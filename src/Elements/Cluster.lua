@@ -64,13 +64,20 @@ function Cluster.new(parent)
         Transparency = 0.4
     })
 
-    -- Avatar image with retry logic
+    -- Avatar image with retry logic and higher ZIndex
     local avatarImageUrl = getAvatarThumbnail(localPlayer.UserId)
-    local avatarImage = _G.CensuraG.ImageLabel.new({Instance = frame}, avatarImageUrl, 5, 1, 28, 28, {Shadow = true, ZIndex = 3})
+    local avatarImage = _G.CensuraG.ImageLabel.new({Instance = frame}, avatarImageUrl, 5, 1, 28, 28, {Shadow = true, ZIndex = 5})
     if not avatarImage then
         logger:error("Failed to create avatar ImageLabel for cluster")
     else
         logger:debug("Cluster avatar image created with URL: %s", avatarImageUrl)
+        -- Ensure visibility and force a render delay
+        avatarImage.Instance.Visible = true
+        task.wait(0.1) -- Small delay to allow image to load
+        if avatarImage.Instance.ImageTransparency > 0 then
+            avatarImage.Instance.ImageTransparency = 0
+            logger:debug("Forced avatar image visibility")
+        end
     end
 
     -- Display name with better truncation
@@ -86,7 +93,7 @@ function Cluster.new(parent)
         TextXAlignment = Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
         Visible = true,
-        ZIndex = 3
+        ZIndex = 4
     })
     Styling:Apply(displayName, "TextLabel")
     logger:debug("Cluster display name created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Text: %s", tostring(displayName.Position), tostring(displayName.Size), displayName.ZIndex, tostring(displayName.Visible), displayName.Text)
@@ -109,7 +116,7 @@ function Cluster.new(parent)
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Right,
         Visible = true,
-        ZIndex = 3
+        ZIndex = 4
     })
     Styling:Apply(timeLabel, "TextLabel")
     logger:debug("Cluster time label created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Text: %s", tostring(timeLabel.Position), tostring(timeLabel.Size), timeLabel.ZIndex, tostring(timeLabel.Visible), timeLabel.Text)
