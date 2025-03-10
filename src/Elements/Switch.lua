@@ -21,10 +21,11 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
 
     logger:debug("Creating switch with parent: %s, Position: (%d, %d), Label: %s", tostring(parent.Instance), x, y, labelText)
 
+    -- Adjust frame size to accommodate label and track vertically
     local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
         Position = UDim2.new(0, x, 0, y),
-        Size = UDim2.new(0, width + 40, 0, height + 20), -- Extra space for label
+        Size = UDim2.new(0, width + 40, 0, 40), -- Height includes label (20px) and track (20px)
         BackgroundTransparency = 1,
         ClipsDescendants = true,
         ZIndex = parent.Instance.ZIndex + 1
@@ -44,7 +45,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
 
     local track = Utilities.createInstance("Frame", {
         Parent = frame,
-        Position = UDim2.new(0, 0, 0, 20),
+        Position = UDim2.new(0, 0, 0, 20), -- Below the label
         Size = UDim2.new(0, width, 0, height),
         BackgroundTransparency = Styling.Transparency.Background,
         ClipsDescendants = true,
@@ -66,7 +67,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
 
     local labelValue = options.ShowLabel and Utilities.createInstance("TextLabel", {
         Parent = frame,
-        Position = UDim2.new(0, width + 5, 0, 20),
+        Position = UDim2.new(0, width + 5, 0, 20), -- Right of the track
         Size = UDim2.new(0, 40, 0, height),
         Text = defaultState and "On" or "Off",
         BackgroundTransparency = 1,
