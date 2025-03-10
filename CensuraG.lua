@@ -24,6 +24,8 @@ CensuraG.Utilities = loadScript("Utilities.lua")
 CensuraG.UIElement = loadScript("UIElement.lua")
 CensuraG.Styling = loadScript("Styling.lua")
 CensuraG.Animation = loadScript("Animation.lua")
+CensuraG.Draggable = loadScript("Draggable.lua")
+CensuraG.WindowManager = loadScript("WindowManager.lua")
 CensuraG.Window = loadScript("Elements/Window.lua")
 CensuraG.TextButton = loadScript("Elements/TextButton.lua")
 CensuraG.Slider = loadScript("Elements/Slider.lua")
@@ -43,9 +45,12 @@ function CensuraG.AddCustomElement(name, class)
     CensuraG[name] = class
 end
 
--- Initialize Taskbar
+-- Initialize Taskbar and WindowManager
 if CensuraG.Taskbar then
     CensuraG.Taskbar:Init()
+end
+if CensuraG.WindowManager then
+    CensuraG.WindowManager:Init()
 end
 
 return CensuraG
