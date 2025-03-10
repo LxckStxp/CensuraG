@@ -1,4 +1,4 @@
--- Utilities.lua: Reusable helper functions
+-- Utilities.lua: Helper functions for the CensuraG API
 local Utilities = {}
 
 function Utilities.createInstance(className, properties)
