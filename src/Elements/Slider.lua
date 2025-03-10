@@ -24,24 +24,24 @@ function Slider.new(parent, x, y, width, min, max, default, options)
     })
     Styling:Apply(frame, "Frame")
 
-    -- Fill bar (make it more visible)
+    -- Fill bar (more visible)
     local fill = Utilities.createInstance("Frame", {
         Parent = frame,
         Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
-        BackgroundColor3 = Color3.fromRGB(0, 120, 215) -- Override for visibility
+        BackgroundColor3 = Color3.fromRGB(0, 120, 215) -- Bright blue for visibility
     })
 
-    -- Draggable notch (more distinct styling)
+    -- Draggable notch (distinct styling)
     local notch = Utilities.createInstance("Frame", {
         Parent = frame,
         Position = UDim2.new((default - min) / (max - min), -5, 0, -5),
         Size = UDim2.new(0, 10, 0, 20),
-        BackgroundColor3 = Color3.fromRGB(200, 200, 200), -- Brighter for visibility
+        BackgroundColor3 = Color3.fromRGB(200, 200, 200), -- Light gray for visibility
         BorderSizePixel = 1,
         BorderColor3 = Color3.fromRGB(80, 80, 80)
     })
 
-    -- Optional value label (positioned above to avoid overlap)
+    -- Optional value label
     local label = options.ShowValue and Utilities.createInstance("TextLabel", {
         Parent = frame,
         Position = UDim2.new(0, 0, 0, -25),
@@ -65,7 +65,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         Orientation = options.Orientation or "Horizontal"
     }, Slider)
 
-    -- Update value and visuals
+    -- Update value and visuals (internal method)
     function self:UpdateValue(newValue)
         newValue = math.clamp(math.floor(newValue / self.Step) * self.Step, self.Min, self.Max)
         self.Value = newValue
@@ -133,7 +133,7 @@ end
 
 -- Public method to set value programmatically
 function Slider:SetValue(value)
-    self:UpdateValue(value)
+    self:UpdateValue(value) -- Fixed: Call the correct method
 end
 
 return Slider
