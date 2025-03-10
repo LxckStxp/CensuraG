@@ -1,4 +1,4 @@
--- Switch.lua: Toggle switch with miltech styling
+-- Switch.lua: Toggle switch with modern miltech styling
 local Switch = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Switch.__index = Switch
 
@@ -24,32 +24,23 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         Parent = parent.Instance,
         Position = UDim2.new(0, x, 0, y),
         Size = UDim2.new(0, width, 0, height),
-        BackgroundTransparency = 0.5,
+        BackgroundTransparency = Styling.Transparency.Background,
         ClipsDescendants = true,
         Visible = true,
         ZIndex = 3
     })
     Styling:Apply(frame, "Frame")
-    logger:debug("Switch frame created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Parent: %s", tostring(frame.Position), tostring(frame.Size), frame.ZIndex, tostring(frame.Visible), tostring(frame.Parent))
-
-    local frameStroke = Utilities.createInstance("UIStroke", {
-        Parent = frame,
-        Thickness = 1,
-        Color = Color3.fromRGB(200, 200, 200),
-        Transparency = 0.5
-    })
+    logger:debug("Switch frame created: Position: %s, Size: %s, ZIndex: %d", tostring(frame.Position), tostring(frame.Size), frame.ZIndex)
 
     local knob = Utilities.createInstance("Frame", {
         Parent = frame,
         Size = UDim2.new(0, height - 4, 0, height - 4),
         Position = defaultState and UDim2.new(1, -(height - 2), 0, 2) or UDim2.new(0, 2, 0, 2),
-        BackgroundColor3 = Color3.fromRGB(150, 150, 150),
-        BackgroundTransparency = 0.2,
-        BorderSizePixel = 0,
-        Visible = true,
+        BackgroundTransparency = Styling.Transparency.Highlight,
         ZIndex = 4
     })
-    logger:debug("Switch knob created: Position: %s, Size: %s, ZIndex: %d, Visible: %s", tostring(knob.Position), tostring(knob.Size), knob.ZIndex, tostring(knob.Visible))
+    Styling:Apply(knob, "Frame")
+    logger:debug("Switch knob created: Position: %s, Size: %s, ZIndex: %d", tostring(knob.Position), tostring(knob.Size))
 
     local label = options.ShowLabel and Utilities.createInstance("TextLabel", {
         Parent = frame,
@@ -57,14 +48,11 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         Size = UDim2.new(1, 0, 0, 20),
         Text = defaultState and "On" or "Off",
         BackgroundTransparency = 1,
-        TextColor3 = Styling.Colors.Text,
-        Font = Enum.Font.Code,
-        TextSize = 12,
-        Visible = true,
         ZIndex = 4
     }) or nil
     if label then
-        logger:debug("Switch label created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Text: %s", tostring(label.Position), tostring(label.Size), label.ZIndex, tostring(label.Visible), label.Text)
+        Styling:Apply(label, "TextLabel")
+        logger:debug("Switch label created: Position: %s, Size: %s, Text: %s", tostring(label.Position), tostring(label.Size), label.Text)
     end
 
     local self = setmetatable({
@@ -80,7 +68,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         self.Debounce = true
         self.State = not self.State
         local newPos = self.State and UDim2.new(1, -(height - 2), 0, 2) or UDim2.new(0, 2, 0, 2)
-        local newTransparency = self.State and 0.3 or 0.5
+        local newTransparency = self.State and Styling.Transparency.Background - 0.1 or Styling.Transparency.Background
         Animation:Tween(self.Knob, {Position = newPos}, 0.2, function()
             self.Debounce = false
         end)
@@ -100,7 +88,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         end
     end)
 
-    frame.BackgroundTransparency = self.State and 0.3 or 0.5
+    frame.BackgroundTransparency = self.State and Styling.Transparency.Background - 0.1 or Styling.Transparency.Background
 
     function self:Destroy()
         self.Instance:Destroy()
