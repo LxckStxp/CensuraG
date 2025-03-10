@@ -23,65 +23,75 @@ function Slider.new(parent, x, y, width, min, max, default, options)
     options = options or {}
     width = width or 200
     local height = 15 -- Track height
-    local labelText = options.LabelText or "Slider" -- Default label text
+    local labelText = options.LabelText or "Slider"
 
     logger:debug("Creating slider with parent: %s, Position: (%d, %d), Width: %d, Label: %s", tostring(parent.Instance), x, y, width, labelText)
 
-    -- Create the label
-    local label = Utilities.createInstance("TextLabel", {
+    -- Create the main frame to hold all components
+    local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
-        Position = UDim2.new(0, x - 60, 0, y), -- 60 pixels to the left of the slider
-        Size = UDim2.new(0, 50, 0, height),   -- Width of 50 pixels, same height as slider
+        Position = UDim2.new(0, x, 0, y),
+        Size = UDim2.new(0, width + 60 + 40, 0, height), -- Extra space for label and value
+        BackgroundTransparency = 1,
+        ClipsDescendants = true,
+        Visible = true,
+        ZIndex = parent.Instance.ZIndex + 1
+    })
+    logger:debug("Slider frame created: Position: %s, Size: %s, ZIndex: %d", tostring(frame.Position), tostring(frame.Size), frame.ZIndex)
+
+    -- Create the label (above the slider)
+    local label = Utilities.createInstance("TextLabel", {
+        Parent = frame,
+        Position = UDim2.new(0, 0, 0, -20), -- Above the slider
+        Size = UDim2.new(0, width, 0, 20),
         Text = labelText,
         BackgroundTransparency = 1,
-        ZIndex = 3
+        ZIndex = frame.ZIndex + 1
     })
     Styling:Apply(label, "TextLabel")
     logger:debug("Slider label created: Position: %s, Size: %s, Text: %s", tostring(label.Position), tostring(label.Size), label.Text)
 
-    -- Create the slider frame
-    local frame = Utilities.createInstance("Frame", {
-        Parent = parent.Instance,
-        Position = UDim2.new(0, x, 0, y),
+    -- Create the track
+    local track = Utilities.createInstance("Frame", {
+        Parent = frame,
+        Position = UDim2.new(0, 0, 0, 0),
         Size = UDim2.new(0, width, 0, height),
         BackgroundTransparency = Styling.Transparency.Background,
-        ClipsDescendants = true,
-        Visible = true,
-        ZIndex = 3
+        ZIndex = frame.ZIndex + 1
     })
-    Styling:Apply(frame, "Frame")
-    logger:debug("Slider frame created: Position: %s, Size: %s, ZIndex: %d", tostring(frame.Position), tostring(frame.Size), frame.ZIndex)
+    Styling:Apply(track, "Frame")
+    logger:debug("Slider track created: Position: %s, Size: %s", tostring(track.Position), tostring(track.Size))
 
     -- Create the fill bar
     local fill = Utilities.createInstance("Frame", {
-        Parent = frame,
-        Size = UDim2.new((default - min) / (max - min), 0, 1, 0), -- Full height of track
+        Parent = track,
+        Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
         Position = UDim2.new(0, 0, 0, 0),
         BackgroundTransparency = Styling.Transparency.Highlight,
-        ZIndex = 4
+        ZIndex = track.ZIndex + 1
     })
     Styling:Apply(fill, "Frame")
     logger:debug("Slider fill created: Position: %s, Size: %s", tostring(fill.Position), tostring(fill.Size))
 
-    -- Create the notch (knob) with full track height
-    local notchSize = height -- Match the track height (15 pixels)
-    local notch = Utilities.createInstance("Frame", {
-        Parent = frame,
-        Position = UDim2.new((default - min) / (max - min), -(notchSize / 2), 0, 0), -- Center horizontally, align with track top
-        Size = UDim2.new(0, notchSize, 0, height), -- Full height of the track
+    -- Create the knob with full track height
+    local knobSize = height
+    local knob = Utilities.createInstance("Frame", {
+        Parent = track,
+        Position = UDim2.new((default - min) / (max - min), -(knobSize / 2), 0, 0),
+        Size = UDim2.new(0, knobSize, 0, height),
         BackgroundTransparency = Styling.Transparency.Highlight,
-        ZIndex = 5
+        ZIndex = track.ZIndex + 2
     })
-    Styling:Apply(notch, "Frame")
-    logger:debug("Slider notch created: Position: %s, Size: %s", tostring(notch.Position), tostring(notch.Size))
+    Styling:Apply(knob, "Frame")
+    logger:debug("Slider knob created: Position: %s, Size: %s", tostring(knob.Position), tostring(knob.Size))
 
     local labelValue = options.ShowValue and Utilities.createInstance("TextLabel", {
         Parent = frame,
-        Position = UDim2.new(1, 5, 0, 0), -- To the right of the slider
+        Position = UDim2.new(0, width + 5, 0, 0), -- To the right of the track
         Size = UDim2.new(0, 40, 0, height),
         Text = tostring(default),
         BackgroundTransparency = 1,
-        ZIndex = 4
+        ZIndex = frame.ZIndex + 1
     }) or nil
     if labelValue then
         Styling:Apply(labelValue, "TextLabel")
@@ -94,9 +104,9 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         Min = min,
         Max = max,
         Fill = fill,
-        Notch = notch,
-        Label = label,           -- Reference to the context label
-        LabelValue = labelValue, -- Reference to the value label
+        Knob = knob,
+        Label = label,
+        LabelValue = labelValue,
         Step = options.Step or 1,
         Orientation = options.Orientation or "Horizontal",
         Connections = {},
@@ -111,18 +121,18 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         if self.Orientation == "Horizontal" then
             if animate then
                 Animation:Tween(self.Fill, {Size = UDim2.new(ratio, 0, 1, 0)}, 0.2)
-                Animation:Tween(self.Notch, {Position = UDim2.new(ratio, -(notchSize / 2), 0, 0)}, 0.2)
+                Animation:Tween(self.Knob, {Position = UDim2.new(ratio, -(knobSize / 2), 0, 0)}, 0.2)
             else
                 self.Fill.Size = UDim2.new(ratio, 0, 1, 0)
-                self.Notch.Position = UDim2.new(ratio, -(notchSize / 2), 0, 0)
+                self.Knob.Position = UDim2.new(ratio, -(knobSize / 2), 0, 0)
             end
         else
             if animate then
                 Animation:Tween(self.Fill, {Size = UDim2.new(1, 0, ratio, 0)}, 0.2)
-                Animation:Tween(self.Notch, {Position = UDim2.new(0, -(notchSize / 2), ratio, 0)}, 0.2)
+                Animation:Tween(self.Knob, {Position = UDim2.new(0, -(knobSize / 2), ratio, 0)}, 0.2)
             else
                 self.Fill.Size = UDim2.new(1, 0, ratio, 0)
-                self.Notch.Position = UDim2.new(0, -(notchSize / 2), ratio, 0)
+                self.Knob.Position = UDim2.new(0, -(knobSize / 2), ratio, 0)
             end
         end
         if self.LabelValue then
@@ -131,16 +141,16 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         if options.OnChanged then
             options.OnChanged(newValue)
         end
-        logger:debug("Slider value updated: New Value: %d, Fill Size: %s, Notch Position: %s", newValue, tostring(self.Fill.Size), tostring(self.Notch.Position))
+        logger:debug("Slider value updated: New Value: %d, Fill Size: %s, Knob Position: %s", newValue, tostring(self.Fill.Size), tostring(self.Knob.Position))
     end
 
-    -- Click handling (only on the notch)
-    table.insert(self.Connections, self.Notch.InputBegan:Connect(function(input)
+    -- Click handling (only on the knob)
+    table.insert(self.Connections, self.Knob.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             self.IsDragging = true
             local mousePos = input.Position
-            local framePos = frame.AbsolutePosition
-            local frameSize = frame.AbsoluteSize
+            local framePos = track.AbsolutePosition
+            local frameSize = track.AbsoluteSize
             local ratio = self.Orientation == "Horizontal" and math.clamp((mousePos.X - framePos.X) / frameSize.X, 0, 1) or math.clamp((mousePos.Y - framePos.Y) / frameSize.Y, 0, 1)
             self:UpdateValue(self.Min + (self.Max - self.Min) * ratio, true)
         end
@@ -153,29 +163,29 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         end
     end))
 
-    -- Dragging handling (only when dragging the notch)
+    -- Dragging handling (only when dragging the knob)
     table.insert(self.Connections, UserInputService.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement and self.IsDragging then
             local mousePos = input.Position
-            local framePos = frame.AbsolutePosition
-            local frameSize = frame.AbsoluteSize
+            local framePos = track.AbsolutePosition
+            local frameSize = track.AbsoluteSize
             local ratio = self.Orientation == "Horizontal" and math.clamp((mousePos.X - framePos.X) / frameSize.X, 0, 1) or math.clamp((mousePos.Y - framePos.Y) / frameSize.Y, 0, 1)
             self:UpdateValue(self.Min + (self.Max - self.Min) * ratio, false)
         end
     end))
 
-    -- Click on the track (outside the notch) to animate to position
-    table.insert(self.Connections, frame.InputBegan:Connect(function(input)
+    -- Click on the track (outside the knob) to animate to position
+    table.insert(self.Connections, track.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             local mousePos = input.Position
-            local notchPos = self.Notch.AbsolutePosition
-            local notchSize = self.Notch.AbsoluteSize
-            if mousePos.X >= notchPos.X and mousePos.X <= notchPos.X + notchSize.X and
-               mousePos.Y >= notchPos.Y and mousePos.Y <= notchPos.Y + notchSize.Y then
+            local knobPos = self.Knob.AbsolutePosition
+            local knobSize = self.Knob.AbsoluteSize
+            if mousePos.X >= knobPos.X and mousePos.X <= knobPos.X + knobSize.X and
+               mousePos.Y >= knobPos.Y and mousePos.Y <= knobPos.Y + knobSize.Y then
                 return
             end
-            local framePos = frame.AbsolutePosition
-            local frameSize = frame.AbsoluteSize
+            local framePos = track.AbsolutePosition
+            local frameSize = track.AbsoluteSize
             local ratio = self.Orientation == "Horizontal" and math.clamp((mousePos.X - framePos.X) / frameSize.X, 0, 1) or math.clamp((mousePos.Y - framePos.Y) / frameSize.Y, 0, 1)
             self:UpdateValue(self.Min + (self.Max - self.Min) * ratio, true)
         end
@@ -193,7 +203,6 @@ function Slider.new(parent, x, y, width, min, max, default, options)
     end
 
     self:UpdateValue(default, false)
-
     return self
 end
 
