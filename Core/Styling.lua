@@ -9,9 +9,9 @@ Styling.Themes = {
         Base = Color3.fromRGB(30, 30, 35),
         Accent = Color3.fromRGB(200, 200, 210),
         Secondary = Color3.fromRGB(50, 50, 55),
-        Text = Color3.fromRGB(220, 220, 230),
+        Text = Color3.fromRGB(240, 240, 245), -- Lighter text for better contrast
         Highlight = Color3.fromRGB(90, 90, 100),
-        Gradient = {Color3.fromRGB(40, 40, 45), Color3.fromRGB(25, 25, 30)} -- Subtle gradient
+        Gradient = {Color3.fromRGB(40, 40, 45), Color3.fromRGB(25, 25, 30)}
     },
     Light = {
         Base = Color3.fromRGB(240, 240, 245),
