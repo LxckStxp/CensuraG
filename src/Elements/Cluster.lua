@@ -8,14 +8,25 @@ local logger = _G.CensuraG.Logger
 local Players = game:GetService("Players")
 
 local function getAvatarThumbnail(userId)
-    local success, content = pcall(function()
-        return Players:GetUserThumbnailAsync(userId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size100x100)
-    end)
-    if success and content then
+    local attempts = 3
+    local content = nil
+    for i = 1, attempts do
+        local success, result = pcall(function()
+            return Players:GetUserThumbnailAsync(userId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size100x100)
+        end)
+        if success and result then
+            content = result
+            break
+        else
+            logger:warn("Attempt %d failed to fetch avatar thumbnail for user %d: %s", i, userId, tostring(result))
+            task.wait(0.5) -- Delay between retries
+        end
+    end
+    if content then
         logger:debug("Fetched avatar thumbnail for user %d: %s", userId, tostring(content))
         return content
     else
-        logger:warn("Failed to fetch avatar thumbnail for user %d: %s", userId, tostring(content))
+        logger:warn("All attempts failed to fetch avatar thumbnail for user %d, using fallback", userId)
         return "rbxassetid://0" -- Fallback to a blank image
     end
 end
@@ -36,33 +47,33 @@ function Cluster.new(parent)
 
     local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
-        Position = UDim2.new(1, -210, 0, 5), -- Adjusted to 210px from right for better spacing
+        Position = UDim2.new(1, -210, 0, 5),
         Size = UDim2.new(0, 200, 0, 30),
-        BackgroundTransparency = 0.6, -- Slightly more transparent for a sleek look
+        BackgroundTransparency = 0.6,
         BackgroundColor3 = Styling.Colors.Highlight,
         Visible = true,
         ZIndex = 2
     })
     Styling:Apply(frame, "Frame")
-    logger:debug("Cluster frame created: Position: %s, Size: %s, ZIndex: %d, Visible: %s", tostring(frame.Position), tostring(frame.Size), frame.ZIndex, tostring(frame.Visible))
+    logger:debug("Cluster frame created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Parent: %s", tostring(frame.Position), tostring(frame.Size), frame.ZIndex, tostring(frame.Visible), tostring(frame.Parent))
 
     local frameStroke = Utilities.createInstance("UIStroke", {
         Parent = frame,
         Thickness = 1,
         Color = Color3.fromRGB(200, 200, 200),
-        Transparency = 0.4 -- Slightly more visible border
+        Transparency = 0.4
     })
 
-    -- Avatar image using ImageLabel
+    -- Avatar image with retry logic
     local avatarImageUrl = getAvatarThumbnail(localPlayer.UserId)
-    local avatarImage = _G.CensuraG.ImageLabel.new(frame, avatarImageUrl, 5, 2, 28, 28, {Shadow = true})
+    local avatarImage = _G.CensuraG.ImageLabel.new({Instance = frame}, avatarImageUrl, 5, 1, 28, 28, {Shadow = true, ZIndex = 3})
     if not avatarImage then
         logger:error("Failed to create avatar ImageLabel for cluster")
     else
         logger:debug("Cluster avatar image created with URL: %s", avatarImageUrl)
     end
 
-    -- Display name
+    -- Display name with better truncation
     local displayName = Utilities.createInstance("TextLabel", {
         Parent = frame,
         Position = UDim2.new(0, 40, 0, 0),
@@ -73,6 +84,7 @@ function Cluster.new(parent)
         Font = Enum.Font.Code,
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Left,
+        TextTruncate = Enum.TextTruncate.AtEnd,
         Visible = true,
         ZIndex = 3
     })
@@ -85,7 +97,7 @@ function Cluster.new(parent)
         logger:debug("Updated cluster display name to: %s", displayName.Text)
     end)
 
-    -- Time
+    -- Time with smoother updates
     local timeLabel = Utilities.createInstance("TextLabel", {
         Parent = frame,
         Position = UDim2.new(0, 155, 0, 0),
@@ -102,7 +114,7 @@ function Cluster.new(parent)
     Styling:Apply(timeLabel, "TextLabel")
     logger:debug("Cluster time label created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Text: %s", tostring(timeLabel.Position), tostring(timeLabel.Size), timeLabel.ZIndex, tostring(timeLabel.Visible), timeLabel.Text)
 
-    -- Update time every 10 seconds for smoother updates
+    -- Update time every 10 seconds
     spawn(function()
         while wait(10) do
             timeLabel.Text = os.date("%H:%M")
