@@ -21,11 +21,11 @@ function Taskbar:Init()
         self.Instance = taskbar
         logger:debug("Taskbar created: Position: %s, Size: %s, ZIndex: %d", tostring(taskbar.Position), tostring(taskbar.Size), taskbar.ZIndex)
 
-        -- Subtle gradient for buttons and cluster (not the frame)
+        -- Subtle gradient for buttons and cluster
         local buttonContainer = Utilities.createInstance("Frame", {
             Parent = taskbar,
             Size = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = 0.7, -- Slight transparency for button background
+            BackgroundTransparency = 0.7,
             BackgroundColor3 = Styling.Colors.Highlight,
             ZIndex = 2
         })
@@ -42,16 +42,16 @@ function Taskbar:Init()
             Transparency = 0.4
         })
 
-        -- Add a subtle shadow for depth
+        -- Subtle shadow for depth
         local shadow = Utilities.createTaperedShadow(taskbar, 5, 5, 0.9)
         shadow.ZIndex = 1
 
-        -- Initialize cluster on the right side
-        self.Cluster = _G.CensuraG.Cluster.new(self)
-        if self.Cluster then
-            logger:info("Cluster initialized on taskbar")
+        -- Initialize cluster on the right side, parented to buttonContainer
+        self.Cluster = _G.CensuraG.Cluster.new({Instance = buttonContainer})
+        if self.Cluster and self.Cluster.Instance then
+            logger:info("Cluster initialized on taskbar, parent: %s", tostring(buttonContainer))
         else
-            logger:error("Failed to initialize cluster on taskbar")
+            logger:error("Failed to initialize cluster on taskbar, parent: %s", tostring(buttonContainer))
         end
 
         local hoverDebounce = false
@@ -60,7 +60,7 @@ function Taskbar:Init()
             if input.UserInputType == Enum.UserInputType.MouseMovement then
                 local screenHeight = _G.CensuraG.ScreenGui.AbsoluteSize.Y
                 local mouseY = input.Position.Y
-                local threshold = 20 -- Trigger near the bottom
+                local threshold = 20
 
                 if mouseY >= screenHeight - threshold and not taskbar.Visible and not hoverDebounce then
                     hoverDebounce = true
@@ -107,7 +107,7 @@ function Taskbar:AddWindow(window)
 
     local title = titleLabel.Text
     local buttonWidth = 150
-    local spacing = 15 -- Increased spacing for better layout
+    local spacing = 15
     local totalWidth = 0
 
     for _, btn in ipairs(self.Instance:GetChildren()) do
@@ -122,7 +122,7 @@ function Taskbar:AddWindow(window)
         Size = UDim2.new(0, buttonWidth, 0, 30),
         Text = title,
         TextTruncate = Enum.TextTruncate.AtEnd,
-        BackgroundTransparency = 0.4, -- Slightly opaque for contrast
+        BackgroundTransparency = 0.4,
         BackgroundColor3 = Styling.Colors.Highlight,
         Visible = true,
         ZIndex = 3
@@ -134,7 +134,7 @@ function Taskbar:AddWindow(window)
         Parent = button,
         Thickness = 1,
         Color = Color3.fromRGB(200, 200, 200),
-        Transparency = 0.3 -- More visible border
+        Transparency = 0.3
     })
 
     local buttonShadow = Utilities.createTaperedShadow(button, 3, 3, 0.95)
