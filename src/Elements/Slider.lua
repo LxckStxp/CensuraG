@@ -1,4 +1,4 @@
--- Slider.lua: Slider with constrained draggable notch
+-- Slider.lua: Slider with a constrained draggable notch
 local Slider = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Slider.__index = Slider
 
@@ -6,7 +6,6 @@ local Utilities = _G.CensuraG.Utilities
 local Styling = _G.CensuraG.Styling
 local Animation = _G.CensuraG.Animation
 local Draggable = _G.CensuraG.Draggable
-local UserInputService = game:GetService("UserInputService")
 
 function Slider.new(parent, x, y, width, min, max, default, callback)
     local frame = Utilities.createInstance("Frame", {
@@ -15,23 +14,20 @@ function Slider.new(parent, x, y, width, min, max, default, callback)
         Size = UDim2.new(0, width, 0, 10)
     })
     Styling:Apply(frame, "Frame")
-    
+
     local fill = Utilities.createInstance("Frame", {
         Parent = frame,
         Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
-        BackgroundColor3 = Styling.Colors.Highlight
+        BackgroundColor3 = Styling.Colors.Accent
     })
-    Styling:Apply(fill, "Frame")
-    
+
     local notch = Utilities.createInstance("Frame", {
         Parent = frame,
         Position = UDim2.new((default - min) / (max - min), -5, 0, -5),
         Size = UDim2.new(0, 10, 0, 20),
-        BackgroundColor3 = Styling.Colors.Accent,
-        BorderSizePixel = 1,
-        BorderColor3 = Styling.Colors.Border
+        BackgroundColor3 = Styling.Colors.Highlight
     })
-    
+
     local self = setmetatable({
         Instance = frame,
         Value = default,
@@ -40,26 +36,26 @@ function Slider.new(parent, x, y, width, min, max, default, callback)
         Fill = fill,
         Notch = notch
     }, Slider)
-    
-    -- Draggable notch with constraints
-    self.DragHandler = Draggable.new(notch, {
-        DragRegion = notch,
-        AxisLock = "X", -- Lock to horizontal movement
-        Bounds = {
-            MinX = -5, -- Notch offset
-            MaxX = width - 5, -- Width minus notch offset
-            MinY = -5,
-            MaxY = -5
-        },
-        OnDrag = function(_, newPos)
-            local relativeX = newPos.X.Offset + 5 -- Adjust for notch offset
-            local ratio = math.clamp(relativeX / width, 0, 1)
+
+    -- Draggable notch with bounds
+    self.DragHandler = Draggable.new(notch, notch)
+    local connection = game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if self.DragHandler.Dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local newX = self.DragHandler.StartPos.X.Offset + (input.Position - self.DragHandler.DragStart).X
+            newX = math.clamp(newX, -5, width - 5)
+            self.Notch.Position = UDim2.new(0, newX, 0, -5)
+            local ratio = (newX + 5) / width
             self.Value = min + (max - min) * ratio
             Animation:Tween(fill, {Size = UDim2.new(ratio, 0, 1, 0)})
             if callback then callback(self.Value) end
         end
-    })
-    
+    end)
+
+    function self:Destroy()
+        connection:Disconnect()
+        self.DragHandler:Destroy()
+    end
+
     return self
 end
 
