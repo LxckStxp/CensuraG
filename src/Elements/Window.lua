@@ -11,15 +11,13 @@ local logger = _G.CensuraG.Logger
 function Window.new(title, x, y, width, height)
     local frame = Utilities.createInstance("Frame", {
         Parent = _G.CensuraG.ScreenGui,
-        Position = UDim2.new(0, x, 0, y),
         Size = UDim2.new(0, width, 0, height),
         BackgroundTransparency = 0.5,
-        ZIndex = 2
+        ZIndex = 2 -- Initial ZIndex, will be updated by WindowManager
     })
     Styling:Apply(frame, "Frame")
-    logger:debug("Created window frame: %s, Position: %s, Size: %s, ZIndex: %d, Transparency: %.2f", title, tostring(frame.Position), tostring(frame.Size), frame.ZIndex, frame.BackgroundTransparency)
+    logger:debug("Created window frame: %s, Initial Position: %s, Size: %s, ZIndex: %d, Transparency: %.2f", title, tostring(frame.Position), tostring(frame.Size), frame.ZIndex, frame.BackgroundTransparency)
 
-    -- Add a thin white border with UIStroke
     local frameStroke = Utilities.createInstance("UIStroke", {
         Parent = frame,
         Thickness = 1,
@@ -27,7 +25,6 @@ function Window.new(title, x, y, width, height)
         Transparency = 0.2
     })
 
-    -- Add a subtle gradient to the background
     local gradient = Utilities.createInstance("UIGradient", {
         Parent = frame,
         Color = ColorSequence.new(Styling.Colors.Base, Styling.Colors.Highlight),
@@ -120,7 +117,7 @@ function Window:Minimize()
         self.Shadow.Visible = false
         self.Debounce = false
         for _, child in pairs(self.Instance:GetChildren()) do
-            if child:IsA("GuiObject") then -- Only set Visible on GuiObjects
+            if child:IsA("GuiObject") then
                 child.Visible = false
                 logger:debug("Set child %s of window to Visible: false during minimize", child.Name)
             end
@@ -143,7 +140,7 @@ function Window:Maximize()
     self.Shadow.Visible = true
 
     for _, child in pairs(self.Instance:GetChildren()) do
-        if child:IsA("GuiObject") then -- Only set Visible on GuiObjects
+        if child:IsA("GuiObject") then
             child.Visible = true
             logger:debug("Set child %s of window to Visible: true during maximize", child.Name)
         end
