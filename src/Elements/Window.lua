@@ -1,37 +1,35 @@
--- Window.lua: Window class with dragging and minimizing
+-- Window.lua: Styled and animated window
 local Window = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Window.__index = Window
 
 local Utilities = _G.CensuraG.Utilities
+local Styling = _G.CensuraG.Styling
+local Animation = _G.CensuraG.Animation
 local UserInputService = game:GetService("UserInputService")
 
 function Window.new(title, x, y, width, height)
     local frame = Utilities.createInstance("Frame", {
         Parent = _G.CensuraG.ScreenGui,
         Position = UDim2.new(0, x, 0, y),
-        Size = UDim2.new(0, width, 0, height),
-        BackgroundColor3 = Color3.fromRGB(30, 30, 30),
-        BorderSizePixel = 0
+        Size = UDim2.new(0, width, 0, height)
     })
+    Styling:Apply(frame, "Frame")
     
     local titleBar = Utilities.createInstance("TextLabel", {
         Parent = frame,
         Size = UDim2.new(1, 0, 0, 20),
-        BackgroundColor3 = Color3.fromRGB(50, 50, 50),
-        Text = title,
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        TextSize = 14,
-        BorderSizePixel = 0
+        Text = title
     })
+    Styling:Apply(titleBar, "TextLabel")
     
     local minimizeButton = Utilities.createInstance("TextButton", {
         Parent = titleBar,
         Position = UDim2.new(1, -20, 0, 0),
         Size = UDim2.new(0, 20, 0, 20),
-        Text = "-",
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+        Text = "-"
     })
+    Styling:Apply(minimizeButton, "TextButton")
+    Animation:HoverEffect(minimizeButton)
     
     local self = setmetatable({Instance = frame, Minimized = false}, Window)
     
@@ -56,7 +54,7 @@ function Window.new(title, x, y, width, height)
         end
     end)
     
-    -- Minimize Logic
+    -- Minimize Logic with Animation
     minimizeButton.MouseButton1Click:Connect(function()
         self:Minimize()
     end)
@@ -66,9 +64,9 @@ end
 
 function Window:Minimize()
     if self.Minimized then
-        self.Instance.Visible = true
+        Animation:FadeIn(self.Instance)
     else
-        self.Instance.Visible = false
+        Animation:FadeOut(self.Instance)
         _G.CensuraG.Taskbar:AddWindow(self)
     end
     self.Minimized = not self.Minimized
