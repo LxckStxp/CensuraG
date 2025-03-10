@@ -8,7 +8,8 @@ function Animation:SlideY(element, targetY, duration, easingStyle, easingDirecti
     local direction = easingDirection or Enum.EasingDirection.InOut
     local tweenInfo = TweenInfo.new(duration or 0.3, style, direction)
     local currentPosition = element.Position
-    local targetPosition = UDim2.new(currentPosition.X.Scale, currentPosition.X.Offset, 0, targetY)
+    -- Preserve the Y.Scale value (e.g., 1 for bottom anchoring)
+    local targetPosition = UDim2.new(currentPosition.X.Scale, currentPosition.X.Offset, currentPosition.Y.Scale, targetY)
     local tween = TweenService:Create(element, tweenInfo, {Position = targetPosition})
     logger:debug("Started Y-axis slide for element: %s, Target Y: %d, Easing: %s, Direction: %s", tostring(element), targetY, tostring(style), tostring(direction))
     if callback then
