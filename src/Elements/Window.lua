@@ -1,4 +1,4 @@
--- Window.lua: Enhanced draggable window with modern miltech styling
+-- Window.lua: Draggable window with modern styling
 local Window = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Window.__index = Window
 
@@ -9,90 +9,52 @@ local Draggable = _G.CensuraG.Draggable
 local logger = _G.CensuraG.Logger
 
 function Window.new(title, x, y, width, height)
-    x = x or 0
-    y = y or 0
-    width = width or 300 -- Default width
-    height = height or 200 -- Default height
+    width = width or 300
+    height = height or 200
 
     local frame = Utilities.createInstance("Frame", {
         Parent = _G.CensuraG.ScreenGui,
-        Position = UDim2.new(0, x, 0, y),
+        Position = UDim2.new(0, x or 0, 0, y or 0),
         Size = UDim2.new(0, width, 0, height),
-        BackgroundTransparency = Styling.Transparency.WindowBackground,
         ZIndex = 2
     })
     Styling:Apply(frame, "Window")
-    logger:debug("Created window frame: %s, Initial Position: %s, Size: %s, ZIndex: %d", title, tostring(frame.Position), tostring(frame.Size), frame.ZIndex)
 
     local shadow = Utilities.createTaperedShadow(frame, 5, 5, 0.9)
     shadow.ZIndex = frame.ZIndex - 1
-    logger:debug("Created shadow for window: %s, ZIndex: %d", title, shadow.ZIndex)
 
     local titleBarHeight = 20
     local titleBar = Utilities.createInstance("TextLabel", {
         Parent = frame,
         Size = UDim2.new(1, -titleBarHeight - 5, 0, titleBarHeight),
         Text = title,
-        BackgroundTransparency = Styling.Transparency.ElementBackground,
-        ZIndex = frame.ZIndex + 1
+        ZIndex = frame.ZIndex + 2
     })
     Styling:Apply(titleBar, "TextLabel")
-    -- Force text visibility and Z-Index
-    titleBar.TextTransparency = 0
-    titleBar.Visible = true
-    titleBar.ZIndex = frame.ZIndex + 2
-    logger:debug("Created title bar for window: %s, Position: %s, Size: %s, ZIndex: %d", title, tostring(titleBar.Position), tostring(titleBar.Size), titleBar.ZIndex)
 
     local minimizeButton = Utilities.createInstance("TextButton", {
         Parent = frame,
         Position = UDim2.new(1, -titleBarHeight, 0, 0),
         Size = UDim2.new(0, titleBarHeight, 0, titleBarHeight),
         Text = "-",
-        BackgroundTransparency = Styling.Transparency.ElementBackground,
-        ZIndex = frame.ZIndex + 1
+        ZIndex = frame.ZIndex + 2
     })
     Styling:Apply(minimizeButton, "TextButton")
-    -- Force text visibility and Z-Index
-    minimizeButton.TextTransparency = 0
-    minimizeButton.Visible = true
-    minimizeButton.ZIndex = frame.ZIndex + 2
-    logger:debug("Created minimize button for window: %s, Position: %s, Size: %s, ZIndex: %d", title, tostring(minimizeButton.Position), tostring(minimizeButton.Size), minimizeButton.ZIndex)
+    Animation:HoverEffect(minimizeButton)
 
     local self = setmetatable({
         Instance = frame,
         Shadow = shadow,
         Minimized = false,
-        CurrentPosition = nil,
-        OriginalPosition = nil,
-        OriginalZIndex = frame.ZIndex,
-        Debounce = false
+        CurrentPosition = frame.Position,
+        OriginalPosition = frame.Position,
+        DragHandler = Draggable.new(frame, titleBar)
     }, Window)
 
-    self.DragHandler = Draggable.new(frame, titleBar)
-
-    self.DragHandler.OnDrag = function()
-        self.CurrentPosition = self.Instance.Position
-        self.Shadow.Position = UDim2.new(0, self.Instance.Position.X.Offset - 5, 0, self.Instance.Position.Y.Offset - 5)
-        self.Shadow.Size = UDim2.new(0, self.Instance.Size.X.Offset + 10, 0, self.Instance.Size.Y.Offset + 10)
-        logger:debug("Window %s dragged to Position: %s", title, tostring(self.CurrentPosition))
-    end
-
     _G.CensuraG.WindowManager:AddWindow(self)
-    self.OriginalPosition = frame.Position
-    self.CurrentPosition = self.OriginalPosition
-    logger:info("Window %s registered with WindowManager at Position: %s", title, tostring(self.OriginalPosition))
-
-    Animation:HoverEffect(minimizeButton)
 
     minimizeButton.MouseButton1Click:Connect(function()
-        if self.Debounce then return end
-        if self.Minimized then
-            self:Maximize()
-            logger:info("Maximized window: %s", title)
-        else
-            self:Minimize()
-            logger:info("Minimized window: %s", title)
-        end
+        if self.Minimized then self:Maximize() else self:Minimize() end
     end)
 
     return self
@@ -104,25 +66,14 @@ function Window:Minimize()
     self.Minimized = true
     self.CurrentPosition = self.Instance.Position
     local screenHeight = _G.CensuraG.ScreenGui.AbsoluteSize.Y
-    local offscreenY = screenHeight + self.Instance.Size.Y.Offset
-
-    Animation:SlideY(self.Instance, offscreenY, 0.3, nil, nil, function()
+    Animation:SlideY(self.Instance, screenHeight + 50, 0.3, nil, nil, function()
         self.Instance.Visible = false
         self.Shadow.Visible = false
+        self:UpdateChildrenVisibility(false)
         self.Debounce = false
-        for _, child in pairs(self.Instance:GetChildren()) do
-            if child:IsA("GuiObject") then
-                child.Visible = false
-                logger:debug("Set child %s of window to Visible: false during minimize", child.Name)
-            end
-        end
     end)
-    Animation:SlideY(self.Shadow, offscreenY - 5, 0.3)
-    if _G.CensuraG and _G.CensuraG.Taskbar and _G.CensuraG.Taskbar.AddWindow then
-        _G.CensuraG.Taskbar:AddWindow(self)
-    else
-        logger:error("Taskbar or AddWindow method is not available during minimize.")
-    end
+    Animation:SlideY(self.Shadow, screenHeight + 45, 0.3)
+    _G.CensuraG.Taskbar:AddWindow(self)
 end
 
 function Window:Maximize()
@@ -131,36 +82,30 @@ function Window:Maximize()
     self.Minimized = false
     self.Instance.Visible = true
     self.Shadow.Visible = true
-
-    local targetY = (self.CurrentPosition or self.OriginalPosition).Y.Offset
+    local targetY = self.CurrentPosition.Y.Offset
     Animation:SlideY(self.Instance, targetY, 0.3, nil, nil, function()
+        self:UpdateChildrenVisibility(true)
         self.Debounce = false
     end)
     Animation:SlideY(self.Shadow, targetY - 5, 0.3)
-    self.Shadow.Size = UDim2.new(0, self.Instance.Size.X.Offset + 10, 0, self.Instance.Size.Y.Offset + 10)
-
-    for _, child in pairs(self.Instance:GetChildren()) do
-        if child:IsA("GuiObject") then
-            child.Visible = true
-            -- Force text visibility for children
-            if child:IsA("TextLabel") or child:IsA("TextButton") then
-                child.TextTransparency = 0
-                child.Visible = true
-                child.ZIndex = self.Instance.ZIndex + 2
-            end
-            logger:debug("Set child %s of window to Visible: true during maximize", child.Name)
-        end
-    end
-
-    for i, taskbarWindow in ipairs(_G.CensuraG.Taskbar.Windows) do
-        if taskbarWindow == self then
-            local button = _G.CensuraG.Taskbar.Instance:GetChildren()[i]
-            if button then
-                button:Destroy()
-                logger:debug("Removed taskbar button for window during maximize")
-            end
+    for i, win in ipairs(_G.CensuraG.Taskbar.Windows) do
+        if win == self then
+            local btn = _G.CensuraG.Taskbar.Instance:GetChildren()[i]
+            if btn then btn:Destroy() end
             table.remove(_G.CensuraG.Taskbar.Windows, i)
             break
+        end
+    end
+end
+
+function Window:UpdateChildrenVisibility(visible)
+    for _, child in pairs(self.Instance:GetChildren()) do
+        if child:IsA("GuiObject") then
+            child.Visible = visible
+            if visible and (child:IsA("TextLabel") or child:IsA("TextButton")) then
+                child.TextTransparency = 0
+                child.ZIndex = self.Instance.ZIndex + 2
+            end
         end
     end
 end
@@ -169,7 +114,7 @@ function Window:Destroy()
     self.DragHandler:Destroy()
     self.Shadow:Destroy()
     self.Instance:Destroy()
-    logger:info("Destroyed window")
+    logger:info("Window destroyed")
 end
 
 return Window
