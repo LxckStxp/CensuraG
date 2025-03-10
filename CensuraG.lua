@@ -52,10 +52,10 @@ local scripts = {
     Taskbar = loadScript(censuraBaseUrl, "Taskbar.lua"),
     Window = loadScript(censuraBaseUrl, "Elements/Window.lua"),
     TextButton = loadScript(censuraBaseUrl, "Elements/TextButton.lua"),
+    ImageLabel = loadScript(censuraBaseUrl, "Elements/ImageLabel.lua"),
     Slider = loadScript(censuraBaseUrl, "Elements/Slider.lua"),
     Switch = loadScript(censuraBaseUrl, "Elements/Switch.lua"),
-    Cluster = loadScript(censuraBaseUrl, "Elements/Cluster.lua"),
-    ImageLabel = loadScript(censuraBaseUrl, "Elements/ImageLabel.lua")
+    Cluster = loadScript(censuraBaseUrl, "Elements/Cluster.lua")
 }
 
 for moduleName, scriptFunc in pairs(scripts) do
