@@ -32,9 +32,12 @@ function TextButton.new(parent, text, x, y, width, height, callback)
         Size = UDim2.new(0, width, 0, 20),
         Text = text,
         BackgroundTransparency = 1,
-        ZIndex = frame.ZIndex + 1
+        ZIndex = frame.ZIndex + 2
     })
     Styling:Apply(label, "TextLabel")
+    -- Force text visibility
+    label.TextTransparency = 0
+    label.Visible = true
 
     local button = Utilities.createInstance("TextButton", {
         Parent = frame,
