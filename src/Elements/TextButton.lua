@@ -1,4 +1,4 @@
--- TextButton.lua: Styled clickable button with modern miltech styling
+-- TextButton.lua: Styled clickable button
 local TextButton = setmetatable({}, {__index = _G.CensuraG.UIElement})
 TextButton.__index = TextButton
 
@@ -8,20 +8,14 @@ local Animation = _G.CensuraG.Animation
 local logger = _G.CensuraG.Logger
 
 function TextButton.new(parent, text, x, y, width, height, callback)
-    if not parent or not parent.Instance then
-        logger:error("Invalid parent for text button: %s", tostring(parent))
-        return nil
-    end
-
-    height = height or 30
+    if not parent or not parent.Instance then return nil end
     width = width or 120
-
-    logger:debug("Creating text button with parent: %s, Text: %s, Position: (%d, %d)", tostring(parent.Instance), text, x, y)
+    height = height or 30
 
     local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
         Position = UDim2.new(0, x, 0, y),
-        Size = UDim2.new(0, width, 0, height + 20),
+        Size = UDim2.new(0, width + 80, 0, 30),
         BackgroundTransparency = 1,
         ZIndex = parent.Instance.ZIndex + 1
     })
@@ -29,31 +23,31 @@ function TextButton.new(parent, text, x, y, width, height, callback)
     local label = Utilities.createInstance("TextLabel", {
         Parent = frame,
         Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(0, width, 0, 20),
+        Size = UDim2.new(0, 60, 0, 20),
         Text = text,
-        BackgroundTransparency = 1,
-        ZIndex = frame.ZIndex + 2
+        ZIndex = frame.ZIndex + 1
     })
     Styling:Apply(label, "TextLabel")
-    -- Force text visibility
-    label.TextTransparency = 0
-    label.Visible = true
 
     local button = Utilities.createInstance("TextButton", {
         Parent = frame,
-        Position = UDim2.new(0, 0, 0, 20),
+        Position = UDim2.new(0, 65, 0, 0),
         Size = UDim2.new(0, width, 0, height),
         Text = "",
-        BackgroundTransparency = Styling.Transparency.ElementBackground,
         ZIndex = frame.ZIndex + 1
     })
     Styling:Apply(button, "TextButton")
-    logger:debug("TextButton created: Position: %s, Size: %s, ZIndex: %d", tostring(button.Position), tostring(button.Size), button.ZIndex)
+    Animation:HoverEffect(button)
 
-    local self = setmetatable({Instance = frame, Button = button, Label = label}, TextButton)
+    local self = setmetatable({
+        Instance = frame,
+        Button = button,
+        Label = label
+    }, TextButton)
+
     button.MouseButton1Click:Connect(function()
-        logger:debug("TextButton clicked: Text: %s", text)
         if callback then callback() end
+        logger:debug("Button %s clicked", text)
     end)
 
     function self:Destroy()
