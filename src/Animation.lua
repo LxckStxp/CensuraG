@@ -1,44 +1,39 @@
--- Animation.lua: Animation utilities for Y-axis sliding and generic tweens
+-- Animation.lua: Animation utilities for smooth transitions
 local Animation = {}
 local TweenService = game:GetService("TweenService")
 local logger = _G.CensuraG.Logger
 
 function Animation:SlideY(element, targetY, duration, easingStyle, easingDirection, callback)
-    local style = easingStyle or Enum.EasingStyle.Linear
-    local direction = easingDirection or Enum.EasingDirection.InOut
+    local style = easingStyle or Enum.EasingStyle.Quad
+    local direction = easingDirection or Enum.EasingDirection.Out
     local tweenInfo = TweenInfo.new(duration or 0.3, style, direction)
-    local currentPosition = element.Position
-    -- Preserve the Y.Scale value (e.g., 1 for bottom anchoring)
-    local targetPosition = UDim2.new(currentPosition.X.Scale, currentPosition.X.Offset, currentPosition.Y.Scale, targetY)
+    local targetPosition = UDim2.new(element.Position.X.Scale, element.Position.X.Offset, element.Position.Y.Scale, targetY)
     local tween = TweenService:Create(element, tweenInfo, {Position = targetPosition})
-    logger:debug("Started Y-axis slide for element: %s, Target Y: %d, Easing: %s, Direction: %s", tostring(element), targetY, tostring(style), tostring(direction))
-    if callback then
-        tween.Completed:Connect(callback)
-    end
+    logger:debug("Sliding element %s to Y: %d", tostring(element), targetY)
+    if callback then tween.Completed:Connect(callback) end
     tween:Play()
     return tween
 end
 
-function Animation:Tween(element, properties, duration, callback)
-    local tweenInfo = TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+function Animation:Tween(element, properties, duration, easingStyle, easingDirection, callback)
+    local style = easingStyle or Enum.EasingStyle.Quad
+    local direction = easingDirection or Enum.EasingDirection.Out
+    local tweenInfo = TweenInfo.new(duration or 0.2, style, direction)
     local tween = TweenService:Create(element, tweenInfo, properties)
-    logger:debug("Started tween for element: %s, Properties: %s, Duration: %.2f", tostring(element), tostring(properties), duration or 0.2)
-    if callback then
-        tween.Completed:Connect(callback)
-    end
+    logger:debug("Tweening element %s with properties: %s", tostring(element), tostring(properties))
+    if callback then tween.Completed:Connect(callback) end
     tween:Play()
     return tween
 end
 
 function Animation:HoverEffect(element)
     element.MouseEnter:Connect(function()
-        element.BorderSizePixel = 1
-        element.BorderColor3 = _G.CensuraG.Styling.Colors.Accent
-        logger:debug("Hover effect applied to element: %s", tostring(element))
+        Animation:Tween(element, {BackgroundTransparency = _G.CensuraG.Styling.Transparency.ElementBackground - 0.1}, 0.1)
+        logger:debug("Hover effect on: %s", tostring(element))
     end)
     element.MouseLeave:Connect(function()
-        element.BorderSizePixel = 0
-        logger:debug("Hover effect removed from element: %s", tostring(element))
+        Animation:Tween(element, {BackgroundTransparency = _G.CensuraG.Styling.Transparency.ElementBackground}, 0.1)
+        logger:debug("Hover effect off: %s", tostring(element))
     end)
 end
 
