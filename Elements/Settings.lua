@@ -526,7 +526,7 @@ function Settings:PopulateTabContent(tabName, contentFrame)
                 task.delay(3, function()
                     notification:Destroy()
                 end)
-            },
+            end,
             {NoLabel = true}
         )
     end
