@@ -205,7 +205,7 @@ function Taskbar:SetAutoHide(enabled)
         if self.MouseCheckConnection then
             self.MouseCheckConnection:Disconnect()
             self.MouseCheckConnection = nil
-        ) -- FIXED: Changed } to )
+        end
         
         -- Show the taskbar when auto-hide is disabled
         self:Show(true)
@@ -440,7 +440,7 @@ function Taskbar:Destroy()
     if self.MouseCheckConnection then
         self.MouseCheckConnection:Disconnect()
         self.MouseCheckConnection = nil
-    ) -- FIXED: Changed } to )
+    end
     
     -- Clear windows
     for _, window in ipairs(self.Windows) do
