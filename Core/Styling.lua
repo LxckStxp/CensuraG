@@ -1,5 +1,5 @@
 -- Core/Styling.lua
--- Enhanced theming system with modern design
+-- Centralized styling system for CensuraG
 
 local Styling = {}
 local logger = _G.CensuraG.Logger
@@ -7,11 +7,11 @@ local logger = _G.CensuraG.Logger
 Styling.Themes = {
     Dark = {
         Base = Color3.fromRGB(30, 30, 35),
-        Accent = Color3.fromRGB(200, 200, 210),
-        Secondary = Color3.fromRGB(50, 50, 55),
-        Text = Color3.fromRGB(240, 240, 245), -- Lighter text for better contrast
-        Highlight = Color3.fromRGB(90, 90, 100),
-        Gradient = {Color3.fromRGB(40, 40, 45), Color3.fromRGB(25, 25, 30)}
+        Accent = Color3.fromRGB(100, 180, 255), -- Brighter accent for contrast
+        Secondary = Color3.fromRGB(40, 40, 45),
+        Text = Color3.fromRGB(220, 220, 230), -- Adjusted for readability
+        Highlight = Color3.fromRGB(70, 90, 120),
+        Gradient = {Color3.fromRGB(35, 35, 40), Color3.fromRGB(25, 25, 30)}
     },
     Light = {
         Base = Color3.fromRGB(240, 240, 245),
@@ -36,19 +36,22 @@ Styling.Colors = Styling.Themes.Dark
 Styling.Transparency = { WindowBackground = 0.2, ElementBackground = 0.25 }
 Styling.TextSizes = { Title = 18, Label = 16, Button = 16 }
 Styling.Fonts = { Primary = Enum.Font.Gotham }
-Styling.CornerRadius = UDim.new(0, 6) -- Slightly larger for modern feel
+Styling.CornerRadius = UDim.new(0, 6)
 Styling.StrokeThickness = 1
-Styling.Padding = 5 -- Consistent padding
+Styling.Padding = 10 -- Increased for better spacing
+Styling.ElementWidth = 200 -- Standard interactive width
+Styling.LabelWidth = 80 -- Standard label width
 
 function Styling:SetTheme(themeName)
     if not self.Themes[themeName] then
-        logger:error("Theme not found: %s", themeName)
+        logger:warn("Theme not found: %s", themeName)
         return false
     end
     self.CurrentTheme = themeName
     self.Colors = self.Themes[themeName]
     logger:info("Theme changed to: %s", themeName)
     _G.CensuraG.EventManager:FireEvent("ThemeChanged", themeName)
+    self:UpdateAllElements()
     return true
 end
 
@@ -56,7 +59,7 @@ function Styling:Apply(element, typeName)
     if not element then return end
     local gradient = element:FindFirstChild("UIGradient") or Instance.new("UIGradient", element)
     gradient.Color = ColorSequence.new(self.Colors.Gradient[1], self.Colors.Gradient[2])
-    gradient.Rotation = 45 -- Diagonal gradient for depth
+    gradient.Rotation = 45
 
     if typeName == "Window" then
         element.BackgroundTransparency = self.Transparency.WindowBackground
@@ -69,13 +72,13 @@ function Styling:Apply(element, typeName)
         element.TextColor3 = self.Colors.Text
         element.Font = self.Fonts.Primary
         element.TextSize = self.TextSizes.Button
-        element.TextWrapped = true -- Enable text wrapping
+        element.TextWrapped = true
     elseif typeName == "TextLabel" then
         element.TextColor3 = self.Colors.Text
         element.Font = self.Fonts.Primary
         element.TextSize = self.TextSizes.Label
         element.BackgroundTransparency = 1
-        element.TextWrapped = true -- Enable text wrapping
+        element.TextWrapped = true
     elseif typeName == "ImageLabel" then
         element.BackgroundColor3 = self.Colors.Secondary
         element.BackgroundTransparency = self.Transparency.ElementBackground
