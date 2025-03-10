@@ -1,4 +1,4 @@
--- TextButton.lua: Styled and animated button
+-- TextButton.lua: Styled clickable button
 local TextButton = setmetatable({}, {__index = _G.CensuraG.UIElement})
 TextButton.__index = TextButton
 
@@ -15,7 +15,7 @@ function TextButton.new(parent, text, x, y, width, height, callback)
     })
     Styling:Apply(button, "TextButton")
     Animation:HoverEffect(button)
-    
+
     local self = setmetatable({Instance = button}, TextButton)
     button.MouseButton1Click:Connect(callback or function() end)
     return self
