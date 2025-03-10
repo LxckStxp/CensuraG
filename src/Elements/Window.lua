@@ -1,4 +1,4 @@
--- Window.lua: Enhanced draggable window with miltech styling and dynamic positioning
+-- Window.lua: Enhanced draggable window with miltech styling and Y-axis sliding animation
 local Window = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Window.__index = Window
 
@@ -72,7 +72,7 @@ function Window.new(title, x, y, width, height)
         Instance = frame,
         Shadow = shadow,
         Minimized = false,
-        CurrentPosition = nil, -- Track the last dragged position
+        CurrentPosition = nil,
         OriginalPosition = nil,
         OriginalZIndex = frame.ZIndex,
         Debounce = false
@@ -81,7 +81,7 @@ function Window.new(title, x, y, width, height)
     self.DragHandler = Draggable.new(frame, titleBar)
 
     self.DragHandler.OnDrag = function()
-        self.CurrentPosition = self.Instance.Position -- Update current position on drag
+        self.CurrentPosition = self.Instance.Position
         self.Shadow.Position = UDim2.new(0, self.Instance.Position.X.Offset - 5, 0, self.Instance.Position.Y.Offset - 5)
         self.Shadow.Size = UDim2.new(0, self.Instance.Size.X.Offset + 10, 0, self.Instance.Size.Y.Offset + 10)
         logger:debug("Window %s dragged to Position: %s", title, tostring(self.CurrentPosition))
@@ -89,7 +89,7 @@ function Window.new(title, x, y, width, height)
 
     _G.CensuraG.WindowManager:AddWindow(self)
     self.OriginalPosition = frame.Position
-    self.CurrentPosition = self.OriginalPosition -- Initialize with original position
+    self.CurrentPosition = self.OriginalPosition
     logger:info("Window %s registered with WindowManager at Position: %s", title, tostring(self.OriginalPosition))
 
     Animation:HoverEffect(minimizeButton)
@@ -112,21 +112,22 @@ function Window:Minimize()
     if self.Minimized or self.Debounce then return end
     self.Debounce = true
     self.Minimized = true
-    self.CurrentPosition = self.Instance.Position -- Save the current position before minimizing
+    self.CurrentPosition = self.Instance.Position
     local screenHeight = _G.CensuraG.ScreenGui.AbsoluteSize.Y
     local offscreenY = screenHeight + self.Instance.Size.Y.Offset
 
-    self.Instance.Position = UDim2.new(0, self.CurrentPosition.X.Offset, 0, offscreenY)
-    self.Instance.Visible = false
-    self.Shadow.Position = UDim2.new(0, self.CurrentPosition.X.Offset - 5, 0, offscreenY - 5)
-    self.Shadow.Visible = false
-    self.Debounce = false
-    for _, child in pairs(self.Instance:GetChildren()) do
-        if child:IsA("GuiObject") then
-            child.Visible = false
-            logger:debug("Set child %s of window to Visible: false during minimize", child.Name)
+    Animation:SlideY(self.Instance, offscreenY, 0.3, function()
+        self.Instance.Visible = false
+        self.Shadow.Visible = false
+        self.Debounce = false
+        for _, child in pairs(self.Instance:GetChildren()) do
+            if child:IsA("GuiObject") then
+                child.Visible = false
+                logger:debug("Set child %s of window to Visible: false during minimize", child.Name)
+            end
         end
-    end
+    end)
+    Animation:SlideY(self.Shadow, offscreenY - 5, 0.3)
     if _G.CensuraG and _G.CensuraG.Taskbar and _G.CensuraG.Taskbar.AddWindow then
         _G.CensuraG.Taskbar:AddWindow(self)
     else
@@ -142,9 +143,11 @@ function Window:Maximize()
     self.Instance.Visible = true
     self.Shadow.Visible = true
 
-    -- Restore to the last dragged position or original if not dragged
-    self.Instance.Position = self.CurrentPosition or self.OriginalPosition
-    self.Shadow.Position = UDim2.new(0, self.CurrentPosition.X.Offset - 5 or self.OriginalPosition.X.Offset - 5, 0, (self.CurrentPosition or self.OriginalPosition).Y.Offset - 5)
+    local targetY = (self.CurrentPosition or self.OriginalPosition).Y.Offset
+    Animation:SlideY(self.Instance, targetY, 0.3, function()
+        self.Debounce = false
+    end)
+    Animation:SlideY(self.Shadow, targetY - 5, 0.3)
     self.Shadow.Size = UDim2.new(0, self.Instance.Size.X.Offset + 10, 0, self.Instance.Size.Y.Offset + 10)
 
     for _, child in pairs(self.Instance:GetChildren()) do
@@ -153,8 +156,6 @@ function Window:Maximize()
             logger:debug("Set child %s of window to Visible: true during maximize", child.Name)
         end
     end
-
-    self.Debounce = false
 
     for i, taskbarWindow in ipairs(_G.CensuraG.Taskbar.Windows) do
         if taskbarWindow == self then
