@@ -23,22 +23,21 @@ function Taskbar:Init()
         Styling:Apply(taskbar, "Frame")
         logger:debug("Taskbar created: Position: %s, Size: %s, ZIndex: %d", tostring(taskbar.Position), tostring(taskbar.Size), taskbar.ZIndex)
 
-        -- Subtle gradient for buttons and cluster
         local buttonContainer = Utilities.createInstance("Frame", {
             Parent = taskbar,
             Size = UDim2.new(1, 0, 1, 0),
             BackgroundTransparency = Styling.Transparency.Background,
             ClipsDescendants = false,
-            ZIndex = 3
+            ZIndex = taskbar.ZIndex + 1
         })
         Styling:Apply(buttonContainer, "Frame")
+        logger:debug("Button container created: Parent: %s, Size: %s, ZIndex: %d", tostring(buttonContainer.Parent), tostring(buttonContainer.Size), buttonContainer.ZIndex)
 
-        -- Subtle shadow for depth
         local shadow = Utilities.createTaperedShadow(taskbar, 5, 5, 0.9)
-        shadow.ZIndex = 1
+        shadow.ZIndex = taskbar.ZIndex - 1
+        logger:debug("Taskbar shadow created: ZIndex: %d", shadow.ZIndex)
 
         task.wait(0.1)
-        logger:debug("Button container created: Parent: %s, Size: %s, ZIndex: %d", tostring(buttonContainer.Parent), tostring(buttonContainer.Size), buttonContainer.ZIndex)
 
         self.Cluster = _G.CensuraG.Cluster.new({Instance = buttonContainer})
         if not self.Cluster or not self.Cluster.Instance then
@@ -47,8 +46,9 @@ function Taskbar:Init()
         end
         self.Cluster.Instance.Visible = false
         self.Cluster.Instance.BackgroundTransparency = Styling.Transparency.Background
-        self.Cluster.Instance.ZIndex = 4
-        logger:info("Cluster initialized on taskbar, parent: %s, Position: %s, Visible: %s", tostring(buttonContainer), tostring(self.Cluster.Instance.Position), tostring(self.Cluster.Instance.Visible))
+        self.Cluster.Instance.ZIndex = buttonContainer.ZIndex + 1
+        logger:info("Cluster initialized on taskbar, parent: %s, Position: %s, Visible: %s, ZIndex: %d", 
+            tostring(buttonContainer), tostring(self.Cluster.Instance.Position), tostring(self.Cluster.Instance.Visible), self.Cluster.Instance.ZIndex)
 
         local isAnimating = false
         local hoverDebounce = false
@@ -85,12 +85,12 @@ function Taskbar:Init()
                     if self.Cluster.TimeLabel then
                         self.Cluster.TimeLabel.Visible = true
                     end
-                    logger:debug("Cluster set to visible: %s, Position: %s", tostring(self.Cluster.Instance.Visible), tostring(self.Cluster.Instance.Position))
+                    logger:debug("Cluster set to visible: %s, Position: %s, ZIndex: %d", tostring(self.Cluster.Instance.Visible), tostring(self.Cluster.Instance.Position), self.Cluster.Instance.ZIndex)
                 end
                 Animation:SlideY(taskbar, -taskbarHeight - padding, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, function()
                     isAnimating = false
                     hoverDebounce = false
-                    logger:debug("Taskbar shown at position: %s", tostring(taskbar.Position))
+                    logger:debug("Taskbar shown at position: %s, ZIndex: %d", tostring(taskbar.Position), taskbar.ZIndex)
                 end)
             elseif mouseY < screenHeight - threshold and taskbar.Visible and not hoverDebounce then
                 hoverDebounce = true
@@ -103,16 +103,15 @@ function Taskbar:Init()
                     taskbar.BackgroundTransparency = Styling.Transparency.Background
                     if self.Cluster and self.Cluster.Instance then
                         self.Cluster.Instance.Visible = false
-                        logger:debug("Cluster set to hidden: %s", tostring(self.Cluster.Instance.Visible))
+                        logger:debug("Cluster set to hidden: %s, ZIndex: %d", tostring(self.Cluster.Instance.Visible), self.Cluster.Instance.ZIndex)
                     end
                     isAnimating = false
                     hoverDebounce = false
-                    logger:debug("Taskbar hidden at position: %s", tostring(taskbar.Position))
+                    logger:debug("Taskbar hidden at position: %s, ZIndex: %d", tostring(taskbar.Position), taskbar.ZIndex)
                 end)
             end
         end)
 
-        -- Add a function to refresh cluster visibility
         function self:RefreshCluster()
             if self.Cluster and self.Cluster.Instance and taskbar.Visible then
                 self.Cluster.Instance.Visible = true
@@ -127,7 +126,7 @@ function Taskbar:Init()
                 if self.Cluster.TimeLabel then
                     self.Cluster.TimeLabel.Visible = true
                 end
-                logger:debug("Cluster refreshed: Visible: %s, Position: %s", tostring(self.Cluster.Instance.Visible), tostring(self.Cluster.Instance.Position))
+                logger:debug("Cluster refreshed: Visible: %s, Position: %s, ZIndex: %d", tostring(self.Cluster.Instance.Visible), tostring(self.Cluster.Instance.Position), self.Cluster.Instance.ZIndex)
             end
         end
     end
@@ -163,13 +162,13 @@ function Taskbar:AddWindow(window)
         Text = title,
         TextTruncate = Enum.TextTruncate.AtEnd,
         BackgroundTransparency = Styling.Transparency.Highlight,
-        ZIndex = 3
+        ZIndex = self.Instance.ZIndex + 2
     })
     Styling:Apply(button, "TextButton")
     logger:debug("Taskbar button created: Text: %s, Position: %s, Size: %s, ZIndex: %d", title, tostring(button.Position), tostring(button.Size), button.ZIndex)
 
     local buttonShadow = Utilities.createTaperedShadow(button, 3, 3, 0.95)
-    buttonShadow.ZIndex = 2
+    buttonShadow.ZIndex = button.ZIndex - 1
 
     button.MouseEnter:Connect(function()
         button.BackgroundTransparency = Styling.Transparency.Highlight - 0.1
@@ -189,7 +188,6 @@ function Taskbar:AddWindow(window)
     button.MouseButton1Click:Connect(function()
         if window and window.Maximize then
             window:Maximize()
-            -- Refresh cluster visibility after maximize
             self:RefreshCluster()
         end
         button:Destroy()
