@@ -50,17 +50,16 @@ function Cluster.new(parent)
         Position = UDim2.new(1, -210, 0, 5),
         Size = UDim2.new(0, 200, 0, 30),
         BackgroundTransparency = Styling.Transparency.Background,
-        ZIndex = 4
+        ZIndex = parent.Instance.ZIndex + 1
     })
     Styling:Apply(frame, "Frame")
     logger:debug("Cluster frame created: Position: %s, Size: %s, ZIndex: %d", tostring(frame.Position), tostring(frame.Size), frame.ZIndex)
 
     local avatarImageUrl = getAvatarThumbnail(localPlayer.UserId)
-    local avatarImage = _G.CensuraG.ImageLabel.new({Instance = frame}, avatarImageUrl, 5, 1, 28, 28, {ZIndex = 5})
+    local avatarImage = _G.CensuraG.ImageLabel.new({Instance = frame}, avatarImageUrl, 5, 1, 28, 28, {ZIndex = frame.ZIndex + 1})
     if not avatarImage then
         logger:error("Failed to create avatar ImageLabel for cluster")
     else
-        logger:debug("Cluster avatar image created with URL: %s, Position: %s, ZIndex: %d", avatarImageUrl, tostring(avatarImage.Instance.Position), avatarImage.Instance.ZIndex)
         avatarImage.Instance.Visible = true
         task.wait(0.1)
         if avatarImage.Instance.ImageTransparency > 0 then
@@ -75,7 +74,7 @@ function Cluster.new(parent)
         Size = UDim2.new(0, 110, 0, 30),
         BackgroundTransparency = 1,
         Text = localPlayer.DisplayName,
-        ZIndex = 5
+        ZIndex = frame.ZIndex + 1
     })
     Styling:Apply(displayName, "TextLabel")
     logger:debug("Cluster display name created: Position: %s, Size: %s, ZIndex: %d, Text: %s", tostring(displayName.Position), tostring(displayName.Size), displayName.ZIndex, displayName.Text)
@@ -91,7 +90,7 @@ function Cluster.new(parent)
         Size = UDim2.new(0, 40, 0, 30),
         BackgroundTransparency = 1,
         Text = os.date("%H:%M"),
-        ZIndex = 5
+        ZIndex = frame.ZIndex + 1
     })
     Styling:Apply(timeLabel, "TextLabel")
     logger:debug("Cluster time label created: Position: %s, Size: %s, ZIndex: %d, Text: %s", tostring(timeLabel.Position), tostring(timeLabel.Size), timeLabel.ZIndex, timeLabel.Text)
