@@ -27,11 +27,10 @@ function Slider.new(parent, x, y, width, min, max, default, options)
 
     logger:debug("Creating slider with parent: %s, Position: (%d, %d), Width: %d, Label: %s", tostring(parent.Instance), x, y, width, labelText)
 
-    -- Create the main frame to hold all components
     local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
         Position = UDim2.new(0, x, 0, y),
-        Size = UDim2.new(0, width + 40, 0, 35), -- Height includes label (20px) and track (15px)
+        Size = UDim2.new(0, width + 40, 0, 35),
         BackgroundTransparency = 1,
         ClipsDescendants = true,
         Visible = true,
@@ -39,7 +38,6 @@ function Slider.new(parent, x, y, width, min, max, default, options)
     })
     logger:debug("Slider frame created: Position: %s, Size: %s, ZIndex: %d", tostring(frame.Position), tostring(frame.Size), frame.ZIndex)
 
-    -- Create the label (above the slider)
     local label = Utilities.createInstance("TextLabel", {
         Parent = frame,
         Position = UDim2.new(0, 0, 0, 0),
@@ -51,35 +49,32 @@ function Slider.new(parent, x, y, width, min, max, default, options)
     Styling:Apply(label, "TextLabel")
     logger:debug("Slider label created: Position: %s, Size: %s, Text: %s", tostring(label.Position), tostring(label.Size), label.Text)
 
-    -- Create the track
     local track = Utilities.createInstance("Frame", {
         Parent = frame,
-        Position = UDim2.new(0, 0, 0, 20), -- Below the label
+        Position = UDim2.new(0, 0, 0, 20),
         Size = UDim2.new(0, width, 0, height),
-        BackgroundTransparency = Styling.Transparency.Background,
+        BackgroundTransparency = Styling.Transparency.ElementBackground,
         ZIndex = frame.ZIndex + 1
     })
     Styling:Apply(track, "Frame")
     logger:debug("Slider track created: Position: %s, Size: %s", tostring(track.Position), tostring(track.Size))
 
-    -- Create the fill bar
     local fill = Utilities.createInstance("Frame", {
         Parent = track,
         Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
         Position = UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency = Styling.Transparency.Highlight,
+        BackgroundTransparency = Styling.Transparency.ElementBackground,
         ZIndex = track.ZIndex + 1
     })
     Styling:Apply(fill, "Frame")
     logger:debug("Slider fill created: Position: %s, Size: %s", tostring(fill.Position), tostring(fill.Size))
 
-    -- Create the knob with full track height
     local knobSize = height
     local knob = Utilities.createInstance("Frame", {
         Parent = track,
         Position = UDim2.new((default - min) / (max - min), -(knobSize / 2), 0, 0),
         Size = UDim2.new(0, knobSize, 0, height),
-        BackgroundTransparency = Styling.Transparency.Highlight,
+        BackgroundTransparency = Styling.Transparency.ElementBackground,
         ZIndex = track.ZIndex + 2
     })
     Styling:Apply(knob, "Frame")
@@ -87,7 +82,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
 
     local labelValue = options.ShowValue and Utilities.createInstance("TextLabel", {
         Parent = frame,
-        Position = UDim2.new(0, width + 5, 0, 20), -- To the right of the track
+        Position = UDim2.new(0, width + 5, 0, 20),
         Size = UDim2.new(0, 40, 0, height),
         Text = tostring(default),
         BackgroundTransparency = 1,
@@ -144,7 +139,6 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         logger:debug("Slider value updated: New Value: %d, Fill Size: %s, Knob Position: %s", newValue, tostring(self.Fill.Size), tostring(self.Knob.Position))
     end
 
-    -- Click handling (only on the knob)
     table.insert(self.Connections, self.Knob.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             self.IsDragging = true
@@ -156,14 +150,12 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         end
     end))
 
-    -- Stop dragging when mouse button is released
     table.insert(self.Connections, UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             self.IsDragging = false
         end
     end))
 
-    -- Dragging handling (only when dragging the knob)
     table.insert(self.Connections, UserInputService.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement and self.IsDragging then
             local mousePos = input.Position
@@ -174,7 +166,6 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         end
     end))
 
-    -- Click on the track (outside the knob) to animate to position
     table.insert(self.Connections, track.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             local mousePos = input.Position
