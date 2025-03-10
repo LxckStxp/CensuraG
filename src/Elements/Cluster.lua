@@ -1,4 +1,4 @@
--- Elements/Cluster.lua: Enhanced taskbar cluster with modern miltech styling
+-- Elements/Cluster.lua: Taskbar cluster with consistent styling
 local Cluster = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Cluster.__index = Cluster
 
@@ -8,43 +8,18 @@ local logger = _G.CensuraG.Logger
 local Players = game:GetService("Players")
 
 local function getAvatarThumbnail(userId)
-    local attempts = 3
-    local content = nil
-    for i = 1, attempts do
-        local success, result = pcall(function()
-            return Players:GetUserThumbnailAsync(userId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size100x100)
-        end)
-        if success and result then
-            content = result
-            break
-        else
-            logger:warn("Attempt %d failed to fetch avatar thumbnail for user %d: %s", i, userId, tostring(result))
-            task.wait(0.5)
-        end
-    end
-    if content then
-        logger:debug("Fetched avatar thumbnail for user %d: %s", userId, tostring(content))
-        return content
-    else
-        logger:warn("All attempts failed to fetch avatar thumbnail for user %d, using fallback", userId)
-        return "rbxassetid://0"
-    end
+    local success, result = pcall(function()
+        return Players:GetUserThumbnailAsync(userId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size100x100)
+    end)
+    if success then return result end
+    logger:warn("Failed to fetch avatar for user %d: %s", userId, tostring(result))
+    return "rbxassetid://0"
 end
 
 function Cluster.new(parent)
-    if not parent or not parent.Instance or not parent.Instance:IsA("GuiObject") then
-        logger:error("Invalid parent for cluster: %s", tostring(parent))
-        return nil
-    end
+    if not parent or not parent.Instance then return nil end
 
-    local localPlayer = Players.LocalPlayer
-    if not localPlayer then
-        logger:warn("No local player found for cluster")
-        return nil
-    end
-
-    logger:info("Creating cluster with parent: %s", tostring(parent.Instance))
-
+    local LocalPlayer = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
     local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
         Position = UDim2.new(1, -210, 0, 5),
@@ -53,40 +28,22 @@ function Cluster.new(parent)
         ZIndex = parent.Instance.ZIndex + 1
     })
     Styling:Apply(frame, "Frame")
-    logger:debug("Cluster frame created: Position: %s, Size: %s, ZIndex: %d", tostring(frame.Position), tostring(frame.Size), frame.ZIndex)
 
-    local avatarImageUrl = getAvatarThumbnail(localPlayer.UserId)
-    local avatarImage = _G.CensuraG.ImageLabel.new({Instance = frame}, avatarImageUrl, 5, 1, 28, 28, {ZIndex = frame.ZIndex + 1})
-    if not avatarImage or not avatarImage.Image then
-        logger:error("Failed to create or access avatar ImageLabel for cluster")
-    else
-        avatarImage.Image.Visible = true
-        task.wait(0.1)
-        if avatarImage.Image.ImageTransparency and avatarImage.Image.ImageTransparency > 0 then
-            avatarImage.Image.ImageTransparency = 0
-            logger:debug("Forced avatar image visibility")
-        end
-    end
+    local avatarImage = _G.CensuraG.ImageLabel.new({Instance = frame}, getAvatarThumbnail(LocalPlayer.UserId), 5, 1, 28, 28, {ZIndex = frame.ZIndex + 1})
+    avatarImage.Image.ImageTransparency = 0
 
     local displayName = Utilities.createInstance("TextLabel", {
         Parent = frame,
         Position = UDim2.new(0, 40, 0, 0),
         Size = UDim2.new(0, 110, 0, 30),
         BackgroundTransparency = 1,
-        Text = localPlayer.DisplayName,
+        Text = LocalPlayer.DisplayName,
         ZIndex = frame.ZIndex + 2
     })
     Styling:Apply(displayName, "TextLabel")
-    -- Force text visibility
-    displayName.TextTransparency = 0
-    displayName.Visible = true
-    logger:debug("Cluster display name created: Position: %s, Size: %s, ZIndex: %d, Text: %s", tostring(displayName.Position), tostring(displayName.Size), displayName.ZIndex, displayName.Text)
 
-    localPlayer:GetPropertyChangedSignal("DisplayName"):Connect(function()
-        displayName.Text = localPlayer.DisplayName
-        displayName.TextTransparency = 0
-        displayName.Visible = true
-        logger:debug("Updated cluster display name to: %s", displayName.Text)
+    LocalPlayer:GetPropertyChangedSignal("DisplayName"):Connect(function()
+        displayName.Text = LocalPlayer.DisplayName
     end)
 
     local timeLabel = Utilities.createInstance("TextLabel", {
@@ -98,19 +55,10 @@ function Cluster.new(parent)
         ZIndex = frame.ZIndex + 2
     })
     Styling:Apply(timeLabel, "TextLabel")
-    -- Force text visibility
-    timeLabel.TextTransparency = 0
-    timeLabel.Visible = true
-    logger:debug("Cluster time label created: Position: %s, Size: %s, ZIndex: %d, Text: %s", tostring(timeLabel.Position), tostring(timeLabel.Size), timeLabel.ZIndex, timeLabel.Text)
 
-    spawn(function()
-        while wait(10) do
-            if timeLabel then
-                timeLabel.Text = os.date("%H:%M")
-                timeLabel.TextTransparency = 0
-                timeLabel.Visible = true
-                logger:debug("Updated cluster time to: %s", timeLabel.Text)
-            end
+    task.spawn(function()
+        while task.wait(10) do
+            timeLabel.Text = os.date("%H:%M")
         end
     end)
 
@@ -125,12 +73,8 @@ function Cluster.new(parent)
 end
 
 function Cluster:Destroy()
-    if self.AvatarImage and self.AvatarImage.Destroy then
-        self.AvatarImage:Destroy()
-    end
-    if self.Instance then
-        self.Instance:Destroy()
-    end
+    if self.AvatarImage then self.AvatarImage:Destroy() end
+    if self.Instance then self.Instance:Destroy() end
     logger:info("Cluster destroyed")
 end
 
