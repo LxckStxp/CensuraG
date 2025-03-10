@@ -1,3 +1,14 @@
+-- Slider.lua: Enhanced slider with miltech styling
+local Slider = setmetatable({}, {__index = _G.CensuraG.UIElement})
+Slider.__index = Slider
+
+local Utilities = _G.CensuraG.Utilities
+local Styling = _G.CensuraG.Styling
+local Animation = _G.CensuraG.Animation
+local Draggable = _G.CensuraG.Draggable
+local UserInputService = game:GetService("UserInputService")
+local logger = _G.CensuraG.Logger
+
 function Slider.new(parent, x, y, width, min, max, default, options)
     min = min or 0
     max = max or 100
@@ -15,9 +26,10 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         Parent = parent.Instance,
         Position = UDim2.new(0, x, 0, y),
         Size = UDim2.new(0, width, 0, 15),
+        BackgroundTransparency = 1, -- Transparent to blend with window
         ClipsDescendants = true,
         Visible = true,
-        ZIndex = 3 -- Higher than window frame
+        ZIndex = 3
     })
     Styling:Apply(frame, "Frame")
     logger:debug("Slider frame created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Parent: %s", tostring(frame.Position), tostring(frame.Size), frame.ZIndex, tostring(frame.Visible), tostring(frame.Parent))
@@ -27,6 +39,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         Size = UDim2.new((default - min) / (max - min), 0, 0.8, 0),
         Position = UDim2.new(0, 0, 0, 2),
         BackgroundColor3 = Styling.Colors.Accent,
+        BackgroundTransparency = 0.4,
         Visible = true,
         ZIndex = 4
     })
@@ -42,6 +55,14 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         ZIndex = 4
     })
     logger:debug("Slider notch created: Position: %s, Size: %s, ZIndex: %d, Visible: %s", tostring(notch.Position), tostring(notch.Size), notch.ZIndex, tostring(notch.Visible))
+
+    -- Add a thin white border to the notch
+    local notchStroke = Utilities.createInstance("UIStroke", {
+        Parent = notch,
+        Thickness = 1,
+        Color = Color3.fromRGB(200, 200, 200),
+        Transparency = 0.5
+    })
 
     local label = options.ShowValue and Utilities.createInstance("TextLabel", {
         Parent = frame,
@@ -59,7 +80,6 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         logger:debug("Slider label created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Text: %s", tostring(label.Position), tostring(label.Size), label.ZIndex, tostring(label.Visible), label.Text)
     end
 
-    -- Rest of the script remains unchanged
     local self = setmetatable({
         Instance = frame,
         Value = default,
