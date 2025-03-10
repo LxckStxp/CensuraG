@@ -32,16 +32,15 @@ until CensuraG.ScreenGui and CensuraG.ScreenGui.AbsoluteSize and CensuraG.Screen
 logger:info("Starting ESP menu showcase with CensuraG")
 
 -- Initialize Taskbar
-local taskbar = CensuraG.Taskbar and CensuraG.Taskbar.new() or nil
+local taskbar = CensuraG.Taskbar and CensuraG.Taskbar:Init() or nil -- Ensure Taskbar is initialized
 if taskbar then logger:info("Taskbar initialized") else logger:warn("Taskbar not available") end
 
 -- Create ESP Control Window
 local espWindow = CensuraG.Window.new("ESP Controls")
 if espWindow then
     logger:info("ESP Controls window created")
-
-    -- Add ESP Toggle Switch
-    local espSwitch = CensuraG.Switch.new(espWindow, 10, 30, 40, 20, false, {
+    -- Add ESP Toggle Switch with error handling
+    local espSwitch = pcall(function() return CensuraG.Switch.new(espWindow, 10, 30, 40, 20, false, {
         LabelText = "ESP Enabled",
         OnToggled = function(state)
             logger:info("ESP toggled to: " .. tostring(state))
@@ -51,45 +50,53 @@ if espWindow then
                 print("ESP Disabled")
             end
         end
-    })
+    }) end)
+    if not espSwitch then logger:error("Failed to create ESP Switch") end
 
-    -- Add ESP Distance Slider
-    local espDistance = CensuraG.Slider.new(espWindow, 10, 70, 200, 0, 1000, 200, {
+    -- Add ESP Distance Slider with error handling
+    local espDistance = pcall(function() return CensuraG.Slider.new(espWindow, 10, 70, 200, 0, 1000, 200, {
         LabelText = "ESP Distance",
         ShowValue = true,
         OnChanged = function(value)
             logger:info("ESP Distance set to: " .. value)
             print("ESP Distance: " .. value)
         end
-    })
+    }) end)
+    if not espDistance then logger:error("Failed to create ESP Distance Slider") end
 
-    -- Add Refresh Button
-    local refreshButton = CensuraG.TextButton.new(espWindow, "Refresh ESP", 10, 110, 120, 30, function()
+    -- Add Refresh Button with error handling
+    local refreshButton = pcall(function() return CensuraG.TextButton.new(espWindow, "Refresh ESP", 10, 110, 120, 30, function()
         logger:info("Refresh ESP clicked")
         print("ESP Refreshed")
-    end)
+    end) end)
+    if not refreshButton then logger:error("Failed to create Refresh Button") end
 end
 
 -- Create Settings Window
 local settingsWindow = CensuraG.Window.new("Settings")
 if settingsWindow then
     logger:info("Settings window created")
-
-    -- Add Dark Mode Switch
-    local darkModeSwitch = CensuraG.Switch.new(settingsWindow, 10, 30, 40, 20, true, {
+    -- Add Dark Mode Switch with error handling
+    local darkModeSwitch = pcall(function() return CensuraG.Switch.new(settingsWindow, 10, 30, 40, 20, true, {
         LabelText = "Dark Mode",
         OnToggled = function(state)
             logger:info("Dark Mode toggled to: " .. tostring(state))
             print("Dark Mode: " .. tostring(state))
         end
-    })
+    }) end)
+    if not darkModeSwitch then logger:error("Failed to create Dark Mode Switch") end
 
-    -- Add Reset Button
-    local resetButton = CensuraG.TextButton.new(settingsWindow, "Reset Settings", 10, 70, 120, 30, function()
+    -- Add Reset Button with error handling
+    local resetButton = pcall(function() return CensuraG.TextButton.new(settingsWindow, "Reset Settings", 10, 70, 120, 30, function()
         logger:info("Reset Settings clicked")
         print("Settings Reset")
-    end)
+    end) end)
+    if not resetButton then logger:error("Failed to create Reset Button") end
 end
+
+-- Ensure windows are added to WindowManager
+if espWindow then CensuraG.WindowManager:AddWindow(espWindow) end
+if settingsWindow then CensuraG.WindowManager:AddWindow(settingsWindow) end
 
 -- Test interactions
 logger:info("Starting UI interaction test")
