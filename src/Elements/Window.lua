@@ -18,7 +18,7 @@ function Window.new(title, x, y, width, height)
         Parent = _G.CensuraG.ScreenGui,
         Position = UDim2.new(0, x, 0, y),
         Size = UDim2.new(0, width, 0, height),
-        BackgroundTransparency = Styling.Transparency.Background,
+        BackgroundTransparency = 1, -- Fully transparent for better visibility
         ZIndex = 2
     })
     Styling:Apply(frame, "Frame")
