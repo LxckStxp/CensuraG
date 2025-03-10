@@ -42,6 +42,24 @@
        end
    end
 
+function Animation:SlideY(element, targetY, duration, easingStyle, easingDirection, callback)
+    if not element or not element.Parent then
+        return nil
+    end
+    local currentPos = element.Position
+    local info = TweenInfo.new(duration or 0.3, easingStyle or Enum.EasingStyle.Quad, easingDirection or Enum.EasingDirection.Out)
+    local tween = TweenService:Create(element, info, {Position = UDim2.new(currentPos.X.Scale, currentPos.X.Offset, 0, targetY)})
+    local tweenData = { Instance = element, Tween = tween, Completed = false }
+    table.insert(activeTweens, tweenData)
+    tween.Completed:Connect(function()
+        tweenData.Completed = true
+        if callback then callback() end
+        task.delay(1, cleanupTweens)
+    end)
+    tween:Play()
+    return tween
+end
+
    --- Add the HoverEffect method
    function Animation:HoverEffect(element, hoverProperties, defaultProperties)
        hoverProperties = hoverProperties or {}
