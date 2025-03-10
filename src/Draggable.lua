@@ -1,4 +1,4 @@
--- Draggable.lua: API for making UI elements draggable (improved for fast dragging)
+-- Draggable.lua: Improved dragging API
 local Draggable = {}
 local UserInputService = game:GetService("UserInputService")
 
@@ -17,7 +17,7 @@ function Draggable:MakeDraggable(element, dragRegion, onDragStart, onDrag, onDra
         end
     end)
     
-    -- Use global InputChanged to track mouse movement reliably
+    -- Global tracking for reliable dragging
     local connection
     connection = UserInputService.InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
@@ -31,7 +31,7 @@ function Draggable:MakeDraggable(element, dragRegion, onDragStart, onDrag, onDra
     dragRegion.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
-            connection:Disconnect() -- Clean up
+            connection:Disconnect()
             if onDragEnd then onDragEnd(element) end
         end
     end)
