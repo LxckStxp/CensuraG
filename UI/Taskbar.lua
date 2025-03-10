@@ -205,7 +205,7 @@ function Taskbar:SetAutoHide(enabled)
         if self.MouseCheckConnection then
             self.MouseCheckConnection:Disconnect()
             self.MouseCheckConnection = nil
-        }
+        ) -- FIXED: Changed } to )
         
         -- Show the taskbar when auto-hide is disabled
         self:Show(true)
