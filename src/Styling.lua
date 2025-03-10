@@ -12,7 +12,7 @@ Styling.Colors = {
 }
 
 Styling.Transparency = {
-    WindowBackground = 0.7, -- Window background at 70% transparency
+    WindowBackground = 0.3, -- Window background at 30% transparency
     ElementBackground = 0.3, -- Elements (sliders, switches, buttons) at 30% transparency
     Highlight = 0.2, -- Slightly less transparent for highlights
     Text = 0, -- Fully opaque text
