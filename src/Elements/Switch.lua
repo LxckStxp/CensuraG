@@ -1,4 +1,4 @@
--- Switch.lua: Toggle switch with animated state changes and debounce
+-- Switch.lua: Toggle switch with animated state changes
 local Switch = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Switch.__index = Switch
 
@@ -20,27 +20,12 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
     })
     Styling:Apply(frame, "Frame")
 
-    -- Add UIStroke for glow effect
-    local stroke = Utilities.createInstance("UIStroke", {
-        Parent = frame,
-        Thickness = 1,
-        Color = Color3.fromRGB(0, 50, 100),
-        Transparency = 0.7
-    })
-
     local knob = Utilities.createInstance("Frame", {
         Parent = frame,
         Size = UDim2.new(0, height - 4, 0, height - 4),
         Position = defaultState and UDim2.new(1, -(height - 2), 0, 2) or UDim2.new(0, 2, 0, 2),
-        BackgroundColor3 = Color3.fromRGB(200, 200, 200),
-        BorderSizePixel = 1,
-        BorderColor3 = Color3.fromRGB(80, 80, 80)
-    })
-    local knobStroke = Utilities.createInstance("UIStroke", {
-        Parent = knob,
-        Thickness = 1,
-        Color = Color3.fromRGB(0, 80, 160),
-        Transparency = 0.5
+        BackgroundColor3 = Color3.fromRGB(150, 150, 150),
+        BorderSizePixel = 0
     })
 
     local label = options.ShowLabel and Utilities.createInstance("TextLabel", {
@@ -49,7 +34,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         Size = UDim2.new(1, 0, 0, 20),
         Text = defaultState and "On" or "Off",
         BackgroundTransparency = 1,
-        TextColor3 = Color3.fromRGB(200, 200, 200),
+        TextColor3 = Styling.Colors.Text,
         Font = Enum.Font.Code,
         TextSize = 12
     }) or nil
@@ -67,7 +52,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         self.Debounce = true
         self.State = not self.State
         local newPos = self.State and UDim2.new(1, -(height - 2), 0, 2) or UDim2.new(0, 2, 0, 2)
-        local newColor = self.State and Color3.fromRGB(0, 120, 215) or Styling.Colors.Base
+        local newColor = self.State and Styling.Colors.Highlight or Styling.Colors.Base
         Animation:Tween(self.Knob, {Position = newPos}, 0.2, function()
             self.Debounce = false
         end)
@@ -86,7 +71,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         end
     end)
 
-    frame.BackgroundColor3 = self.State and Color3.fromRGB(0, 120, 215) or Styling.Colors.Base
+    frame.BackgroundColor3 = self.State and Styling.Colors.Highlight or Styling.Colors.Base
 
     function self:Destroy()
         self.Instance:Destroy()
