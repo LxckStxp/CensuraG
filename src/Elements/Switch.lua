@@ -1,4 +1,4 @@
--- Switch.lua: Toggle switch with animated state changes
+-- Switch.lua: Toggle switch with animated state changes and debounce
 local Switch = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Switch.__index = Switch
 
@@ -7,13 +7,11 @@ local Styling = _G.CensuraG.Styling
 local Animation = _G.CensuraG.Animation
 
 function Switch.new(parent, x, y, width, height, defaultState, options)
-    -- Validate inputs
     defaultState = defaultState or false
     options = options or {}
     width = width or 40
     height = height or 20
 
-    -- Create switch frame
     local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
         Position = UDim2.new(0, x, 0, y),
@@ -22,17 +20,29 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
     })
     Styling:Apply(frame, "Frame")
 
-    -- Knob (the moving part of the switch)
+    -- Add UIStroke for glow effect
+    local stroke = Utilities.createInstance("UIStroke", {
+        Parent = frame,
+        Thickness = 1,
+        Color = Color3.fromRGB(0, 50, 100),
+        Transparency = 0.7
+    })
+
     local knob = Utilities.createInstance("Frame", {
         Parent = frame,
         Size = UDim2.new(0, height - 4, 0, height - 4),
         Position = defaultState and UDim2.new(1, -(height - 2), 0, 2) or UDim2.new(0, 2, 0, 2),
-        BackgroundColor3 = Color3.fromRGB(200, 200, 200), -- Light gray for visibility
+        BackgroundColor3 = Color3.fromRGB(200, 200, 200),
         BorderSizePixel = 1,
         BorderColor3 = Color3.fromRGB(80, 80, 80)
     })
+    local knobStroke = Utilities.createInstance("UIStroke", {
+        Parent = knob,
+        Thickness = 1,
+        Color = Color3.fromRGB(0, 80, 160),
+        Transparency = 0.5
+    })
 
-    -- Optional label
     local label = options.ShowLabel and Utilities.createInstance("TextLabel", {
         Parent = frame,
         Position = UDim2.new(0, 0, 0, -25),
@@ -48,15 +58,19 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         Instance = frame,
         Knob = knob,
         Label = label,
-        State = defaultState
+        State = defaultState,
+        Debounce = false
     }, Switch)
 
-    -- Toggle state
     local function toggleState()
+        if self.Debounce then return end
+        self.Debounce = true
         self.State = not self.State
         local newPos = self.State and UDim2.new(1, -(height - 2), 0, 2) or UDim2.new(0, 2, 0, 2)
         local newColor = self.State and Color3.fromRGB(0, 120, 215) or Styling.Colors.Base
-        Animation:Tween(self.Knob, {Position = newPos})
+        Animation:Tween(self.Knob, {Position = newPos}, 0.2, function()
+            self.Debounce = false
+        end)
         Animation:Tween(self.Instance, {BackgroundColor3 = newColor})
         if self.Label then
             self.Label.Text = self.State and "On" or "Off"
@@ -66,30 +80,26 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         end
     end
 
-    -- Click to toggle
     frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if input.UserInputType == Enum.UserInputType.MouseButton1 and not self.Debounce then
             toggleState()
         end
     end)
 
-    -- Initial styling
     frame.BackgroundColor3 = self.State and Color3.fromRGB(0, 120, 215) or Styling.Colors.Base
 
-    -- Cleanup method
     function self:Destroy()
         self.Instance:Destroy()
     end
 
-    return self
-end
-
--- Public method to set state programmatically
-function Switch:SetState(state)
-    if self.State ~= state then
-        self.State = state
-        toggleState()
+    function self:SetState(state)
+        if self.State ~= state and not self.Debounce then
+            self.State = state
+            toggleState()
+        end
     end
+
+    return self
 end
 
 return Switch
