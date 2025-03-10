@@ -13,13 +13,16 @@ function TextButton.new(parent, text, x, y, width, height, callback)
         return nil
     end
 
+    height = height or 30
+    width = width or 120
+
     logger:debug("Creating text button with parent: %s, Text: %s, Position: (%d, %d)", tostring(parent.Instance), text, x, y)
 
     -- Create the main frame
     local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
         Position = UDim2.new(0, x, 0, y),
-        Size = UDim2.new(0, width, 0, height or 30),
+        Size = UDim2.new(0, width, 0, height + 20), -- Include label height
         BackgroundTransparency = 1,
         ZIndex = parent.Instance.ZIndex + 1
     })
@@ -27,7 +30,7 @@ function TextButton.new(parent, text, x, y, width, height, callback)
     -- Create the label (above the button)
     local label = Utilities.createInstance("TextLabel", {
         Parent = frame,
-        Position = UDim2.new(0, 0, 0, -20),
+        Position = UDim2.new(0, 0, 0, 0),
         Size = UDim2.new(0, width, 0, 20),
         Text = text,
         BackgroundTransparency = 1,
@@ -38,8 +41,8 @@ function TextButton.new(parent, text, x, y, width, height, callback)
     -- Create the button
     local button = Utilities.createInstance("TextButton", {
         Parent = frame,
-        Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(0, width, 0, height or 30),
+        Position = UDim2.new(0, 0, 0, 20), -- Below the label
+        Size = UDim2.new(0, width, 0, height),
         Text = "",
         BackgroundTransparency = Styling.Transparency.Highlight,
         ZIndex = frame.ZIndex + 1
