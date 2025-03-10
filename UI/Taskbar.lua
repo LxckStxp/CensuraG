@@ -12,6 +12,7 @@ Taskbar.Windows = {}
 Taskbar.Visible = false
 Taskbar.Height = 40
 Taskbar.ButtonWidth = 150
+Taskbar.AutoHideEnabled = true
 
 -- Initialize the taskbar
 function Taskbar:Init()
@@ -20,10 +21,10 @@ function Taskbar:Init()
         return self
     end
     
-    -- Create the taskbar frame
+    -- Create the taskbar frame (start off-screen)
     local taskbar = Utilities.createInstance("Frame", {
         Parent = _G.CensuraG.ScreenGui,
-        Position = UDim2.new(0, 10, 1, self.Height), -- Start off-screen
+        Position = UDim2.new(0, 10, 1, self.Height),
         Size = UDim2.new(1, -210, 0, self.Height),
         BackgroundTransparency = Styling.Transparency.ElementBackground,
         ZIndex = 5,
@@ -47,10 +48,14 @@ function Taskbar:Init()
     
     -- Create the user info cluster
     self.Cluster = _G.CensuraG.Cluster.new({Instance = taskbar})
-    self:RefreshCluster()
     
     -- Set up auto-hide/show behavior
-    self:SetupAutoHide()
+    if self.AutoHideEnabled then
+        self:SetupAutoHide()
+    else
+        -- If auto-hide is disabled, show the taskbar immediately
+        self:Show(true)
+    end
     
     -- Subscribe to window events
     EventManager:SubscribeToEvent("WindowMinimized", function(window)
@@ -71,7 +76,7 @@ function Taskbar:SetupAutoHide()
     local showThreshold = 40 -- pixels from bottom of screen
     
     -- Connect to mouse movement
-    EventManager:Connect(UserInputService.InputChanged, function(input)
+    local connection = EventManager:Connect(UserInputService.InputChanged, function(input)
         if input.UserInputType ~= Enum.UserInputType.MouseMovement or isAnimating then return end
         
         local screenHeight = _G.CensuraG.ScreenGui.AbsoluteSize.Y
@@ -79,7 +84,6 @@ function Taskbar:SetupAutoHide()
         
         -- Show taskbar when mouse is near bottom of screen
         if mouseY >= screenHeight - showThreshold and not self.Visible then
-            task.wait(0.2) -- Small delay to prevent accidental shows
             isAnimating = true
             self.Instance.Visible = true
             self:RefreshCluster()
@@ -87,23 +91,59 @@ function Taskbar:SetupAutoHide()
             Animation:SlideY(self.Instance, -self.Height, 0.3, nil, nil, function()
                 isAnimating = false
                 self.Visible = true
+                logger:debug("Taskbar shown by auto-hide")
             end)
         -- Hide taskbar when mouse moves away
         elseif mouseY < screenHeight - self.Height - showThreshold and self.Visible then
-            task.wait(0.3) -- Longer delay before hiding
-            isAnimating = true
+            task.wait(0.3) -- Delay before hiding
             
-            Animation:SlideY(self.Instance, self.Height, 0.3, nil, nil, function()
-                self.Instance.Visible = false
-                isAnimating = false
-                self.Visible = false
-            end)
+            -- Check again after delay to prevent flickering when mouse moves quickly
+            local newMouseY = UserInputService:GetMouseLocation().Y
+            if newMouseY < screenHeight - self.Height - showThreshold then
+                isAnimating = true
+                
+                Animation:SlideY(self.Instance, self.Height, 0.3, nil, nil, function()
+                    self.Instance.Visible = false
+                    isAnimating = false
+                    self.Visible = false
+                    logger:debug("Taskbar hidden by auto-hide")
+                end)
+            end
         end
     end)
     
+    -- Store the connection for cleanup
+    self.AutoHideConnection = connection
+    
     -- Initially hide the taskbar
     self.Instance.Visible = false
+    self.Visible = false
+    
     logger:debug("Taskbar auto-hide behavior set up")
+end
+
+-- Enable or disable auto-hide
+function Taskbar:SetAutoHide(enabled)
+    if enabled == self.AutoHideEnabled then return end
+    
+    self.AutoHideEnabled = enabled
+    
+    if enabled then
+        -- Enable auto-hide
+        if not self.AutoHideConnection then
+            self:SetupAutoHide()
+        end
+    else
+        -- Disable auto-hide
+        if self.AutoHideConnection then
+            self.AutoHideConnection:Disconnect()
+            self.AutoHideConnection = nil
+        end
+        -- Show the taskbar when auto-hide is disabled
+        self:Show(true)
+    end
+    
+    logger:info("Taskbar auto-hide %s", enabled and "enabled" : "disabled")
 end
 
 -- Add a window to the taskbar
@@ -122,7 +162,7 @@ function Taskbar:AddWindow(window)
     end
     
     -- Get window title
-    local titleLabel = window.Instance:FindFirstChildWhichIsA("TextLabel")
+    local titleLabel = window.TitleText or window.Instance:FindFirstChildWhichIsA("TextLabel")
     local title = titleLabel and titleLabel.Text or "Window"
     
     -- Create button
@@ -136,15 +176,27 @@ function Taskbar:AddWindow(window)
         Name = "TaskbarButton_" .. window.Id
     })
     Styling:Apply(button, "TextButton")
-    Animation:HoverEffect(button)
+    
+    -- Apply hover effect manually to avoid attribute issues
+    button.MouseEnter:Connect(function()
+        Animation:Tween(button, {
+            BackgroundTransparency = Styling.Transparency.ElementBackground - 0.1
+        }, 0.1)
+    end)
+    
+    button.MouseLeave:Connect(function()
+        Animation:Tween(button, {
+            BackgroundTransparency = Styling.Transparency.ElementBackground
+        }, 0.1)
+    end)
     
     -- Update canvas size
     self.ButtonContainer.CanvasSize = UDim2.new(0, (#self.Windows + 1) * (self.ButtonWidth + 5), 0, 0)
     
     -- Handle button click
     button.MouseButton1Click:Connect(function()
-        if window.Maximize then
-            window:Maximize()
+        if window.Restore then
+            window:Restore()
             self:RemoveWindow(window)
         end
     end)
@@ -152,6 +204,11 @@ function Taskbar:AddWindow(window)
     -- Add window to list
     table.insert(self.Windows, window)
     window.TaskbarButton = button
+    
+    -- Show taskbar if it's the first window and currently hidden
+    if #self.Windows == 1 and not self.Visible then
+        self:Show()
+    end
     
     logger:debug("Added window to taskbar: %s", title)
     return true
@@ -174,6 +231,11 @@ function Taskbar:RemoveWindow(window)
             
             -- Update remaining buttons
             self:UpdateButtonPositions()
+            
+            -- Hide taskbar if no windows left and auto-hide is enabled
+            if #self.Windows == 0 and self.AutoHideEnabled then
+                self:Hide()
+            end
             
             logger:debug("Removed window from taskbar: %s", window.Instance.Name)
             return true
@@ -228,13 +290,13 @@ function Taskbar:Show(instant)
     if instant then
         self.Instance.Position = UDim2.new(0, 10, 1, -self.Height)
         self.Visible = true
+        logger:debug("Taskbar shown instantly")
     else
         Animation:SlideY(self.Instance, -self.Height, 0.3, nil, nil, function()
             self.Visible = true
+            logger:debug("Taskbar shown with animation")
         end)
     end
-    
-    logger:debug("Taskbar shown")
 end
 
 -- Hide the taskbar
@@ -245,14 +307,14 @@ function Taskbar:Hide(instant)
         self.Instance.Position = UDim2.new(0, 10, 1, self.Height)
         self.Instance.Visible = false
         self.Visible = false
+        logger:debug("Taskbar hidden instantly")
     else
         Animation:SlideY(self.Instance, self.Height, 0.3, nil, nil, function()
             self.Instance.Visible = false
             self.Visible = false
+            logger:debug("Taskbar hidden with animation")
         end)
     end
-    
-    logger:debug("Taskbar hidden")
 end
 
 -- Toggle taskbar visibility
@@ -262,10 +324,28 @@ function Taskbar:Toggle()
     else
         self:Show()
     end
+    
+    return self.Visible
+end
+
+-- Force taskbar to appear (for debugging)
+function Taskbar:ForceShow()
+    self.Instance.Visible = true
+    self.Instance.Position = UDim2.new(0, 10, 1, -self.Height)
+    self.Visible = true
+    self:RefreshCluster()
+    logger:info("Taskbar force shown")
+    return true
 end
 
 -- Clean up resources
 function Taskbar:Destroy()
+    -- Disconnect auto-hide connection
+    if self.AutoHideConnection then
+        self.AutoHideConnection:Disconnect()
+        self.AutoHideConnection = nil
+    end
+    
     -- Clear windows
     for _, window in ipairs(self.Windows) do
         if window.TaskbarButton then
