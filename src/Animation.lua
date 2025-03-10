@@ -12,13 +12,13 @@ function Animation:Tween(element, properties, duration, callback)
     return tween
 end
 
-function Animation:HoverEffect(button)
-    local originalColor = button.BackgroundColor3
-    button.MouseEnter:Connect(function()
-        self:Tween(button, {BackgroundColor3 = _G.CensuraG.Styling.Colors.Accent})
+function Animation:HoverEffect(element)
+    element.MouseEnter:Connect(function()
+        element.BorderSizePixel = 1
+        element.BorderColor3 = _G.CensuraG.Styling.Colors.Accent
     end)
-    button.MouseLeave:Connect(function()
-        self:Tween(button, {BackgroundColor3 = originalColor})
+    element.MouseLeave:Connect(function()
+        element.BorderSizePixel = 0
     end)
 end
 
