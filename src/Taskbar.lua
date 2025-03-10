@@ -14,7 +14,7 @@ function Taskbar:Init()
             Parent = _G.CensuraG.ScreenGui,
             Position = UDim2.new(0, 10, 1, 40),
             Size = UDim2.new(1, -210, 0, 40),
-            BackgroundTransparency = Styling.Transparency.Background,
+            BackgroundTransparency = Styling.Transparency.ElementBackground,
             ClipsDescendants = false,
             Visible = false,
             ZIndex = 2
@@ -26,7 +26,7 @@ function Taskbar:Init()
         local buttonContainer = Utilities.createInstance("Frame", {
             Parent = taskbar,
             Size = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = Styling.Transparency.Background,
+            BackgroundTransparency = Styling.Transparency.ElementBackground,
             ClipsDescendants = false,
             ZIndex = taskbar.ZIndex + 1
         })
@@ -45,7 +45,7 @@ function Taskbar:Init()
             return
         end
         self.Cluster.Instance.Visible = false
-        self.Cluster.Instance.BackgroundTransparency = Styling.Transparency.Background
+        self.Cluster.Instance.BackgroundTransparency = Styling.Transparency.ElementBackground
         self.Cluster.Instance.ZIndex = buttonContainer.ZIndex + 1
         logger:info("Cluster initialized on taskbar, parent: %s, Position: %s, Visible: %s, ZIndex: %d", 
             tostring(buttonContainer), tostring(self.Cluster.Instance.Position), tostring(self.Cluster.Instance.Visible), self.Cluster.Instance.ZIndex)
@@ -71,10 +71,10 @@ function Taskbar:Init()
                 if tick() - lastInputTime < 0.1 then return end
                 isAnimating = true
                 taskbar.Visible = true
-                taskbar.BackgroundTransparency = Styling.Transparency.Background
+                taskbar.BackgroundTransparency = Styling.Transparency.ElementBackground
                 if self.Cluster and self.Cluster.Instance then
                     self.Cluster.Instance.Visible = true
-                    self.Cluster.Instance.BackgroundTransparency = Styling.Transparency.Background
+                    self.Cluster.Instance.BackgroundTransparency = Styling.Transparency.ElementBackground
                     if self.Cluster.AvatarImage and self.Cluster.AvatarImage.Image then
                         self.Cluster.AvatarImage.Image.Visible = true
                         if self.Cluster.AvatarImage.Image.ImageTransparency then
@@ -102,7 +102,7 @@ function Taskbar:Init()
                 isAnimating = true
                 Animation:SlideY(taskbar, taskbarHeight, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function()
                     taskbar.Visible = false
-                    taskbar.BackgroundTransparency = Styling.Transparency.Background
+                    taskbar.BackgroundTransparency = Styling.Transparency.ElementBackground
                     if self.Cluster and self.Cluster.Instance then
                         self.Cluster.Instance.Visible = false
                         logger:debug("Cluster set to hidden: %s, ZIndex: %d", tostring(self.Cluster.Instance.Visible), self.Cluster.Instance.ZIndex)
@@ -117,7 +117,7 @@ function Taskbar:Init()
         function self:RefreshCluster()
             if self.Cluster and self.Cluster.Instance and taskbar.Visible then
                 self.Cluster.Instance.Visible = true
-                self.Cluster.Instance.BackgroundTransparency = Styling.Transparency.Background
+                self.Cluster.Instance.BackgroundTransparency = Styling.Transparency.ElementBackground
                 if self.Cluster.AvatarImage and self.Cluster.AvatarImage.Image then
                     self.Cluster.AvatarImage.Image.Visible = true
                     if self.Cluster.AvatarImage.Image.ImageTransparency then
@@ -165,7 +165,7 @@ function Taskbar:AddWindow(window)
         Size = UDim2.new(0, buttonWidth, 0, 30),
         Text = title,
         TextTruncate = Enum.TextTruncate.AtEnd,
-        BackgroundTransparency = Styling.Transparency.Highlight,
+        BackgroundTransparency = Styling.Transparency.ElementBackground,
         ZIndex = self.Instance.ZIndex + 2
     })
     Styling:Apply(button, "TextButton")
@@ -175,14 +175,14 @@ function Taskbar:AddWindow(window)
     buttonShadow.ZIndex = button.ZIndex - 1
 
     button.MouseEnter:Connect(function()
-        button.BackgroundTransparency = Styling.Transparency.Highlight - 0.1
+        button.BackgroundTransparency = Styling.Transparency.ElementBackground - 0.1
         local stroke = button:FindFirstChild("UIStroke")
         if stroke then
             stroke.Transparency = 0.5
         end
     end)
     button.MouseLeave:Connect(function()
-        button.BackgroundTransparency = Styling.Transparency.Highlight
+        button.BackgroundTransparency = Styling.Transparency.ElementBackground
         local stroke = button:FindFirstChild("UIStroke")
         if stroke then
             stroke.Transparency = 0.85
