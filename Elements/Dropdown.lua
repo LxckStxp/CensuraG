@@ -10,7 +10,10 @@ local UserInputService = game:GetService("UserInputService")
 local logger = _G.CensuraG.Logger
 
 function Dropdown.new(parent, x, y, options)
-    if not parent or not parent.Instance then return nil end
+    if not parent or not parent:IsA("GuiObject") then
+        logger:error("Invalid parent for Dropdown: %s", tostring(parent))
+        return nil
+    end
     options = options or {}
     local width = options.Width or Styling.ElementWidth
     local labelText = options.LabelText or "Dropdown"
@@ -18,13 +21,14 @@ function Dropdown.new(parent, x, y, options)
     local defaultSelection = options.defaultSelection or (items[1] or "Select...")
 
     local frame = Utilities.createInstance("Frame", {
-        Parent = parent.Instance,
+        Parent = parent,
         Position = UDim2.new(0, x, 0, y),
         Size = UDim2.new(0, Styling.LabelWidth + width, 0, 30),
         BackgroundTransparency = 1,
-        ZIndex = parent.Instance.ZIndex + 1,
+        ZIndex = (_G.CensuraG.ZIndexManager and _G.CensuraG.ZIndexManager:GetNextZIndex()) or 100,
         Name = "Dropdown_" .. labelText
     })
+    logger:debug("Created Dropdown frame for: %s", labelText)
 
     local label = Utilities.createInstance("TextLabel", {
         Parent = frame,
