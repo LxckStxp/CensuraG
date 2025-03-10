@@ -1,4 +1,4 @@
--- Window.lua: Draggable window with minimize/maximize functionality
+-- Window.lua: Draggable window with slide-based minimize/maximize functionality
 local Window = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Window.__index = Window
 
@@ -56,7 +56,12 @@ end
 function Window:Minimize()
     if self.Minimized then return end
     self.Minimized = true
-    _G.CensuraG.Animation:Tween(self.Instance, {Transparency = 1}, 0.2, function()
+    -- Store the current position before minimizing
+    self.OriginalPosition = self.Instance.Position
+    -- Calculate offscreen position (below the screen)
+    local screenHeight = _G.CensuraG.ScreenGui.AbsoluteSize.Y
+    local offscreenY = screenHeight + self.Instance.Size.Y.Offset
+    Animation:Tween(self.Instance, {Position = UDim2.new(0, self.OriginalPosition.X.Offset, 0, offscreenY)}, 0.3, function()
         self.Instance.Visible = false
     end)
     _G.CensuraG.Taskbar:AddWindow(self)
@@ -67,8 +72,8 @@ function Window:Maximize()
     if not self.Minimized then return end
     self.Minimized = false
     self.Instance.Visible = true
-    self.Instance.Position = self.OriginalPosition
-    _G.CensuraG.Animation:Tween(self.Instance, {Transparency = 0})
+    -- Slide back to the original position
+    Animation:Tween(self.Instance, {Position = self.OriginalPosition})
     _G.CensuraG.WindowManager:AddWindow(self)
 end
 
