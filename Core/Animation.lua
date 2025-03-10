@@ -1,5 +1,5 @@
 -- Core/Animation.lua
--- Simplified animation system using TweenService
+-- Simplified animation system using TweenService with AnimationSpeed scaling
 
 local TweenService = game:GetService("TweenService") or { Create = function() return { Play = function() end, Completed = Instance.new("BindableEvent") } end }
 local Animation = {}
@@ -18,7 +18,8 @@ function Animation:Tween(element, properties, duration, easingStyle, easingDirec
     if not element or not element.Parent then
         return nil
     end
-    local info = TweenInfo.new(duration or 0.3, easingStyle or Enum.EasingStyle.Quad, easingDirection or Enum.EasingDirection.Out)
+    local scaledDuration = (duration or 0.3) / (_G.CensuraG.Config and _G.CensuraG.Config.AnimationSpeed or 1.0)
+    local info = TweenInfo.new(scaledDuration, easingStyle or Enum.EasingStyle.Quad, easingDirection or Enum.EasingDirection.Out)
     local tween = TweenService:Create(element, info, properties)
     local tweenData = { Instance = element, Tween = tween, Completed = false }
     table.insert(activeTweens, tweenData)
@@ -35,7 +36,8 @@ function Animation:Elastic(element, properties, duration, callback)
     if not element or not element.Parent then
         return nil
     end
-    local info = TweenInfo.new(duration or 0.5, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out, 0, false, 0)
+    local scaledDuration = (duration or 0.5) / (_G.CensuraG.Config and _G.CensuraG.Config.AnimationSpeed or 1.0)
+    local info = TweenInfo.new(scaledDuration, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out, 0, false, 0)
     local tween = TweenService:Create(element, info, properties)
     local tweenData = { Instance = element, Tween = tween, Completed = false }
     table.insert(activeTweens, tweenData)
@@ -61,8 +63,9 @@ function Animation:SlideY(element, targetY, duration, easingStyle, easingDirecti
     if not element or not element.Parent then
         return nil
     end
+    local scaledDuration = (duration or 0.3) / (_G.CensuraG.Config and _G.CensuraG.Config.AnimationSpeed or 1.0)
     local currentPos = element.Position
-    local info = TweenInfo.new(duration or 0.3, easingStyle or Enum.EasingStyle.Quad, easingDirection or Enum.EasingDirection.Out)
+    local info = TweenInfo.new(scaledDuration, easingStyle or Enum.EasingStyle.Quad, easingDirection or Enum.EasingDirection.Out)
     local tween = TweenService:Create(element, info, {Position = UDim2.new(currentPos.X.Scale, currentPos.X.Offset, 0, targetY)})
     local tweenData = { Instance = element, Tween = tween, Completed = false }
     table.insert(activeTweens, tweenData)
