@@ -145,6 +145,12 @@ function ZIndexManager:ResetZIndex(element)
     return false
 end
 
+function ZIndexManager:GetNextZIndex()
+    self.CurrentZIndex = self.CurrentZIndex + 1
+    logger:debug("Generated next Z-index: %d", self.CurrentZIndex)
+    return self.CurrentZIndex
+end
+
 function ZIndexManager:Cleanup()
     self.Elements = {}
     self.CurrentZIndex = self.BaseZIndex
