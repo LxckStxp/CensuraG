@@ -1,5 +1,5 @@
 -- Core/Animation.lua
--- Enhanced animation system using TweenService with AnimationSpeed scaling
+-- Enhanced animation system using TweenService with AnimationSpeed scaling and full compatibility with CensuraG framework
 
 local TweenService = game:GetService("TweenService") or { Create = function() return { Play = function() end, Completed = Instance.new("BindableEvent") } end }
 local Animation = {}
@@ -17,7 +17,7 @@ end
 
 local function getScaledDuration(duration, defaultValue)
     local speed = _G.CensuraG.Config and _G.CensuraG.Config.AnimationSpeed or 1.0
-    return (duration or defaultValue) / speed
+    return (duration or defaultValue) / math.max(0.1, speed) -- Prevent division by zero or negative speed
 end
 
 local function validateElement(element)
@@ -36,7 +36,9 @@ local function createAndPlayTween(element, info, properties, callback)
     
     tween.Completed:Connect(function()
         tweenData.Completed = true
-        if callback then callback() end
+        if callback then 
+            pcall(callback) -- Wrap callback in pcall to prevent errors from breaking cleanup
+        end
         task.delay(1, cleanupTweens)
     end)
     
@@ -155,20 +157,24 @@ function Animation:Fade(element, transparency, duration, callback)
     properties[property] = transparency
     
     return self:Tween(element, properties, duration, nil, nil, callback)
-}
+end
 
 function Animation:CancelTweens(element)
-    for _, tweenData in ipairs(activeTweens) do
+    if not element then return end
+    
+    for i = #activeTweens, 1, -1 do
+        local tweenData = activeTweens[i]
         if tweenData.Instance == element and not tweenData.Completed then
             tweenData.Tween:Cancel()
             tweenData.Completed = true
+            table.remove(activeTweens, i)
         end
     end
 end
 
 function Animation:HoverEffect(element, hoverProps, leaveProps)
     if not validateElement(element) then
-        return
+        return nil
     end
     
     local id = tostring(element) .. "_hover"
@@ -212,6 +218,8 @@ function Animation:HoverEffect(element, hoverProps, leaveProps)
 end
 
 function Animation:CleanupHoverEffects(element)
+    if not element then return end
+    
     local id = tostring(element) .. "_hover"
     if hoverConnections[id] then
         for _, conn in ipairs(hoverConnections[id]) do
@@ -233,7 +241,7 @@ function Animation:PulseEffect(element, intensity, duration, times, callback)
     
     local function doPulse(remaining)
         if remaining <= 0 then
-            if callback then callback() end
+            if callback then pcall(callback) end
             return
         end
         
@@ -255,14 +263,14 @@ function Animation:PulseEffect(element, intensity, duration, times, callback)
 end
 
 function Animation:SequentialFade(elements, transparency, delay, duration, callback)
-    if #elements == 0 then
-        if callback then callback() end
+    if not elements or #elements == 0 then
+        if callback then pcall(callback) end
         return
     end
     
     local function fadeNext(index)
         if index > #elements then
-            if callback then callback() end
+            if callback then pcall(callback) end
             return
         end
         
@@ -279,7 +287,7 @@ function Animation:SequentialFade(elements, transparency, delay, duration, callb
     end
     
     fadeNext(1)
-}
+end
 
 function Animation:ShakeEffect(element, intensity, times, callback)
     if not validateElement(element) then
