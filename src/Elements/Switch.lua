@@ -21,11 +21,10 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
 
     logger:debug("Creating switch with parent: %s, Position: (%d, %d), Label: %s", tostring(parent.Instance), x, y, labelText)
 
-    -- Adjust frame size to accommodate label and track vertically
     local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
         Position = UDim2.new(0, x, 0, y),
-        Size = UDim2.new(0, width + 40, 0, 40), -- Height includes label (20px) and track (20px)
+        Size = UDim2.new(0, width + 40, 0, 40),
         BackgroundTransparency = 1,
         ClipsDescendants = true,
         ZIndex = parent.Instance.ZIndex + 1
@@ -45,9 +44,9 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
 
     local track = Utilities.createInstance("Frame", {
         Parent = frame,
-        Position = UDim2.new(0, 0, 0, 20), -- Below the label
+        Position = UDim2.new(0, 0, 0, 20),
         Size = UDim2.new(0, width, 0, height),
-        BackgroundTransparency = Styling.Transparency.Background,
+        BackgroundTransparency = Styling.Transparency.ElementBackground,
         ClipsDescendants = true,
         ZIndex = frame.ZIndex + 1
     })
@@ -59,7 +58,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         Parent = track,
         Size = UDim2.new(0, knobSize, 0, height),
         Position = defaultState and UDim2.new(1, -knobSize, 0, 0) or UDim2.new(0, 0, 0, 0),
-        BackgroundTransparency = Styling.Transparency.Highlight,
+        BackgroundTransparency = Styling.Transparency.ElementBackground,
         ZIndex = track.ZIndex + 1
     })
     Styling:Apply(knob, "Frame")
@@ -67,7 +66,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
 
     local labelValue = options.ShowLabel and Utilities.createInstance("TextLabel", {
         Parent = frame,
-        Position = UDim2.new(0, width + 5, 0, 20), -- Right of the track
+        Position = UDim2.new(0, width + 5, 0, 20),
         Size = UDim2.new(0, 40, 0, height),
         Text = defaultState and "On" or "Off",
         BackgroundTransparency = 1,
@@ -92,7 +91,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         self.Debounce = true
         self.State = not self.State
         local newPos = self.State and UDim2.new(1, -knobSize, 0, 0) or UDim2.new(0, 0, 0, 0)
-        local newTransparency = self.State and Styling.Transparency.Background - 0.1 or Styling.Transparency.Background
+        local newTransparency = self.State and Styling.Transparency.ElementBackground - 0.1 or Styling.Transparency.ElementBackground
         Animation:Tween(self.Knob, {Position = newPos}, 0.2, function()
             self.Debounce = false
         end)
@@ -112,7 +111,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         end
     end)
 
-    track.BackgroundTransparency = self.State and Styling.Transparency.Background - 0.1 or Styling.Transparency.Background
+    track.BackgroundTransparency = self.State and Styling.Transparency.ElementBackground - 0.1 or Styling.Transparency.ElementBackground
 
     function self:Destroy()
         if self.Instance then self.Instance:Destroy() end
