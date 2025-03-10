@@ -1,19 +1,13 @@
--- Slider.lua: Enhanced slider with draggable notch
-local Slider = setmetatable({}, {__index = _G.CensuraG.UIElement})
-Slider.__index = Slider
-
-local Utilities = _G.CensuraG.Utilities
-local Styling = _G.CensuraG.Styling
-local Animation = _G.CensuraG.Animation
-local Draggable = _G.CensuraG.Draggable
-local UserInputService = game:GetService("UserInputService")
-local logger = _G.CensuraG.Logger
-
 function Slider.new(parent, x, y, width, min, max, default, options)
     min = min or 0
     max = max or 100
     default = math.clamp(default or min, min, max)
     options = options or {}
+
+    if not parent or not parent.Instance then
+        logger:error("Invalid parent for slider: %s", tostring(parent))
+        return nil
+    end
 
     logger:debug("Creating slider with parent: %s, Position: (%d, %d), Width: %d", tostring(parent.Instance), x, y, width)
 
@@ -21,7 +15,9 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         Parent = parent.Instance,
         Position = UDim2.new(0, x, 0, y),
         Size = UDim2.new(0, width, 0, 15),
-        ClipsDescendants = true
+        ClipsDescendants = true,
+        Visible = true,
+        ZIndex = 3 -- Higher than window frame
     })
     Styling:Apply(frame, "Frame")
     logger:debug("Slider frame created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Parent: %s", tostring(frame.Position), tostring(frame.Size), frame.ZIndex, tostring(frame.Visible), tostring(frame.Parent))
@@ -30,7 +26,9 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         Parent = frame,
         Size = UDim2.new((default - min) / (max - min), 0, 0.8, 0),
         Position = UDim2.new(0, 0, 0, 2),
-        BackgroundColor3 = Styling.Colors.Accent
+        BackgroundColor3 = Styling.Colors.Accent,
+        Visible = true,
+        ZIndex = 4
     })
     logger:debug("Slider fill created: Position: %s, Size: %s, ZIndex: %d, Visible: %s", tostring(fill.Position), tostring(fill.Size), fill.ZIndex, tostring(fill.Visible))
 
@@ -39,7 +37,9 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         Position = UDim2.new((default - min) / (max - min), -5, 0, -5),
         Size = UDim2.new(0, 10, 0, 25),
         BackgroundColor3 = Color3.fromRGB(150, 150, 150),
-        BorderSizePixel = 0
+        BorderSizePixel = 0,
+        Visible = true,
+        ZIndex = 4
     })
     logger:debug("Slider notch created: Position: %s, Size: %s, ZIndex: %d, Visible: %s", tostring(notch.Position), tostring(notch.Size), notch.ZIndex, tostring(notch.Visible))
 
@@ -51,12 +51,15 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         BackgroundTransparency = 1,
         TextColor3 = Styling.Colors.Text,
         Font = Enum.Font.Code,
-        TextSize = 12
+        TextSize = 12,
+        Visible = true,
+        ZIndex = 4
     }) or nil
     if label then
         logger:debug("Slider label created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Text: %s", tostring(label.Position), tostring(label.Size), label.ZIndex, tostring(label.Visible), label.Text)
     end
 
+    -- Rest of the script remains unchanged
     local self = setmetatable({
         Instance = frame,
         Value = default,
