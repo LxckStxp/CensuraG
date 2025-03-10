@@ -1,6 +1,6 @@
 -- CensuraG.lua: Entry point for the CensuraG UI API
--- Loads all scripts dynamically from LxckStxp/CensuraG/src/
--- Date: March 09, 2025
+-- Loads all scripts dynamically into a global table
+-- Date: March 10, 2025
 
 local baseUrl = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/"
 
@@ -19,13 +19,13 @@ end
 local CensuraG = {}
 _G.CensuraG = CensuraG
 
--- Load dependencies
+-- Load dependencies into global table
 CensuraG.Utilities = loadScript("Utilities.lua")
 CensuraG.UIElement = loadScript("UIElement.lua")
 CensuraG.Styling = loadScript("Styling.lua")
 CensuraG.Animation = loadScript("Animation.lua")
-CensuraG.Draggable = loadScript("Draggable.lua") -- Added
-CensuraG.WindowManager = loadScript("WindowManager.lua") -- Added
+CensuraG.Draggable = loadScript("Draggable.lua")
+CensuraG.WindowManager = loadScript("WindowManager.lua")
 CensuraG.Window = loadScript("Elements/Window.lua")
 CensuraG.TextButton = loadScript("Elements/TextButton.lua")
 CensuraG.Slider = loadScript("Elements/Slider.lua")
