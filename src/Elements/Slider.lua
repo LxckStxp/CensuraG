@@ -1,8 +1,8 @@
 -- Slider.lua: Slider class
-local Slider = setmetatable({}, {__index = require(script.Parent.Parent.UIElement)})
+local Slider = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Slider.__index = Slider
 
-local Utilities = require(script.Parent.Parent.Utilities)
+local Utilities = _G.CensuraG.Utilities
 
 function Slider.new(parent, x, y, width, min, max, default, callback)
     local frame = Utilities.createInstance("Frame", {
