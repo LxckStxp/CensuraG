@@ -65,11 +65,23 @@ function ImageLabel.new(parent, imageUrl, x, y, width, height, options)
         Styling:Apply(caption, "TextLabel")
     end
     
+    -- Create an invisible button over the image for click detection
+    local clickDetector = Utilities.createInstance("TextButton", {
+        Parent = frame,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Text = "",
+        ZIndex = frame.ZIndex + 2,
+        Name = "ClickDetector"
+    })
+    
     -- Create self object
     local self = setmetatable({
         Instance = frame,
         Image = image,
         Caption = caption,
+        ClickDetector = clickDetector,
         Options = options,
         Connections = {}
     }, ImageLabel)
@@ -129,19 +141,29 @@ function ImageLabel.new(parent, imageUrl, x, y, width, height, options)
     function self:OnClick(callback)
         if not callback then return self end
         
-        -- Make image clickable
-        self.Image.Active = true
+        -- Use the click detector instead of the image directly
+        -- Disconnect any existing connections first
+        for i, conn in ipairs(self.Connections) do
+            if conn.Name == "ClickConnection" then
+                conn.Connection:Disconnect()
+                table.remove(self.Connections, i)
+                break
+            end
+        end
         
-        -- Connect click event
-        table.insert(self.Connections, EventManager:Connect(
-            self.Image.MouseButton1Click,
+        -- Connect new click event
+        local connection = EventManager:Connect(
+            self.ClickDetector.MouseButton1Click,
             function()
                 local success, result = pcall(callback)
                 if not success then
                     logger:warn("ImageLabel click callback error: %s", result)
                 end
             end
-        ))
+        )
+        
+        -- Store connection with a name for later reference
+        table.insert(self.Connections, {Name = "ClickConnection", Connection = connection})
         
         logger:debug("ImageLabel click handler added")
         return self
@@ -151,25 +173,38 @@ function ImageLabel.new(parent, imageUrl, x, y, width, height, options)
     function self:AddHoverEffect(scale)
         scale = scale or 1.1
         
-        table.insert(self.Connections, EventManager:Connect(
-            self.Image.MouseEnter,
+        -- Clean up any existing hover connections
+        for i, conn in ipairs(self.Connections) do
+            if conn.Name == "HoverEnter" or conn.Name == "HoverLeave" then
+                conn.Connection:Disconnect()
+                table.remove(self.Connections, i)
+            end
+        end
+        
+        -- Add new hover connections
+        local enterConnection = EventManager:Connect(
+            self.ClickDetector.MouseEnter,
             function()
                 Animation:Tween(self.Image, {
                     Size = UDim2.new(scale, 0, scale, 0),
                     Position = UDim2.new((1-scale)/2, 0, (1-scale)/2, 0)
                 }, 0.2)
             end
-        ))
+        )
         
-        table.insert(self.Connections, EventManager:Connect(
-            self.Image.MouseLeave,
+        local leaveConnection = EventManager:Connect(
+            self.ClickDetector.MouseLeave,
             function()
                 Animation:Tween(self.Image, {
                     Size = UDim2.new(1, 0, 1, 0),
                     Position = UDim2.new(0, 0, 0, 0)
                 }, 0.2)
             end
-        ))
+        )
+        
+        -- Store connections with names
+        table.insert(self.Connections, {Name = "HoverEnter", Connection = enterConnection})
+        table.insert(self.Connections, {Name = "HoverLeave", Connection = leaveConnection})
         
         logger:debug("ImageLabel hover effect added")
         return self
@@ -177,8 +212,8 @@ function ImageLabel.new(parent, imageUrl, x, y, width, height, options)
     
     -- Clean up resources
     function self:Destroy()
-        for _, conn in ipairs(self.Connections) do
-            conn:Disconnect()
+        for _, connData in ipairs(self.Connections) do
+            connData.Connection:Disconnect()
         end
         self.Connections = {}
         
