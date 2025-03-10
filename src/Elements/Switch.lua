@@ -12,7 +12,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
     options = options or {}
     width = width or 40
     height = height or 20
-    local labelText = options.LabelText or "Switch" -- Default label text
+    local labelText = options.LabelText or "Switch"
 
     if not parent or not parent.Instance then
         logger:error("Invalid parent for switch: %s", tostring(parent))
@@ -21,39 +21,51 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
 
     logger:debug("Creating switch with parent: %s, Position: (%d, %d), Label: %s", tostring(parent.Instance), x, y, labelText)
 
-    -- Create the label
-    local label = Utilities.createInstance("TextLabel", {
+    -- Create the main frame to hold all components
+    local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
-        Position = UDim2.new(0, x - 60, 0, y), -- 60 pixels to the left of the switch
-        Size = UDim2.new(0, 50, 0, height),   -- Width of 50 pixels, same height as switch
+        Position = UDim2.new(0, x, 0, y),
+        Size = UDim2.new(0, width + 40, 0, height), -- Extra space for value label
+        BackgroundTransparency = 1,
+        ClipsDescendants = true,
+        Visible = true,
+        ZIndex = parent.Instance.ZIndex + 1
+    })
+    logger:debug("Switch frame created: Position: %s, Size: %s, ZIndex: %d", tostring(frame.Position), tostring(frame.Size), frame.ZIndex)
+
+    -- Create the label (above the switch)
+    local label = Utilities.createInstance("TextLabel", {
+        Parent = frame,
+        Position = UDim2.new(0, 0, 0, -20), -- Above the switch
+        Size = UDim2.new(0, width, 0, 20),
         Text = labelText,
         BackgroundTransparency = 1,
-        ZIndex = 3
+        ZIndex = frame.ZIndex + 1
     })
     Styling:Apply(label, "TextLabel")
     logger:debug("Switch label created: Position: %s, Size: %s, Text: %s", tostring(label.Position), tostring(label.Size), label.Text)
 
-    -- Create the switch frame (track)
-    local frame = Utilities.createInstance("Frame", {
-        Parent = parent.Instance,
-        Position = UDim2.new(0, x, 0, y),
+    -- Create the track
+    local track = Utilities.createInstance("Frame", {
+        Parent = frame,
+        Position = UDim2.new(0, 0, 0, 0),
         Size = UDim2.new(0, width, 0, height),
         BackgroundTransparency = Styling.Transparency.Background,
         ClipsDescendants = true,
         Visible = true,
-        ZIndex = 3
+        ZIndex = frame.ZIndex + 1
     })
-    Styling:Apply(frame, "Frame")
-    logger:debug("Switch frame created: Position: %s, Size: %s, ZIndex: %d", tostring(frame.Position), tostring(frame.Size), frame.ZIndex)
+    Styling:Apply(track, "Frame")
+    logger:debug("Switch track created: Position: %s, Size: %s, ZIndex: %d", tostring(track.Position), tostring(track.Size), track.ZIndex)
 
-    -- Create the knob with full track height
-    local knobSize = height -- Match the track height
+    -- Create the knob
+    local knobSize = height
     local knob = Utilities.createInstance("Frame", {
-        Parent = frame,
-        Size = UDim2.new(0, knobSize, 0, height), -- Full height of the track
-        Position = defaultState and UDim2.new(1, -knobSize, 0, 0) or UDim2.new(0, 0, 0, 0), -- Align with track top
+        Parent = track,
+        Size = UDim2.new(0, knobSize, 0, height),
+        Position = defaultState and UDim2.new(1, -knobSize, 0, 0) or UDim2.new(0, 0, 0, 0),
         BackgroundTransparency = Styling.Transparency.Highlight,
-        ZIndex = 4
+        ZIndex = track.ZIndex + 1
     })
     Styling:Apply(knob, "Frame")
     logger:debug("Switch knob created: Position: %s, Size: %s, ZIndex: %d", tostring(knob.Position), tostring(knob.Size), knob.ZIndex)
@@ -61,11 +73,11 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
     -- Add a value label if enabled
     local labelValue = options.ShowLabel and Utilities.createInstance("TextLabel", {
         Parent = frame,
-        Position = UDim2.new(1, 5, 0, 0), -- To the right of the switch
+        Position = UDim2.new(0, width + 5, 0, 0),
         Size = UDim2.new(0, 40, 0, height),
         Text = defaultState and "On" or "Off",
         BackgroundTransparency = 1,
-        ZIndex = 4
+        ZIndex = frame.ZIndex + 1
     }) or nil
     if labelValue then
         Styling:Apply(labelValue, "TextLabel")
@@ -75,8 +87,8 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
     local self = setmetatable({
         Instance = frame,
         Knob = knob,
-        Label = label,           -- Reference to the context label
-        LabelValue = labelValue, -- Reference to the value label
+        Label = label,
+        LabelValue = labelValue,
         State = defaultState,
         Debounce = false
     }, Switch)
@@ -100,13 +112,13 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         logger:debug("Switch toggled: State: %s, Knob Position: %s", tostring(self.State), tostring(self.Knob.Position))
     end
 
-    frame.InputBegan:Connect(function(input)
+    track.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 and not self.Debounce then
             toggleState()
         end
     end)
 
-    frame.BackgroundTransparency = self.State and Styling.Transparency.Background - 0.1 or Styling.Transparency.Background
+    track.BackgroundTransparency = self.State and Styling.Transparency.Background - 0.1 or Styling.Transparency.Background
 
     function self:Destroy()
         self.Instance:Destroy()
