@@ -1,12 +1,14 @@
--- Animation.lua: Simple animation utilities
+-- Animation.lua: Simple animation utilities for Y-axis sliding
 local Animation = {}
 local TweenService = game:GetService("TweenService")
 local logger = _G.CensuraG.Logger
 
-function Animation:Tween(element, properties, duration, callback)
-    local tweenInfo = TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    local tween = TweenService:Create(element, tweenInfo, properties)
-    logger:debug("Started tween for element: %s, Properties: %s", tostring(element), tostring(properties))
+function Animation:SlideY(element, targetY, duration, callback)
+    local tweenInfo = TweenInfo.new(duration or 0.3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
+    local currentPosition = element.Position
+    local targetPosition = UDim2.new(currentPosition.X.Scale, currentPosition.X.Offset, 0, targetY)
+    local tween = TweenService:Create(element, tweenInfo, {Position = targetPosition})
+    logger:debug("Started Y-axis slide for element: %s, Target Y: %d", tostring(element), targetY)
     if callback then
         tween.Completed:Connect(callback)
     end
