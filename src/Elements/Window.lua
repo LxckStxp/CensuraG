@@ -1,4 +1,4 @@
--- Window.lua: Enhanced draggable window with tapered shadow and slide animations
+-- Window.lua: Enhanced draggable window with subtle shadow and slide animations
 local Window = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Window.__index = Window
 
@@ -11,12 +11,11 @@ function Window.new(title, x, y, width, height)
     local frame = Utilities.createInstance("Frame", {
         Parent = _G.CensuraG.ScreenGui,
         Size = UDim2.new(0, width, 0, height),
-        ZIndex = 2 -- Ensure windows are above the taskbar
+        ZIndex = 2
     })
     Styling:Apply(frame, "Frame")
 
-    -- Add tapered shadow to the window
-    local shadow = Utilities.createTaperedShadow(frame, 10, 10, 1.2, 0.7)
+    local shadow = Utilities.createTaperedShadow(frame, 5, 5, 0.9)
 
     local titleBar = Utilities.createInstance("TextLabel", {
         Parent = frame,
@@ -34,7 +33,6 @@ function Window.new(title, x, y, width, height)
         ZIndex = 3
     })
     Styling:Apply(minimizeButton, "TextButton")
-    Animation:HoverEffect(minimizeButton)
 
     local self = setmetatable({
         Instance = frame,
@@ -45,18 +43,17 @@ function Window.new(title, x, y, width, height)
         Debounce = false
     }, Window)
 
-    -- Make the window draggable
     self.DragHandler = Draggable.new(frame, titleBar)
 
-    -- Update shadow position when window moves
     self.DragHandler.OnDrag = function()
-        self.Shadow.Position = UDim2.new(0, self.Instance.Position.X.Offset - 10, 0, self.Instance.Position.Y.Offset - 10)
-        self.Shadow.Size = UDim2.new(0, self.Instance.Size.X.Offset + 20, 0, self.Instance.Size.Y.Offset + 20)
+        self.Shadow.Position = UDim2.new(0, self.Instance.Position.X.Offset - 5, 0, self.Instance.Position.Y.Offset - 5)
+        self.Shadow.Size = UDim2.new(0, self.Instance.Size.X.Offset + 10, 0, self.Instance.Size.Y.Offset + 10)
     end
 
-    -- Register with WindowManager
     _G.CensuraG.WindowManager:AddWindow(self)
     self.OriginalPosition = frame.Position
+
+    Animation:HoverEffect(minimizeButton)
 
     minimizeButton.MouseButton1Click:Connect(function()
         if self.Debounce then return end
@@ -78,17 +75,15 @@ function Window:Minimize()
     local screenHeight = _G.CensuraG.ScreenGui.AbsoluteSize.Y
     local offscreenY = screenHeight + self.Instance.Size.Y.Offset
 
-    -- Animate window and shadow together
     Animation:Tween(self.Instance, {Position = UDim2.new(0, self.OriginalPosition.X.Offset, 0, offscreenY)}, 0.3, function()
         self.Instance.Visible = false
         self.Shadow.Visible = false
         self.Debounce = false
-        -- Ensure child elements are hidden
         for _, child in pairs(self.Instance:GetChildren()) do
             child.Visible = false
         end
     end)
-    Animation:Tween(self.Shadow, {Position = UDim2.new(0, self.OriginalPosition.X.Offset - 10, 0, offscreenY - 10)}, 0.3)
+    Animation:Tween(self.Shadow, {Position = UDim2.new(0, self.OriginalPosition.X.Offset - 5, 0, offscreenY - 5)}, 0.3)
 
     if _G.CensuraG and _G.CensuraG.Taskbar and _G.CensuraG.Taskbar.AddWindow then
         _G.CensuraG.Taskbar:AddWindow(self)
@@ -105,19 +100,16 @@ function Window:Maximize()
     self.Instance.Visible = true
     self.Shadow.Visible = true
 
-    -- Restore visibility of child elements
     for _, child in pairs(self.Instance:GetChildren()) do
         child.Visible = true
     end
 
-    -- Animate window and shadow together
     Animation:Tween(self.Instance, {Position = self.OriginalPosition}, 0.3, function()
         self.Debounce = false
     end)
-    Animation:Tween(self.Shadow, {Position = UDim2.new(0, self.OriginalPosition.X.Offset - 10, 0, self.OriginalPosition.Y.Offset - 10)}, 0.3)
-    Animation:Tween(self.Shadow, {Size = UDim2.new(0, self.Instance.Size.X.Offset + 20, 0, self.Instance.Size.Y.Offset + 20)}, 0.3)
+    Animation:Tween(self.Shadow, {Position = UDim2.new(0, self.OriginalPosition.X.Offset - 5, 0, self.OriginalPosition.Y.Offset - 5)}, 0.3)
+    Animation:Tween(self.Shadow, {Size = UDim2.new(0, self.Instance.Size.X.Offset + 10, 0, self.Instance.Size.Y.Offset + 10)}, 0.3)
 
-    -- Remove the window from the taskbar
     for i, taskbarWindow in ipairs(_G.CensuraG.Taskbar.Windows) do
         if taskbarWindow == self then
             local button = _G.CensuraG.Taskbar.Instance:GetChildren()[i]
