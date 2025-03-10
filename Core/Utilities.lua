@@ -61,6 +61,25 @@ function Utilities.generateId()
 	return string.format("%x", os.time() + math.random(1, 1000000))
 end
 
+-- Add createTaperedShadow if it does not exist.
+function Utilities.createTaperedShadow(target, offsetX, offsetY, transparency)
+    -- Create an ImageLabel that will serve as a shadow
+    local shadow = Instance.new("ImageLabel")
+    shadow.Name = "Shadow"
+    shadow.BackgroundTransparency = 1
+    -- Use a suitable image asset for your shadow (update the asset ID as needed)
+    shadow.Image = "rbxassetid://6031075935"  -- Example asset; replace as needed
+    shadow.ImageTransparency = transparency or 0.5
+    shadow.ScaleType = Enum.ScaleType.Slice
+    shadow.SliceCenter = Rect.new(10,10,90,90)
+    -- Position the shadow relative to the target
+    shadow.Parent = target.Parent
+    shadow.ZIndex = target.ZIndex - 1
+    shadow.Position = target.Position + UDim2.new(0, offsetX or 5, 0, offsetY or 5)
+    shadow.Size = target.Size + UDim2.new(0, 20, 0, 20)
+    return shadow
+end
+
 function Utilities.getPlayerAvatar(userId, size)
 	size = size or Enum.ThumbnailSize.Size100x100
 	local Players = game:GetService("Players")
