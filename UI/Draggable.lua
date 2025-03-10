@@ -1,4 +1,4 @@
--- UI/Draggable.lua
+-- UI/Draggable.lua (with fallback for WindowManager)
 -- Enhanced draggable functionality
 
 local Draggable = {}
@@ -22,15 +22,15 @@ function Draggable.new(element, dragRegion, options)
         DragStart = nil,
         StartPos = nil,
         LastPosition = nil,
-        Velocity = Vector2.new(0, 0), -- For inertia
+        Velocity = Vector2.new(0, 0),
         Connections = {},
         Bounds = options.Bounds,
         OnDragStart = options.OnDragStart,
         OnDragEnd = options.OnDragEnd,
         OnDrag = options.OnDrag,
-        DragThreshold = options.DragThreshold or 5, -- Pixels before drag starts
-        InertiaEnabled = options.InertiaEnabled ~= false, -- Default true
-        Friction = options.Friction or 0.9 -- Deceleration rate for inertia
+        DragThreshold = options.DragThreshold or 5,
+        InertiaEnabled = options.InertiaEnabled ~= false,
+        Friction = options.Friction or 0.9
     }
     
     local function updatePosition(newX, newY)
@@ -40,8 +40,9 @@ function Draggable.new(element, dragRegion, options)
         else
             local gui = _G.CensuraG.ScreenGui
             if gui then
+                local taskbarHeight = (_G.CensuraG.Taskbar and _G.CensuraG.Taskbar.Height) or 0
                 newX = math.clamp(newX, 0, gui.AbsoluteSize.X - element.Size.X.Offset)
-                newY = math.clamp(newY, 0, gui.AbsoluteSize.Y - element.Size.Y.Offset - (_G.CensuraG.Taskbar and _G.CensuraG.Taskbar.Height or 0))
+                newY = math.clamp(newY, 0, gui.AbsoluteSize.Y - element.Size.Y.Offset - taskbarHeight)
             end
         end
         self.Element.Position = UDim2.new(0, newX, 0, newY)
@@ -55,7 +56,7 @@ function Draggable.new(element, dragRegion, options)
             local newY = self.StartPos.Y.Offset + delta.Y
             updatePosition(newX, newY)
             self.LastPosition = input.Position
-            self.Velocity = (input.Position - (self.LastPosition or input.Position)) * 60 -- Approximate pixels per second
+            self.Velocity = (input.Position - (self.LastPosition or input.Position)) * 60
         end
     end))
     
@@ -69,7 +70,11 @@ function Draggable.new(element, dragRegion, options)
             dragConnection = RunService.RenderStepped:Connect(function()
                 if not self.Dragging and (input.Position - self.DragStart).Magnitude > self.DragThreshold then
                     self.Dragging = true
-                    ErrorHandler:TryCatch(function() _G.CensuraG.WindowManager:BringToFront(self.Element.Parent) end, "Failed to bring window to front")
+                    ErrorHandler:TryCatch(function()
+                        if _G.CensuraG.WindowManager then
+                            _G.CensuraG.WindowManager:BringToFront(self.Element.Parent)
+                        end
+                    end, "Failed to bring window to front")
                     if self.OnDragStart then self.OnDragStart() end
                     logger:debug("Started dragging %s", tostring(self.Element))
                 end
@@ -91,14 +96,18 @@ function Draggable.new(element, dragRegion, options)
                     updatePosition(finalX, finalY)
                     if self.Velocity.Magnitude < 1 then
                         inertiaConnection:Disconnect()
-                        _G.CensuraG.WindowManager:SnapWindow(self.Element.Parent)
+                        if _G.CensuraG.WindowManager then
+                            _G.CensuraG.WindowManager:SnapWindow(self.Element.Parent)
+                        end
                         if self.OnDragEnd then self.OnDragEnd(finalX, finalY) end
                         logger:debug("Inertia stopped for %s at (%d, %d)", tostring(self.Element), finalX, finalY)
                     end
                 end)
                 table.insert(self.Connections, inertiaConnection)
             else
-                _G.CensuraG.WindowManager:SnapWindow(self.Element.Parent)
+                if _G.CensuraG.WindowManager then
+                    _G.CensuraG.WindowManager:SnapWindow(self.Element.Parent)
+                end
                 if self.OnDragEnd then self.OnDragEnd(finalX, finalY) end
                 logger:debug("Stopped dragging %s", tostring(self.Element))
             end
@@ -107,7 +116,7 @@ function Draggable.new(element, dragRegion, options)
     
     table.insert(self.Connections, EventManager:Connect(UserInputService.InputEnded, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            self.Dragging = false -- Ensure dragging stops globally
+            self.Dragging = false
             logger:debug("Global drag release for %s", tostring(self.Element))
         end
     end))
@@ -130,7 +139,9 @@ function Draggable.new(element, dragRegion, options)
     function self:SmoothMoveTo(x, y, duration)
         duration = duration or 0.2
         Animation:Tween(self.Element, { Position = UDim2.new(0, x, 0, y) }, duration / _G.CensuraG.Config.AnimationSpeed, nil, nil, function()
-            _G.CensuraG.WindowManager:SnapWindow(self.Element.Parent)
+            if _G.CensuraG.WindowManager then
+                _G.CensuraG.WindowManager:SnapWindow(self.Element.Parent)
+            end
             if self.OnDragEnd then self.OnDragEnd(x, y) end
         end)
         logger:debug("Smooth move %s to (%d, %d)", tostring(self.Element), x, y)
