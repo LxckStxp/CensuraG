@@ -18,10 +18,10 @@ function Window.new(title, x, y, width, height)
         Parent = _G.CensuraG.ScreenGui,
         Position = UDim2.new(0, x, 0, y),
         Size = UDim2.new(0, width, 0, height),
-        BackgroundTransparency = Styling.Transparency.WindowBackground, -- Use defined transparency
+        BackgroundTransparency = Styling.Transparency.WindowBackground,
         ZIndex = 2
     })
-    Styling:Apply(frame, "Window") -- Specify Window type for styling
+    Styling:Apply(frame, "Window")
     logger:debug("Created window frame: %s, Initial Position: %s, Size: %s, ZIndex: %d", title, tostring(frame.Position), tostring(frame.Size), frame.ZIndex)
 
     local shadow = Utilities.createTaperedShadow(frame, 5, 5, 0.9)
