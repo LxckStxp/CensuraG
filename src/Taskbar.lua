@@ -1,4 +1,4 @@
--- Taskbar.lua: Enhanced taskbar with modern miltech styling
+-- Taskbar.lua: Enhanced taskbar with modern miltech styling and cluster stability
 local Taskbar = {}
 Taskbar.Windows = {}
 
@@ -111,6 +111,25 @@ function Taskbar:Init()
                 end)
             end
         end)
+
+        -- Add a function to refresh cluster visibility
+        function self:RefreshCluster()
+            if self.Cluster and self.Cluster.Instance and taskbar.Visible then
+                self.Cluster.Instance.Visible = true
+                self.Cluster.Instance.BackgroundTransparency = Styling.Transparency.Background
+                if self.Cluster.AvatarImage then
+                    self.Cluster.AvatarImage.Instance.Visible = true
+                    self.Cluster.AvatarImage.Instance.ImageTransparency = 0
+                end
+                if self.Cluster.DisplayName then
+                    self.Cluster.DisplayName.Visible = true
+                end
+                if self.Cluster.TimeLabel then
+                    self.Cluster.TimeLabel.Visible = true
+                end
+                logger:debug("Cluster refreshed: Visible: %s, Position: %s", tostring(self.Cluster.Instance.Visible), tostring(self.Cluster.Instance.Position))
+            end
+        end
     end
 end
 
@@ -156,20 +175,22 @@ function Taskbar:AddWindow(window)
         button.BackgroundTransparency = Styling.Transparency.Highlight - 0.1
         local stroke = button:FindFirstChild("UIStroke")
         if stroke then
-            stroke.Transparency = 0.5 -- Brighter glow on hover
+            stroke.Transparency = 0.5
         end
     end)
     button.MouseLeave:Connect(function()
         button.BackgroundTransparency = Styling.Transparency.Highlight
         local stroke = button:FindFirstChild("UIStroke")
         if stroke then
-            stroke.Transparency = 0.8
+            stroke.Transparency = 0.85
         end
     end)
 
     button.MouseButton1Click:Connect(function()
         if window and window.Maximize then
             window:Maximize()
+            -- Refresh cluster visibility after maximize
+            self:RefreshCluster()
         end
         button:Destroy()
         buttonShadow:Destroy()
