@@ -1,46 +1,60 @@
-   -- Core/Animation.lua
-   local TweenService = game:GetService("TweenService")
-   local Animation = {}
-   local activeTweens = {}
+-- Core/Animation.lua
+-- Simplified animation system using TweenService
 
-   local function cleanupTweens()
-       for i = #activeTweens, 1, -1 do
-           if activeTweens[i].Completed then
-               table.remove(activeTweens, i)
-           end
-       end
-   end
+local TweenService = game:GetService("TweenService") or { Create = function() return { Play = function() end, Completed = Instance.new("BindableEvent") } end }
+local Animation = {}
+local activeTweens = {}
 
-   function Animation:Tween(element, properties, duration, easingStyle, easingDirection, callback)
-       if not element or not element.Parent then
-           return nil
-       end
+local function cleanupTweens()
+    for i = #activeTweens, 1, -1 do
+        if activeTweens[i].Completed then
+            table.remove(activeTweens, i)
+        end
+    end
+end
 
-       duration = duration or 0.3
-       easingStyle = easingStyle or Enum.EasingStyle.Quad
-       easingDirection = easingDirection or Enum.EasingDirection.Out
+function Animation:Tween(element, properties, duration, easingStyle, easingDirection, callback)
+    if not element or not element.Parent then
+        return nil
+    end
+    local info = TweenInfo.new(duration or 0.3, easingStyle or Enum.EasingStyle.Quad, easingDirection or Enum.EasingDirection.Out)
+    local tween = TweenService:Create(element, info, properties)
+    local tweenData = { Instance = element, Tween = tween, Completed = false }
+    table.insert(activeTweens, tweenData)
+    tween.Completed:Connect(function()
+        tweenData.Completed = true
+        if callback then callback() end
+        task.delay(1, cleanupTweens)
+    end)
+    tween:Play()
+    return tween
+end
 
-       local info = TweenInfo.new(duration, easingStyle, easingDirection)
-       local tween = TweenService:Create(element, info, properties)
-       local tweenData = { Instance = element, Tween = tween, Completed = false }
-       table.insert(activeTweens, tweenData)
-       tween.Completed:Connect(function()
-           tweenData.Completed = true
-           if callback then callback() end
-           task.delay(1, cleanupTweens)
-       end)
-       tween:Play()
-       return tween
-   end
+function Animation:Elastic(element, properties, duration, callback)
+    if not element or not element.Parent then
+        return nil
+    end
+    local info = TweenInfo.new(duration or 0.5, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out, 0, false, 0)
+    local tween = TweenService:Create(element, info, properties)
+    local tweenData = { Instance = element, Tween = tween, Completed = false }
+    table.insert(activeTweens, tweenData)
+    tween.Completed:Connect(function()
+        tweenData.Completed = true
+        if callback then callback() end
+        task.delay(1, cleanupTweens)
+    end)
+    tween:Play()
+    return tween
+end
 
-   function Animation:CancelTweens(element)
-       for _, tweenData in ipairs(activeTweens) do
-           if tweenData.Instance == element and not tweenData.Completed then
-               tweenData.Tween:Cancel()
-               tweenData.Completed = true
-           end
-       end
-   end
+function Animation:CancelTweens(element)
+    for _, tweenData in ipairs(activeTweens) do
+        if tweenData.Instance == element and not tweenData.Completed then
+            tweenData.Tween:Cancel()
+            tweenData.Completed = true
+        end
+    end
+end
 
 function Animation:SlideY(element, targetY, duration, easingStyle, easingDirection, callback)
     if not element or not element.Parent then
@@ -60,21 +74,5 @@ function Animation:SlideY(element, targetY, duration, easingStyle, easingDirecti
     return tween
 end
 
-   --- Add the HoverEffect method
-   function Animation:HoverEffect(element, hoverProperties, defaultProperties)
-       hoverProperties = hoverProperties or {}
-       defaultProperties = defaultProperties or {}
-       
-       if element.MouseEnter and element.MouseLeave then
-           element.MouseEnter:Connect(function()
-               Animation:Tween(element, hoverProperties, 0.2)
-           end)
-           element.MouseLeave:Connect(function()
-               Animation:Tween(element, defaultProperties, 0.2)
-           end)
-       else
-           warn("HoverEffect could not be applied. The element does not support MouseEnter/MouseLeave events.")
-       end
-   end
-
-   return Animation
+-- You can add additional effects as wrappers around Tween.
+return Animation
