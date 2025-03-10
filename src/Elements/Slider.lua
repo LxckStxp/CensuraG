@@ -1,4 +1,4 @@
--- Slider.lua: Simplified slider with modern miltech styling
+-- Slider.lua: Simplified slider with modern miltech styling and precise knob dragging
 local Slider = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Slider.__index = Slider
 
@@ -82,22 +82,32 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         Label = label,
         Step = options.Step or 1,
         Orientation = options.Orientation or "Horizontal",
-        Connections = {}
+        Connections = {},
+        IsDragging = false -- Track dragging state
     }, Slider)
 
-    function self:UpdateValue(newValue)
+    function self:UpdateValue(newValue, animate)
         newValue = math.clamp(math.floor(newValue / self.Step) * self.Step, self.Min, self.Max)
         if newValue == self.Value then return end
         self.Value = newValue
-        local ratio = (newValue - self.Min) / (max - min)
+        local ratio = (newValue - self.Min) / (self.Max - self.Min)
         if self.Orientation == "Horizontal" then
-            Animation:Tween(self.Fill, {Size = UDim2.new(ratio, 0, 1, 0)}, 0.2)
-            local newX = math.clamp(ratio, 0, 1)
-            self.Notch.Position = UDim2.new(newX, -(notchSize / 2), 0, -(height / 2))
+            if animate then
+                Animation:Tween(self.Fill, {Size = UDim2.new(ratio, 0, 1, 0)}, 0.2)
+                Animation:Tween(self.Notch, {Position = UDim2.new(ratio, -(notchSize / 2), 0, -(height / 2))}, 0.2)
+            else
+                -- Update instantly during drag for seamless movement
+                self.Fill.Size = UDim2.new(ratio, 0, 1, 0)
+                self.Notch.Position = UDim2.new(ratio, -(notchSize / 2), 0, -(height / 2))
+            end
         else
-            Animation:Tween(self.Fill, {Size = UDim2.new(1, 0, ratio, 0)}, 0.2)
-            local newY = math.clamp(ratio, 0, 1)
-            self.Notch.Position = UDim2.new(0, -(notchSize / 2), newY, -(height / 2))
+            if animate then
+                Animation:Tween(self.Fill, {Size = UDim2.new(1, 0, ratio, 0)}, 0.2)
+                Animation:Tween(self.Notch, {Position = UDim2.new(0, -(notchSize / 2), ratio, -(height / 2))}, 0.2)
+            else
+                self.Fill.Size = UDim2.new(1, 0, ratio, 0)
+                self.Notch.Position = UDim2.new(0, -(notchSize / 2), ratio, -(height / 2))
+            end
         end
         if self.Label then
             self.Label.Text = tostring(newValue)
@@ -108,23 +118,52 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         logger:debug("Slider value updated: New Value: %d, Fill Size: %s, Notch Position: %s", newValue, tostring(self.Fill.Size), tostring(self.Notch.Position))
     end
 
-    table.insert(self.Connections, frame.InputBegan:Connect(function(input)
+    -- Click handling (only on the notch)
+    table.insert(self.Connections, self.Notch.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            self.IsDragging = true
             local mousePos = input.Position
             local framePos = frame.AbsolutePosition
             local frameSize = frame.AbsoluteSize
             local ratio = self.Orientation == "Horizontal" and math.clamp((mousePos.X - framePos.X) / frameSize.X, 0, 1) or math.clamp((mousePos.Y - framePos.Y) / frameSize.Y, 0, 1)
-            self:UpdateValue(self.Min + (self.Max - self.Min) * ratio)
+            self:UpdateValue(self.Min + (self.Max - self.Min) * ratio, true) -- Animate on click
         end
     end))
 
+    -- Stop dragging when mouse button is released
+    table.insert(self.Connections, UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            self.IsDragging = false
+        end
+    end))
+
+    -- Dragging handling (only when dragging the notch)
     table.insert(self.Connections, UserInputService.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+        if input.UserInputType == Enum.UserInputType.MouseMovement and self.IsDragging then
             local mousePos = input.Position
             local framePos = frame.AbsolutePosition
             local frameSize = frame.AbsoluteSize
             local ratio = self.Orientation == "Horizontal" and math.clamp((mousePos.X - framePos.X) / frameSize.X, 0, 1) or math.clamp((mousePos.Y - framePos.Y) / frameSize.Y, 0, 1)
-            self:UpdateValue(self.Min + (self.Max - self.Min) * ratio)
+            self:UpdateValue(self.Min + (self.Max - self.Min) * ratio, false) -- No animation during drag
+        end
+    end))
+
+    -- Click on the track (outside the notch) to animate to position
+    table.insert(self.Connections, frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            -- Check if the click was on the notch (already handled above)
+            local mousePos = input.Position
+            local notchPos = self.Notch.AbsolutePosition
+            local notchSize = self.Notch.AbsoluteSize
+            if mousePos.X >= notchPos.X and mousePos.X <= notchPos.X + notchSize.X and
+               mousePos.Y >= notchPos.Y and mousePos.Y <= notchPos.Y + notchSize.Y then
+                return -- Click was on the notch, handled by notch.InputBegan
+            end
+            -- Click on the track, animate to position
+            local framePos = frame.AbsolutePosition
+            local frameSize = frame.AbsoluteSize
+            local ratio = self.Orientation == "Horizontal" and math.clamp((mousePos.X - framePos.X) / frameSize.X, 0, 1) or math.clamp((mousePos.Y - framePos.Y) / frameSize.Y, 0, 1)
+            self:UpdateValue(self.Min + (self.Max - self.Min) * ratio, true) -- Animate on track click
         end
     end))
 
@@ -137,13 +176,13 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         logger:info("Slider destroyed")
     end
 
-    self:UpdateValue(default)
+    self:UpdateValue(default, false)
 
     return self
 end
 
 function Slider:SetValue(value)
-    self:UpdateValue(value)
+    self:UpdateValue(value, true)
 end
 
 return Slider
