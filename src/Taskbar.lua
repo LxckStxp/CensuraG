@@ -1,4 +1,4 @@
--- Taskbar.lua: Displays minimized windows with transparency and shadows
+-- Taskbar.lua: Enhanced taskbar with reactive behavior, better spacing, and modern styling
 local Taskbar = {}
 Taskbar.Windows = {}
 
@@ -11,49 +11,115 @@ function Taskbar:Init()
     local taskbar = Utilities.createInstance("Frame", {
         Parent = _G.CensuraG.ScreenGui,
         Position = UDim2.new(0, 0, 1, 0), -- Start offscreen
-        Size = UDim2.new(1, 0, 0, 50),
-        BackgroundTransparency = 1, -- Make taskbar transparent
-        Visible = false
+        Size = UDim2.new(1, 0, 0, 60), -- Increased height for better visuals
+        BackgroundTransparency = 0.8, -- More subtle transparency
+        Visible = false,
+        ZIndex = 1 -- Below windows but above base UI
     })
     self.Instance = taskbar
 
-    -- Show/hide taskbar based on mouse position
+    -- Add a subtle background glow
+    local stroke = Utilities.createInstance("UIStroke", {
+        Parent = taskbar,
+        Thickness = 1,
+        Color = Styling.Colors.Border,
+        Transparency = 0.7
+    })
+
+    -- Reactive show/hide with hover intent
+    local hoverDebounce = false
+    local lastInputTime = 0
     UserInputService.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             local screenHeight = _G.CensuraG.ScreenGui.AbsoluteSize.Y
-            if input.Position.Y > screenHeight * 0.9 and not taskbar.Visible then
-                taskbar.Visible = true
-                Animation:Tween(taskbar, {Position = UDim2.new(0, 0, 1, -50)})
-            elseif input.Position.Y <= screenHeight * 0.9 and taskbar.Visible then
-                Animation:Tween(taskbar, {Position = UDim2.new(0, 0, 1, 0)}, 0.2, function()
-                    taskbar.Visible = false
-                end)
+            local mouseY = input.Position.Y
+            local threshold = screenHeight - 20 -- Trigger when within 20px of bottom
+
+            if mouseY >= threshold and not taskbar.Visible and not hoverDebounce then
+                hoverDebounce = true
+                lastInputTime = tick()
+                task.wait(0.1) -- Hover intent delay
+                if tick() - lastInputTime >= 0.1 then
+                    taskbar.Visible = true
+                    Animation:Tween(taskbar, {Position = UDim2.new(0, 0, 1, -60), BackgroundTransparency = 0.5}, 0.25)
+                end
+                hoverDebounce = false
+            elseif mouseY < threshold and taskbar.Visible and not hoverDebounce then
+                hoverDebounce = true
+                lastInputTime = tick()
+                task.wait(0.2) -- Slightly longer hide delay
+                if tick() - lastInputTime >= 0.2 then
+                    Animation:Tween(taskbar, {Position = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 0.8}, 0.25, function()
+                        taskbar.Visible = false
+                    end)
+                end
+                hoverDebounce = false
             end
         end
     end)
 end
 
 function Taskbar:AddWindow(window)
-    local spacing = 10 -- Spacing between buttons
+    local title = window.Instance:FindFirstChildWhichIsA("TextLabel").Text
+    local buttonWidth = math.clamp(#title * 8, 100, 200) -- Dynamic width based on title length (8px per char)
+    local spacing = 20 -- Increased spacing
+    local totalWidth = 0
+    for _, w in ipairs(self.Windows) do
+        local btn = self.Instance:GetChildren()[table.find(self.Windows, w)]
+        if btn then
+            totalWidth = totalWidth + btn.Size.X.Offset + spacing
+        end
+    end
+
     local button = Utilities.createInstance("TextButton", {
         Parent = self.Instance,
-        Position = UDim2.new(0, (#self.Windows * (100 + spacing)), 0, 0),
-        Size = UDim2.new(0, 100, 1, 0),
-        Text = window.Instance:FindFirstChildWhichIsA("TextLabel").Text,
-        BackgroundTransparency = 0.2
+        Position = UDim2.new(0, totalWidth, 0, 10), -- Centered vertically with padding
+        Size = UDim2.new(0, buttonWidth, 0, 40), -- Taller buttons
+        Text = title,
+        BackgroundTransparency = 0.5, -- Idle transparency
+        ZIndex = 2
     })
     Styling:Apply(button, "TextButton")
 
-    -- Add shadow to the button
-    Utilities.createShadow(button, 5, 5, Color3.fromRGB(0, 0, 0), 0.6)
+    -- Add glow effect
+    local stroke = Utilities.createInstance("UIStroke", {
+        Parent = button,
+        Thickness = 1,
+        Color = Styling.Colors.Accent,
+        Transparency = 0.8
+    })
 
-    Animation:HoverEffect(button)
+    -- Enhanced shadow
+    local shadow = Utilities.createTaperedShadow(button, 5, 5, 1.2, 0.6)
+
+    -- Advanced hover and click animations
+    local originalSize = button.Size
+    button.MouseEnter:Connect(function()
+        Animation:Tween(button, {
+            BackgroundTransparency = 0.2,
+            Size = originalSize + UDim2.new(0, 10, 0, 5),
+            BackgroundColor3 = Styling.Colors.Accent
+        }, 0.15)
+        Animation:Tween(stroke, {Transparency = 0.5}, 0.15)
+    end)
+    button.MouseLeave:Connect(function()
+        Animation:Tween(button, {
+            BackgroundTransparency = 0.5,
+            Size = originalSize,
+            BackgroundColor3 = Styling.Colors.Base
+        }, 0.15)
+        Animation:Tween(stroke, {Transparency = 0.8}, 0.15)
+    end)
 
     button.MouseButton1Click:Connect(function()
-        window:Maximize()
-        button:Destroy()
-        table.remove(self.Windows, table.find(self.Windows, window))
+        Animation:Tween(button, {Size = originalSize - UDim2.new(0, 5, 0, 5)}, 0.1, function()
+            window:Maximize()
+            button:Destroy()
+            shadow:Destroy()
+            table.remove(self.Windows, table.find(self.Windows, window))
+        end)
     end)
+
     table.insert(self.Windows, window)
 end
 
