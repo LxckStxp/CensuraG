@@ -285,14 +285,14 @@ else
 end
 
 -- Initialize Settings
-if CensuraG.Settings then
+if CensuraG.Settings and CensuraG.Settings.Init then
     task.spawn(function()
         wait(0.5) -- Give a moment for everything else to initialize
         CensuraG.Settings:Init()
         CensuraG.Logger:info("Settings menu auto-initialized")
     end)
 else
-    CensuraG.Logger:warn("Settings module not loaded")
+    CensuraG.Logger:warn("Settings module or Init method not found")
 end
 
 -- =============================================
@@ -317,19 +317,19 @@ end
 
 -- Toggle settings window
 function CensuraG.ToggleSettings()
-    if CensuraG.Settings then
+    if CensuraG.Settings and CensuraG.Settings.Toggle then
         CensuraG.Settings:Toggle()
     else
-        CensuraG.Logger:warn("Settings module not loaded")
+        CensuraG.Logger:warn("Settings module or Toggle method not found")
     end
 end
 
 -- Open settings window
 function CensuraG.OpenSettings()
-    if CensuraG.Settings then
+    if CensuraG.Settings and CensuraG.Settings.Show then
         CensuraG.Settings:Show()
     else
-        CensuraG.Logger:warn("Settings module not loaded")
+        CensuraG.Logger:warn("Settings module or Show method not found")
     end
 end
 
