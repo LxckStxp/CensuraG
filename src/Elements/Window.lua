@@ -1,8 +1,8 @@
 -- Window.lua: Window class with dragging and minimizing
-local Window = setmetatable({}, {__index = require(script.Parent.Parent.UIElement)})
+local Window = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Window.__index = Window
 
-local Utilities = require(script.Parent.Parent.Utilities)
+local Utilities = _G.CensuraG.Utilities
 local UserInputService = game:GetService("UserInputService")
 
 function Window.new(title, x, y, width, height)
