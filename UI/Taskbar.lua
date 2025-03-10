@@ -215,8 +215,8 @@ function Taskbar:RefreshCluster()
             self.Cluster.TimeLabel.Visible = true
             self.Cluster.TimeLabel.Text = os.date("%H:%M")
         end
-    }
-}
+    end
+end
 
 -- Show the taskbar
 function Taskbar:Show(instant)
