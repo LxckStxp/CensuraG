@@ -1,6 +1,4 @@
--- UI/Draggable.lua (with fallback for WindowManager)
--- Enhanced draggable functionality
-
+-- UI/Draggable.lua
 local Draggable = {}
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -28,11 +26,11 @@ function Draggable.new(element, dragRegion, options)
         OnDragStart = options.OnDragStart,
         OnDragEnd = options.OnDragEnd,
         OnDrag = options.OnDrag,
-        DragThreshold = options.DragThreshold or 5,
+        DragThreshold = options.DragThreshold or 0, -- Removed threshold to start immediately
         InertiaEnabled = options.InertiaEnabled ~= false,
         Friction = options.Friction or 0.9
     }
-    
+
     local function updatePosition(newX, newY)
         if self.Bounds then
             newX = math.clamp(newX, self.Bounds.MinX or 0, self.Bounds.MaxX or math.huge)
@@ -48,7 +46,7 @@ function Draggable.new(element, dragRegion, options)
         self.Element.Position = UDim2.new(0, newX, 0, newY)
         if self.OnDrag then self.OnDrag(newX, newY) end
     end
-    
+
     table.insert(self.Connections, EventManager:Connect(UserInputService.InputChanged, function(input)
         if self.Dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - self.DragStart
@@ -59,30 +57,24 @@ function Draggable.new(element, dragRegion, options)
             self.Velocity = (input.Position - (self.LastPosition or input.Position)) * 60
         end
     end))
-    
+
     table.insert(self.Connections, EventManager:Connect(self.DragRegion.InputBegan, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             self.DragStart = input.Position
             self.StartPos = self.Element.Position
             self.LastPosition = input.Position
             self.Velocity = Vector2.new(0, 0)
-            local dragConnection
-            dragConnection = RunService.RenderStepped:Connect(function()
-                if not self.Dragging and (input.Position - self.DragStart).Magnitude > self.DragThreshold then
-                    self.Dragging = true
-                    ErrorHandler:TryCatch(function()
-                        if _G.CensuraG.WindowManager then
-                            _G.CensuraG.WindowManager:BringToFront(self.Element.Parent)
-                        end
-                    end, "Failed to bring window to front")
-                    if self.OnDragStart then self.OnDragStart() end
-                    logger:debug("Started dragging %s", tostring(self.Element))
+            self.Dragging = true
+            ErrorHandler:TryCatch(function()
+                if _G.CensuraG.WindowManager then
+                    _G.CensuraG.WindowManager:BringToFront(self.Element.Parent)
                 end
-            end)
-            table.insert(self.Connections, dragConnection)
+            end, "Failed to bring window to front")
+            if self.OnDragStart then self.OnDragStart() end
+            logger:debug("Started dragging %s", tostring(self.Element))
         end
     end))
-    
+
     table.insert(self.Connections, EventManager:Connect(self.DragRegion.InputEnded, function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 and self.Dragging then
             self.Dragging = false
@@ -113,32 +105,25 @@ function Draggable.new(element, dragRegion, options)
             end
         end
     end))
-    
-    table.insert(self.Connections, EventManager:Connect(UserInputService.InputEnded, function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            self.Dragging = false
-            logger:debug("Global drag release for %s", tostring(self.Element))
-        end
-    end))
-    
+
     function self:SetBounds(minX, minY, maxX, maxY)
         self.Bounds = { MinX = minX, MinY = minY, MaxX = maxX, MaxY = maxY }
         logger:debug("Set draggable bounds for %s", tostring(self.Element))
     end
-    
+
     function self:SetInertia(enabled)
         self.InertiaEnabled = enabled
         logger:debug("Inertia %s for %s", enabled and "enabled" or "disabled", tostring(self.Element))
     end
-    
+
     function self:SetFriction(friction)
         self.Friction = math.clamp(friction, 0.1, 0.99)
         logger:debug("Set friction to %.2f for %s", self.Friction, tostring(self.Element))
     end
-    
+
     function self:SmoothMoveTo(x, y, duration)
         duration = duration or 0.2
-        Animation:Tween(self.Element, { Position = UDim2.new(0, x, 0, y) }, duration / _G.CensuraG.Config.AnimationSpeed, nil, nil, function()
+        Animation:Tween(self.Element, { Position = UDim2.new(0, x, 0, y) }, duration / (_G.CensuraG.Config and _G.CensuraG.Config.AnimationSpeed or 1), nil, nil, function()
             if _G.CensuraG.WindowManager then
                 _G.CensuraG.WindowManager:SnapWindow(self.Element.Parent)
             end
@@ -146,16 +131,14 @@ function Draggable.new(element, dragRegion, options)
         end)
         logger:debug("Smooth move %s to (%d, %d)", tostring(self.Element), x, y)
     end
-    
+
     function self:Destroy()
-        for _, conn in ipairs(self.Connections) do
-            conn:Disconnect()
-        end
+        for _, conn in ipairs(self.Connections) do conn:Disconnect() end
         self.Connections = {}
         self.Velocity = Vector2.new(0, 0)
         logger:debug("Draggable destroyed for %s", tostring(self.Element))
     end
-    
+
     return self
 end
 
