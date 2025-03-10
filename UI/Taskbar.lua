@@ -1,5 +1,5 @@
 -- UI/Taskbar.lua
--- Enhanced taskbar with auto-hide detection and improved organization
+-- Enhanced taskbar with consistent auto-hide and state management
 
 local Taskbar = {}
 local logger = _G.CensuraG.Logger
@@ -13,13 +13,14 @@ local RunService = game:GetService("RunService")
 Taskbar.Windows = {}
 Taskbar.Visible = false
 Taskbar.Height = 40
-Taskbar.ButtonWidth = 150 -- Default max width, will be adjusted dynamically
+Taskbar.ButtonWidth = 150
 Taskbar.AutoHideEnabled = true
 Taskbar.IsAnimating = false
 Taskbar.CheckingMouse = false
 Taskbar.LastMousePosition = nil
 Taskbar.ShowThreshold = 30
 Taskbar.HideDelay = 1.0
+Taskbar.MouseCheckConnection = nil
 
 function Taskbar:Init()
     if self.Instance then
@@ -28,12 +29,12 @@ function Taskbar:Init()
     end
     local screenSize = Utilities.getScreenSize()
     if screenSize.X == 0 or screenSize.Y == 0 then
-        screenSize = Vector2.new(1366, 768) -- Fallback resolution
+        screenSize = Vector2.new(1366, 768)
         logger:warn("Using fallback screen size: %s", tostring(screenSize))
     end
     local taskbar = Utilities.createInstance("Frame", {
         Parent = _G.CensuraG.ScreenGui,
-        Position = UDim2.new(0, 10, 1, 0), -- Start at the bottom edge
+        Position = UDim2.new(0, 10, 1, 0),
         Size = UDim2.new(1, -210, 0, self.Height),
         BackgroundTransparency = Styling.Transparency.ElementBackground,
         ZIndex = 5,
@@ -42,12 +43,11 @@ function Taskbar:Init()
     Styling:Apply(taskbar, "Frame")
     self.Instance = taskbar
 
-    -- Start Button
     local startButton = Utilities.createInstance("TextButton", {
         Parent = self.Instance,
         Position = UDim2.new(0, 5, 0, 5),
         Size = UDim2.new(0, 40, 0, 30),
-        Text = "☰", -- Hamburger menu icon
+        Text = "☰",
         ZIndex = self.Instance.ZIndex + 1,
         Name = "StartButton"
     })
@@ -59,11 +59,10 @@ function Taskbar:Init()
     end)
     self.StartButton = startButton
 
-    -- Button Container
     local buttonContainer = Utilities.createInstance("ScrollingFrame", {
         Parent = taskbar,
-        Position = UDim2.new(0, 50, 0, 0), -- Adjusted for start button
-        Size = UDim2.new(1, -260, 1, 0), -- Adjusted for start button and cluster
+        Position = UDim2.new(0, 50, 0, 0),
+        Size = UDim2.new(1, -260, 1, 0),
         CanvasSize = UDim2.new(0, 0, 0, 0),
         BackgroundTransparency = 1,
         ScrollBarThickness = 4,
@@ -72,36 +71,47 @@ function Taskbar:Init()
     })
     self.ButtonContainer = buttonContainer
 
-    -- Cluster
     self.Cluster = _G.CensuraG.Cluster.new({ Instance = taskbar })
     self:RefreshCluster()
 
-    -- Mouse Check for Auto-Hide
-    self.MouseCheckConnection = RunService.RenderStepped:Connect(function()
-        if self.CheckingMouse or self.IsAnimating then return end
-        self.CheckingMouse = true
-        local mousePos = UserInputService:GetMouseLocation()
-        local screenHeight = Utilities.getScreenSize().Y
-        logger:debug("Mouse Y: %d, Screen Height: %d, Taskbar Y: %d", mousePos.Y, screenHeight, self.Instance.Position.Y.Offset)
-        if mousePos.Y >= screenHeight - self.ShowThreshold and not self.Visible then
-            self:ShowTaskbar()
-        elseif mousePos.Y < screenHeight - self.Height - self.ShowThreshold and self.Visible then
-            if not self.HideTimestamp then
-                self.HideTimestamp = tick()
-            elseif tick() - self.HideTimestamp > self.HideDelay then
-                self:HideTaskbar()
-                self.HideTimestamp = nil
-            end
-        else
-            self.HideTimestamp = nil
-        end
-        self.LastMousePosition = mousePos
-        self.CheckingMouse = false
-    end)
     self.Instance.Visible = false
     self.Visible = false
-    logger:info("Taskbar initialized")
+    self.AutoHideEnabled = _G.CensuraG.Config.AutoHide
+    self:UpdateAutoHide()
+    logger:info("Taskbar initialized with AutoHide: %s", tostring(self.AutoHideEnabled))
     return self
+end
+
+function Taskbar:UpdateAutoHide()
+    if self.MouseCheckConnection then
+        self.MouseCheckConnection:Disconnect()
+        self.MouseCheckConnection = nil
+    end
+    if self.AutoHideEnabled then
+        self.MouseCheckConnection = RunService.RenderStepped:Connect(function()
+            if self.CheckingMouse or self.IsAnimating then return end
+            self.CheckingMouse = true
+            local mousePos = UserInputService:GetMouseLocation()
+            local screenHeight = Utilities.getScreenSize().Y
+            if mousePos.Y >= screenHeight - self.ShowThreshold and not self.Visible then
+                self:ShowTaskbar()
+            elseif mousePos.Y < screenHeight - self.Height - self.ShowThreshold and self.Visible then
+                if not self.HideTimestamp then
+                    self.HideTimestamp = tick()
+                elseif tick() - self.HideTimestamp > self.HideDelay then
+                    self:HideTaskbar()
+                    self.HideTimestamp = nil
+                end
+            else
+                self.HideTimestamp = nil
+            end
+            self.LastMousePosition = mousePos
+            self.CheckingMouse = false
+        end)
+        if not self.Visible then self:Hide(true) end
+    else
+        self:Show(true)
+    end
 end
 
 function Taskbar:ShowTaskbar()
@@ -132,13 +142,9 @@ end
 function Taskbar:SetAutoHide(enabled)
     if enabled == self.AutoHideEnabled then return end
     self.AutoHideEnabled = enabled
-    if enabled then
-        self:Init()
-    else
-        if self.MouseCheckConnection then self.MouseCheckConnection:Disconnect() end
-        self:Show(true)
-    end
-    logger:info("Taskbar auto-hide %s", enabled and "enabled" or "disabled")
+    _G.CensuraG.Config.AutoHide = enabled
+    self:UpdateAutoHide()
+    logger:info("Taskbar auto-hide set to %s", tostring(enabled))
 end
 
 function Taskbar:AddWindow(window)
@@ -162,7 +168,6 @@ function Taskbar:AddWindow(window)
     button.MouseEnter:Connect(function() Animation:Tween(button, { BackgroundTransparency = Styling.Transparency.ElementBackground - 0.1 }, 0.1) end)
     button.MouseLeave:Connect(function() Animation:Tween(button, { BackgroundTransparency = Styling.Transparency.ElementBackground }, 0.1) end)
 
-    -- Tooltip
     local tooltip = Utilities.createInstance("TextLabel", {
         Parent = _G.CensuraG.ScreenGui,
         Size = UDim2.new(0, 200, 0, 20),
@@ -248,8 +253,7 @@ function Taskbar:Show(instant)
     if instant then
         self.Instance.Visible = true
         local screenHeight = Utilities.getScreenSize().Y
-        self.Instance.Position = UDim2.new(0, 10, 1, 0) -- Reset to bottom
-        Animation:SlideY(self.Instance, screenHeight - self.Height, 0, nil, nil) -- Instant slide
+        self.Instance.Position = UDim2.new(0, 10, 0, screenHeight - self.Height)
         self.Visible = true
         self:RefreshCluster()
         logger:debug("Taskbar shown instantly at Y: %d", self.Instance.Position.Y.Offset)
@@ -261,9 +265,9 @@ end
 function Taskbar:Hide(instant)
     if not self.Visible then return end
     if instant then
-        local screenHeight = Utilities.getScreenSize().Y
-        self.Instance.Position = UDim2.new(0, 10, 1, 0) -- Reset to bottom
         self.Instance.Visible = false
+        local screenHeight = Utilities.getScreenSize().Y
+        self.Instance.Position = UDim2.new(0, 10, 0, screenHeight)
         self.Visible = false
         logger:debug("Taskbar hidden instantly")
     else
@@ -279,14 +283,10 @@ end
 function Taskbar:ForceShow()
     local wasAutoHide = self.AutoHideEnabled
     self.AutoHideEnabled = false
-    self.Instance.Visible = true
-    local screenHeight = Utilities.getScreenSize().Y
-    self.Instance.Position = UDim2.new(0, 10, 1, 0) -- Reset to bottom
-    Animation:SlideY(self.Instance, screenHeight - self.Height, 0.3, nil, nil)
-    self.Visible = true
+    self:UpdateAutoHide()
     task.delay(5, function()
         self.AutoHideEnabled = wasAutoHide
-        if self.AutoHideEnabled then self:Init() end
+        self:UpdateAutoHide()
     end)
     logger:info("Taskbar force shown")
     return true
