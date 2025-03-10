@@ -24,31 +24,31 @@ function Slider.new(parent, x, y, width, min, max, default, options)
     })
     Styling:Apply(frame, "Frame")
 
-    -- Fill bar
+    -- Fill bar (make it more visible)
     local fill = Utilities.createInstance("Frame", {
         Parent = frame,
         Size = UDim2.new((default - min) / (max - min), 0, 1, 0),
-        BackgroundColor3 = Styling.Colors.Accent
+        BackgroundColor3 = Color3.fromRGB(0, 120, 215) -- Override for visibility
     })
 
-    -- Draggable notch
+    -- Draggable notch (more distinct styling)
     local notch = Utilities.createInstance("Frame", {
         Parent = frame,
         Position = UDim2.new((default - min) / (max - min), -5, 0, -5),
         Size = UDim2.new(0, 10, 0, 20),
-        BackgroundColor3 = Styling.Colors.Highlight,
+        BackgroundColor3 = Color3.fromRGB(200, 200, 200), -- Brighter for visibility
         BorderSizePixel = 1,
-        BorderColor3 = Styling.Colors.Border
+        BorderColor3 = Color3.fromRGB(80, 80, 80)
     })
 
-    -- Optional value label
+    -- Optional value label (positioned above to avoid overlap)
     local label = options.ShowValue and Utilities.createInstance("TextLabel", {
         Parent = frame,
-        Position = UDim2.new(0, 0, 0, -20),
+        Position = UDim2.new(0, 0, 0, -25),
         Size = UDim2.new(1, 0, 0, 20),
         Text = tostring(default),
         BackgroundTransparency = 1,
-        TextColor3 = Styling.Colors.Text,
+        TextColor3 = Color3.fromRGB(200, 200, 200),
         Font = Enum.Font.Code,
         TextSize = 12
     }) or nil
@@ -61,24 +61,24 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         Fill = fill,
         Notch = notch,
         Label = label,
-        Step = options.Step or 1, -- Increment step (e.g., 1, 0.1)
-        Orientation = options.Orientation or "Horizontal" -- "Horizontal" or "Vertical"
+        Step = options.Step or 1,
+        Orientation = options.Orientation or "Horizontal"
     }, Slider)
 
     -- Update value and visuals
-    local function updateValue(newValue)
-        newValue = math.clamp(math.floor(newValue / self.Step) * self.Step, min, max)
+    function self:UpdateValue(newValue)
+        newValue = math.clamp(math.floor(newValue / self.Step) * self.Step, self.Min, self.Max)
         self.Value = newValue
-        local ratio = (newValue - min) / (max - min)
+        local ratio = (newValue - self.Min) / (self.Max - self.Min)
         if self.Orientation == "Horizontal" then
-            Animation:Tween(fill, {Size = UDim2.new(ratio, 0, 1, 0)})
-            Animation:Tween(notch, {Position = UDim2.new(ratio, -5, 0, -5)})
+            Animation:Tween(self.Fill, {Size = UDim2.new(ratio, 0, 1, 0)})
+            Animation:Tween(self.Notch, {Position = UDim2.new(ratio, -5, 0, -5)})
         else
-            Animation:Tween(fill, {Size = UDim2.new(1, 0, ratio, 0)})
-            Animation:Tween(notch, {Position = UDim2.new(0, -5, ratio, -5)})
+            Animation:Tween(self.Fill, {Size = UDim2.new(1, 0, ratio, 0)})
+            Animation:Tween(self.Notch, {Position = UDim2.new(0, -5, ratio, -5)})
         end
-        if label then
-            label.Text = tostring(newValue)
+        if self.Label then
+            self.Label.Text = tostring(newValue)
         end
         if options.OnChanged then
             options.OnChanged(newValue)
@@ -97,7 +97,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
             else
                 ratio = math.clamp((mousePos.Y - framePos.Y) / frameSize.Y, 0, 1)
             end
-            updateValue(min + (max - min) * ratio)
+            self:UpdateValue(self.Min + (self.Max - self.Min) * ratio)
         end
     end)
 
@@ -114,7 +114,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
             else
                 ratio = math.clamp((mousePos.Y - framePos.Y) / frameSize.Y, 0, 1)
             end
-            updateValue(min + (max - min) * ratio)
+            self:UpdateValue(self.Min + (self.Max - self.Min) * ratio)
         end
     end)
 
@@ -126,7 +126,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
     end
 
     -- Initial value set
-    updateValue(default)
+    self:UpdateValue(default)
 
     return self
 end
