@@ -15,6 +15,7 @@ function Taskbar:Init()
             Position = UDim2.new(0, 10, 1, 40), -- Start off-screen below the bottom
             Size = UDim2.new(1, -210, 0, 40), -- Space for cluster (200px + 10px padding)
             BackgroundTransparency = 0.7, -- Subtle visibility
+            ClipsDescendants = false, -- Ensure children aren’t clipped
             Visible = false,
             ZIndex = 2
         })
@@ -27,6 +28,7 @@ function Taskbar:Init()
             Size = UDim2.new(1, 0, 1, 0),
             BackgroundTransparency = 0.7,
             BackgroundColor3 = Styling.Colors.Highlight,
+            ClipsDescendants = false,
             ZIndex = 3
         })
         local gradient = Utilities.createInstance("UIGradient", {
@@ -57,7 +59,9 @@ function Taskbar:Init()
             return
         end
         self.Cluster.Instance.Visible = false
-        logger:info("Cluster initialized on taskbar, parent: %s", tostring(buttonContainer))
+        self.Cluster.Instance.BackgroundTransparency = 0.6
+        self.Cluster.Instance.ZIndex = 4 -- Ensure cluster is above buttonContainer
+        logger:info("Cluster initialized on taskbar, parent: %s, Position: %s, Visible: %s", tostring(buttonContainer), tostring(self.Cluster.Instance.Position), tostring(self.Cluster.Instance.Visible))
 
         local isAnimating = false
         local hoverDebounce = false
@@ -84,6 +88,18 @@ function Taskbar:Init()
                 if self.Cluster and self.Cluster.Instance then
                     self.Cluster.Instance.Visible = true
                     self.Cluster.Instance.BackgroundTransparency = 0.6
+                    -- Ensure cluster children are visible
+                    if self.Cluster.AvatarImage then
+                        self.Cluster.AvatarImage.Instance.Visible = true
+                        self.Cluster.AvatarImage.Instance.ImageTransparency = 0
+                    end
+                    if self.Cluster.DisplayName then
+                        self.Cluster.DisplayName.Visible = true
+                    end
+                    if self.Cluster.TimeLabel then
+                        self.Cluster.TimeLabel.Visible = true
+                    end
+                    logger:debug("Cluster set to visible: %s, Position: %s", tostring(self.Cluster.Instance.Visible), tostring(self.Cluster.Instance.Position))
                 end
                 -- Slide to position the bottom edge near the screen bottom
                 Animation:SlideY(taskbar, -taskbarHeight - padding, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, function()
@@ -103,6 +119,7 @@ function Taskbar:Init()
                     taskbar.BackgroundTransparency = 0.7
                     if self.Cluster and self.Cluster.Instance then
                         self.Cluster.Instance.Visible = false
+                        logger:debug("Cluster set to hidden: %s", tostring(self.Cluster.Instance.Visible))
                     end
                     isAnimating = false
                     hoverDebounce = false
@@ -113,7 +130,7 @@ function Taskbar:Init()
     end
 end
 
--- Rest of Taskbar.lua remains unchanged
+-- Rest of Taskbar.lua remains unchanged (AddWindow and Destroy functions as previously provided)
 function Taskbar:AddWindow(window)
     if not window or not window.Instance or not self.Instance then
         logger:warn("Invalid window or taskbar instance in AddWindow")
