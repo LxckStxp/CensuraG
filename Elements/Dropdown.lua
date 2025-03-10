@@ -56,7 +56,23 @@ function Dropdown.new(parent, x, y, width, options, defaultSelection, callback)
         Name = "DropButton"
     })
     Styling:Apply(dropButton, "TextButton")
-    Animation:HoverEffect(dropButton)
+    
+    -- Apply hover effect manually instead of using the Animation:HoverEffect
+    local hoverConnections = {}
+    
+    table.insert(hoverConnections, dropButton.MouseEnter:Connect(function()
+        Animation:Tween(dropButton, {
+            BackgroundTransparency = Styling.Transparency.ElementBackground - 0.1
+        }, 0.1)
+        logger:debug("Hover effect on: %s", tostring(dropButton))
+    end))
+    
+    table.insert(hoverConnections, dropButton.MouseLeave:Connect(function()
+        Animation:Tween(dropButton, {
+            BackgroundTransparency = Styling.Transparency.ElementBackground
+        }, 0.1)
+        logger:debug("Hover effect off: %s", tostring(dropButton))
+    end))
     
     -- Create dropdown icon
     local dropIcon = Utilities.createInstance("TextLabel", {
@@ -93,6 +109,7 @@ function Dropdown.new(parent, x, y, width, options, defaultSelection, callback)
         SelectedItem = selectedText,
         IsOpen = false,
         Callback = callback,
+        HoverConnections = hoverConnections,
         Connections = {}
     }, Dropdown)
     
@@ -116,7 +133,19 @@ function Dropdown.new(parent, x, y, width, options, defaultSelection, callback)
                 Name = "Item_" .. i
             })
             Styling:Apply(itemButton, "TextButton")
-            Animation:HoverEffect(itemButton)
+            
+            -- Apply hover effect manually for item buttons
+            itemButton.MouseEnter:Connect(function()
+                Animation:Tween(itemButton, {
+                    BackgroundTransparency = Styling.Transparency.ElementBackground - 0.1
+                }, 0.1)
+            end)
+            
+            itemButton.MouseLeave:Connect(function()
+                Animation:Tween(itemButton, {
+                    BackgroundTransparency = Styling.Transparency.ElementBackground
+                }, 0.1)
+            end)
             
             -- Handle item selection
             itemButton.MouseButton1Click:Connect(function()
@@ -214,6 +243,12 @@ function Dropdown.new(parent, x, y, width, options, defaultSelection, callback)
     
     -- Clean up resources
     function self:Destroy()
+        -- Clean up hover connections
+        for _, conn in ipairs(self.HoverConnections) do
+            conn:Disconnect()
+        end
+        self.HoverConnections = {}
+        
         for _, conn in ipairs(self.Connections) do
             conn:Disconnect()
         end
