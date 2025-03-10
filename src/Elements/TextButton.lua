@@ -1,4 +1,4 @@
--- TextButton.lua: Styled clickable button with miltech styling
+-- TextButton.lua: Styled clickable button with modern miltech styling
 local TextButton = setmetatable({}, {__index = _G.CensuraG.UIElement})
 TextButton.__index = TextButton
 
@@ -20,22 +20,11 @@ function TextButton.new(parent, text, x, y, width, height, callback)
         Position = UDim2.new(0, x, 0, y),
         Size = UDim2.new(0, width, 0, height or 30),
         Text = text,
-        BackgroundTransparency = 0.2,
-        BackgroundColor3 = Styling.Colors.Highlight,
-        Visible = true,
+        BackgroundTransparency = Styling.Transparency.Highlight,
         ZIndex = 3
     })
     Styling:Apply(button, "TextButton")
-    logger:debug("TextButton created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Parent: %s", tostring(button.Position), tostring(button.Size), button.ZIndex, tostring(button.Visible), tostring(button.Parent))
-
-    local buttonStroke = Utilities.createInstance("UIStroke", {
-        Parent = button,
-        Thickness = 1,
-        Color = Color3.fromRGB(200, 200, 200),
-        Transparency = 0.5
-    })
-
-    Animation:HoverEffect(button)
+    logger:debug("TextButton created: Position: %s, Size: %s, ZIndex: %d", tostring(button.Position), tostring(button.Size), button.ZIndex)
 
     local self = setmetatable({Instance = button}, TextButton)
     button.MouseButton1Click:Connect(function()
