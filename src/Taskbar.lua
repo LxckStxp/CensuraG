@@ -12,7 +12,7 @@ function Taskbar:Init()
     if not self.Instance then
         local taskbar = Utilities.createInstance("Frame", {
             Parent = _G.CensuraG.ScreenGui,
-            Position = UDim2.new(0, 10, 1, 0), -- Start aligned with the bottom edge
+            Position = UDim2.new(0, 10, 1, 40), -- Start off-screen below the bottom edge
             Size = UDim2.new(1, -210, 0, 40), -- Space for cluster (200px + 10px padding)
             BackgroundTransparency = 1, -- Fully transparent frame
             Visible = false,
@@ -74,11 +74,12 @@ function Taskbar:Init()
                     task.wait(0.1)
                     if tick() - lastInputTime >= 0.1 then
                         taskbar.Visible = true
-                        -- Slide up to reveal the taskbar (top edge at -taskbarHeight + padding)
-                        Animation:SlideY(taskbar, -taskbarHeight + padding, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                        -- Slide up to reveal the taskbar (top edge at padding)
+                        Animation:SlideY(taskbar, padding, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
                         if self.Cluster and self.Cluster.Instance then
                             self.Cluster.Instance.Visible = true
                         end
+                        logger:debug("Taskbar shown at position: %s", tostring(taskbar.Position))
                     end
                     hoverDebounce = false
                 elseif mouseY < screenHeight - threshold and taskbar.Visible and not hoverDebounce then
@@ -87,11 +88,12 @@ function Taskbar:Init()
                     task.wait(0.2)
                     if tick() - lastInputTime >= 0.2 then
                         -- Slide down to hide the taskbar (bottom edge off-screen)
-                        Animation:SlideY(taskbar, 0, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function()
+                        Animation:SlideY(taskbar, taskbarHeight, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function()
                             taskbar.Visible = false
                             if self.Cluster and self.Cluster.Instance then
                                 self.Cluster.Instance.Visible = false
                             end
+                            logger:debug("Taskbar hidden at position: %s", tostring(taskbar.Position))
                         end)
                     end
                     hoverDebounce = false
