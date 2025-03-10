@@ -1,4 +1,4 @@
--- Taskbar.lua: Displays minimized windows when mouse is in bottom 10% of screen
+-- Taskbar.lua: Displays minimized windows with transparency and shadows
 local Taskbar = {}
 Taskbar.Windows = {}
 
@@ -12,9 +12,9 @@ function Taskbar:Init()
         Parent = _G.CensuraG.ScreenGui,
         Position = UDim2.new(0, 0, 1, 0), -- Start offscreen
         Size = UDim2.new(1, 0, 0, 50),
+        BackgroundTransparency = 1, -- Make taskbar transparent
         Visible = false
     })
-    Styling:Apply(taskbar, "Frame")
     self.Instance = taskbar
 
     -- Show/hide taskbar based on mouse position
@@ -34,13 +34,19 @@ function Taskbar:Init()
 end
 
 function Taskbar:AddWindow(window)
+    local spacing = 10 -- Spacing between buttons
     local button = Utilities.createInstance("TextButton", {
         Parent = self.Instance,
-        Position = UDim2.new(0, #self.Windows * 100, 0, 0),
+        Position = UDim2.new(0, (#self.Windows * (100 + spacing)), 0, 0),
         Size = UDim2.new(0, 100, 1, 0),
-        Text = window.Instance:FindFirstChildWhichIsA("TextLabel").Text
+        Text = window.Instance:FindFirstChildWhichIsA("TextLabel").Text,
+        BackgroundTransparency = 0.2
     })
     Styling:Apply(button, "TextButton")
+
+    -- Add shadow to the button
+    Utilities.createShadow(button, 5, 5, Color3.fromRGB(0, 0, 0), 0.6)
+
     Animation:HoverEffect(button)
 
     button.MouseButton1Click:Connect(function()
