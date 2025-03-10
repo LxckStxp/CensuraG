@@ -80,9 +80,10 @@ function Taskbar:AddWindow(window)
     local buttonWidth = 150
     local spacing = 10
     local totalWidth = 0
-    for _, w in ipairs(self.Windows) do
-        local btn = self.Instance:GetChildren()[table.find(self.Windows, w)]
-        if btn then
+
+    -- Only consider TextButton children for totalWidth
+    for _, btn in ipairs(self.Instance:GetChildren()) do
+        if btn:IsA("TextButton") then
             totalWidth = totalWidth + btn.Size.X.Offset + spacing
         end
     end
