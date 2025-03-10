@@ -23,10 +23,12 @@ CensuraG.UIElement = loadScript("UIElement.lua")
 CensuraG.Styling = loadScript("Styling.lua")
 CensuraG.Animation = loadScript("Animation.lua")
 CensuraG.Draggable = loadScript("Draggable.lua")
+CensuraG.WindowManager = loadScript("WindowManager.lua")
+CensuraG.Taskbar = loadScript("Taskbar.lua")
 CensuraG.Window = loadScript("Elements/Window.lua")
 CensuraG.TextButton = loadScript("Elements/TextButton.lua")
 CensuraG.Slider = loadScript("Elements/Slider.lua")
-CensuraG.Switch = loadScript("Elements/Switch.lua") -- Added
+CensuraG.Switch = loadScript("Elements/Switch.lua")
 
 -- Initialize ScreenGui
 local Players = game:GetService("Players")
@@ -41,6 +43,14 @@ CensuraG.ScreenGui = PlayerGui:FindFirstChild("CensuraGGui") or CensuraG.Utiliti
 -- API extension method
 function CensuraG.AddCustomElement(name, class)
     CensuraG[name] = class
+end
+
+-- Initialize WindowManager and Taskbar
+if CensuraG.WindowManager then
+    CensuraG.WindowManager:Init()
+end
+if CensuraG.Taskbar then
+    CensuraG.Taskbar:Init()
 end
 
 return CensuraG
