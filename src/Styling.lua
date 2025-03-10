@@ -41,7 +41,7 @@ function Styling:Apply(element, elementType)
         NumberSequenceKeypoint.new(0, self.Transparency.Background - 0.1),
         NumberSequenceKeypoint.new(1, self.Transparency.Background)
     })
-    gradient.Rotation = 45
+    gradient.Rotation = 90
     gradient.Parent = element
 
     if elementType == "TextLabel" or elementType == "TextButton" then
@@ -51,6 +51,9 @@ function Styling:Apply(element, elementType)
         element.BackgroundColor3 = self.Colors.Secondary
         element.BackgroundTransparency = self.Transparency.Highlight
         element.TextTransparency = self.Transparency.Text
+        -- Add text stroke for better visibility
+        element.TextStrokeColor3 = Color3.fromRGB(0,0,0)
+        element.TextStrokeTransparency = 0.5
     end
 end
 
