@@ -1,4 +1,4 @@
--- Elements/ImageLabel.lua: Styled image label with miltech styling
+-- Elements/ImageLabel.lua: Styled image label with modern miltech styling
 local ImageLabel = setmetatable({}, {__index = _G.CensuraG.UIElement})
 ImageLabel.__index = ImageLabel
 
@@ -24,26 +24,11 @@ function ImageLabel.new(parent, imageUrl, x, y, width, height, options)
         Visible = true,
         ZIndex = options.ZIndex or 3
     })
-    logger:debug("ImageLabel created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Parent: %s", tostring(image.Position), tostring(image.Size), image.ZIndex, tostring(image.Visible), tostring(image.Parent))
-
-    -- Add a thin white border
-    local imageStroke = Utilities.createInstance("UIStroke", {
-        Parent = image,
-        Thickness = 1,
-        Color = Color3.fromRGB(200, 200, 200),
-        Transparency = 0.5
-    })
-
-    -- Optional shadow
-    local shadow
-    if options.Shadow then
-        shadow = Utilities.createTaperedShadow(image, 3, 3, 0.95)
-        shadow.ZIndex = options.ZIndex and (options.ZIndex - 1) or 2
-    end
+    Styling:Apply(image, "ImageLabel")
+    logger:debug("ImageLabel created: Position: %s, Size: %s, ZIndex: %d", tostring(image.Position), tostring(image.Size), image.ZIndex)
 
     local self = setmetatable({
-        Instance = image,
-        Shadow = shadow
+        Instance = image
     }, ImageLabel)
 
     return self
@@ -55,9 +40,6 @@ function ImageLabel:SetImage(url)
 end
 
 function ImageLabel:Destroy()
-    if self.Shadow then
-        self.Shadow:Destroy()
-    end
     self.Instance:Destroy()
     logger:info("ImageLabel destroyed")
 end
