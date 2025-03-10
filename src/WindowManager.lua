@@ -6,7 +6,6 @@ WindowManager.Windows = {}
 WindowManager.ZIndexCounter = 2
 WindowManager.WindowCount = 0
 
--- Use a global table to persist state across script runs
 _G.CensuraGGlobal = _G.CensuraGGlobal or {}
 _G.CensuraGGlobal.WindowManagerState = _G.CensuraGGlobal.WindowManagerState or {
     ZIndexCounter = 2,
@@ -14,7 +13,6 @@ _G.CensuraGGlobal.WindowManagerState = _G.CensuraGGlobal.WindowManagerState or {
     Windows = {}
 }
 
--- Load global state
 WindowManager.ZIndexCounter = _G.CensuraGGlobal.WindowManagerState.ZIndexCounter
 WindowManager.WindowCount = _G.CensuraGGlobal.WindowManagerState.WindowCount
 WindowManager.Windows = _G.CensuraGGlobal.WindowManagerState.Windows
@@ -34,16 +32,20 @@ function WindowManager:AddWindow(window)
     self.WindowCount = self.WindowCount + 1
     logger:debug("Added window with ZIndex: %d, Total Windows: %d", window.Instance.ZIndex, self.WindowCount)
 
-    -- Update global state
     _G.CensuraGGlobal.WindowManagerState.ZIndexCounter = self.ZIndexCounter
     _G.CensuraGGlobal.WindowManagerState.WindowCount = self.WindowCount
     _G.CensuraGGlobal.WindowManagerState.Windows = self.Windows
 
-    -- Update window position based on global count
-    local baseX, baseY = 50, 50
-    local offsetX, offsetY = 20, 20
-    window.Instance.Position = UDim2.new(0, baseX + ((self.WindowCount - 1) % 3) * (300 + offsetX), 0, baseY + math.floor((self.WindowCount - 1) / 3) * (200 + offsetY))
-    logger:info("Window registered with WindowManager at Position: %s, ZIndex: %d", tostring(window.Instance.Position), window.Instance.ZIndex)
+    -- Set initial position only if not already dragged
+    if not window.CurrentPosition then
+        local baseX, baseY = 50, 50
+        local offsetX, offsetY = 20, 20
+        window.Instance.Position = UDim2.new(0, baseX + ((self.WindowCount - 1) % 3) * (300 + offsetX), 0, baseY + math.floor((self.WindowCount - 1) / 3) * (200 + offsetY))
+        window.OriginalPosition = window.Instance.Position
+        logger:info("Window registered with WindowManager at initial Position: %s, ZIndex: %d", tostring(window.Instance.Position), window.Instance.ZIndex)
+    else
+        logger:info("Window registered with WindowManager at dragged Position: %s, ZIndex: %d", tostring(window.CurrentPosition), window.Instance.ZIndex)
+    end
 end
 
 function WindowManager:RemoveWindow(window)
@@ -55,12 +57,13 @@ function WindowManager:RemoveWindow(window)
         _G.CensuraGGlobal.WindowManagerState.Windows = self.Windows
         logger:debug("Removed window, remaining count: %d", self.WindowCount)
 
-        -- Recalculate positions for remaining windows
         for i, w in ipairs(self.Windows) do
-            local baseX, baseY = 50, 50
-            local offsetX, offsetY = 20, 20
-            w.Instance.Position = UDim2.new(0, baseX + ((i - 1) % 3) * (300 + offsetX), 0, baseY + math.floor((i - 1) / 3) * (200 + offsetY))
-            logger:debug("Repositioned window %d to Position: %s", i, tostring(w.Instance.Position))
+            if not w.CurrentPosition then
+                local baseX, baseY = 50, 50
+                local offsetX, offsetY = 20, 20
+                w.Instance.Position = UDim2.new(0, baseX + ((i - 1) % 3) * (300 + offsetX), 0, baseY + math.floor((i - 1) / 3) * (200 + offsetY))
+                logger:debug("Repositioned window %d to Position: %s", i, tostring(w.Instance.Position))
+            end
         end
     end
 end
