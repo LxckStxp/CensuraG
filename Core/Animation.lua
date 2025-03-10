@@ -186,4 +186,78 @@ function Animation:Bounce(element, intensity, duration, callback)
     )
     
     self:Tween(element, {Size = targetSize}, duration / 2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, function()
-        self:Tween(element, {Size = originalSize}, duration / 2, Enum.EasingStyle.Quad, Enum.EasingDirection
+        self:Tween(element, {Size = originalSize}, duration / 2, Enum.EasingStyle.Quad, Enum.EasingDirection.In, callback)
+    end)
+    
+    logger:debug("Bounce effect applied to %s", tostring(element))
+end
+
+-- Shake effect
+function Animation:Shake(element, intensity, duration, callback)
+    if not element then return nil end
+    
+    intensity = intensity or 5
+    duration = duration or 0.5
+    local originalPosition = element.Position
+    local steps = 10
+    local stepDuration = duration / steps
+    
+    local function shakeStep(step)
+        if step > steps then
+            element.Position = originalPosition
+            if callback then callback() end
+            return
+        end
+        
+        local randomX = math.random(-intensity, intensity)
+        local randomY = math.random(-intensity, intensity)
+        
+        local newPosition = UDim2.new(
+            originalPosition.X.Scale,
+            originalPosition.X.Offset + randomX,
+            originalPosition.Y.Scale,
+            originalPosition.Y.Offset + randomY
+        )
+        
+        self:Tween(element, {Position = newPosition}, stepDuration, nil, nil, function()
+            shakeStep(step + 1)
+        end)
+    end
+    
+    shakeStep(1)
+    logger:debug("Shake effect applied to %s", tostring(element))
+end
+
+-- Pulse effect
+function Animation:Pulse(element, intensity, count, callback)
+    if not element then return nil end
+    
+    intensity = intensity or 1.1
+    count = count or 3
+    
+    local originalSize = element.Size
+    local targetSize = UDim2.new(
+        originalSize.X.Scale * intensity,
+        originalSize.X.Offset * intensity,
+        originalSize.Y.Scale * intensity,
+        originalSize.Y.Offset * intensity
+    )
+    
+    local function doPulse(currentCount)
+        if currentCount > count then
+            if callback then callback() end
+            return
+        end
+        
+        self:Tween(element, {Size = targetSize}, 0.15, nil, nil, function()
+            self:Tween(element, {Size = originalSize}, 0.15, nil, nil, function()
+                doPulse(currentCount + 1)
+            end)
+        end)
+    end
+    
+    doPulse(1)
+    logger:debug("Pulse effect applied to %s", tostring(element))
+end
+
+return Animation
