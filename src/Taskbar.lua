@@ -1,4 +1,4 @@
--- Taskbar.lua: Styled and animated taskbar
+-- Taskbar.lua: Displays minimized windows when mouse is in bottom 10% of screen
 local Taskbar = {}
 Taskbar.Windows = {}
 
@@ -16,7 +16,8 @@ function Taskbar:Init()
     })
     Styling:Apply(taskbar, "Frame")
     self.Instance = taskbar
-    
+
+    -- Show/hide taskbar based on mouse position
     UserInputService.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             local screenHeight = _G.CensuraG.ScreenGui.AbsoluteSize.Y
@@ -24,7 +25,7 @@ function Taskbar:Init()
                 taskbar.Visible = true
                 Animation:Tween(taskbar, {Position = UDim2.new(0, 0, 1, -50)})
             elseif input.Position.Y <= screenHeight * 0.9 and taskbar.Visible then
-                Animation:Tween(taskbar, {Position = UDim2.new(0, 0, 1, 0)}, nil, function()
+                Animation:Tween(taskbar, {Position = UDim2.new(0, 0, 1, 0)}, 0.2, function()
                     taskbar.Visible = false
                 end)
             end
@@ -41,13 +42,17 @@ function Taskbar:AddWindow(window)
     })
     Styling:Apply(button, "TextButton")
     Animation:HoverEffect(button)
-    
+
     button.MouseButton1Click:Connect(function()
-        window:Minimize()
+        window:Maximize()
         button:Destroy()
         table.remove(self.Windows, table.find(self.Windows, window))
     end)
     table.insert(self.Windows, window)
+end
+
+function Taskbar:Destroy()
+    self.Instance:Destroy()
 end
 
 return Taskbar
