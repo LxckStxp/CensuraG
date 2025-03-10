@@ -28,7 +28,6 @@ function TextButton.new(parent, text, x, y, width, height, callback)
     Styling:Apply(button, "TextButton")
     logger:debug("TextButton created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Parent: %s", tostring(button.Position), tostring(button.Size), button.ZIndex, tostring(button.Visible), tostring(button.Parent))
 
-    -- Add a thin white border
     local buttonStroke = Utilities.createInstance("UIStroke", {
         Parent = button,
         Thickness = 1,
