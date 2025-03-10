@@ -12,7 +12,7 @@ function Taskbar:Init()
     if not self.Instance then
         local taskbar = Utilities.createInstance("Frame", {
             Parent = _G.CensuraG.ScreenGui,
-            Position = UDim2.new(0, 10, 1, -40), -- Start just off-screen at the bottom
+            Position = UDim2.new(0, 10, 1, 40), -- Start just off-screen at the bottom (positive offset)
             Size = UDim2.new(1, -210, 0, 40), -- Space for cluster (200px + 10px padding)
             BackgroundTransparency = 1, -- Fully transparent frame
             Visible = false,
@@ -64,7 +64,8 @@ function Taskbar:Init()
             if input.UserInputType == Enum.UserInputType.MouseMovement then
                 local screenHeight = _G.CensuraG.ScreenGui.AbsoluteSize.Y
                 local mouseY = input.Position.Y
-                local threshold = 20
+                local threshold = screenHeight * 0.2 -- Bottom 20% of the screen
+                local padding = 5 -- Small padding from the bottom edge
 
                 if mouseY >= screenHeight - threshold and not taskbar.Visible and not hoverDebounce then
                     hoverDebounce = true
@@ -72,7 +73,8 @@ function Taskbar:Init()
                     task.wait(0.1)
                     if tick() - lastInputTime >= 0.1 then
                         taskbar.Visible = true
-                        Animation:SlideY(taskbar, -40, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+                        -- Slide up to reveal the taskbar (Y: -padding to show it with padding)
+                        Animation:SlideY(taskbar, -padding, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
                         if self.Cluster and self.Cluster.Instance then
                             self.Cluster.Instance.Visible = true
                         end
@@ -83,7 +85,8 @@ function Taskbar:Init()
                     lastInputTime = tick()
                     task.wait(0.2)
                     if tick() - lastInputTime >= 0.2 then
-                        Animation:SlideY(taskbar, 0, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function()
+                        -- Slide down to hide the taskbar (Y: 40 to move it off-screen)
+                        Animation:SlideY(taskbar, 40, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function()
                             taskbar.Visible = false
                             if self.Cluster and self.Cluster.Instance then
                                 self.Cluster.Instance.Visible = false
