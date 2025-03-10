@@ -57,13 +57,13 @@ function Cluster.new(parent)
 
     local avatarImageUrl = getAvatarThumbnail(localPlayer.UserId)
     local avatarImage = _G.CensuraG.ImageLabel.new({Instance = frame}, avatarImageUrl, 5, 1, 28, 28, {ZIndex = frame.ZIndex + 1})
-    if not avatarImage then
-        logger:error("Failed to create avatar ImageLabel for cluster")
+    if not avatarImage or not avatarImage.Image then
+        logger:error("Failed to create or access avatar ImageLabel for cluster")
     else
-        avatarImage.Image.Visible = true -- Access the ImageLabel directly
+        avatarImage.Image.Visible = true
         task.wait(0.1)
-        if avatarImage.Image.ImageTransparency > 0 then
-            avatarImage.Image.ImageTransparency = 0 -- Correct property access
+        if avatarImage.Image.ImageTransparency and avatarImage.Image.ImageTransparency > 0 then
+            avatarImage.Image.ImageTransparency = 0
             logger:debug("Forced avatar image visibility")
         end
     end
@@ -97,8 +97,10 @@ function Cluster.new(parent)
 
     spawn(function()
         while wait(10) do
-            timeLabel.Text = os.date("%H:%M")
-            logger:debug("Updated cluster time to: %s", timeLabel.Text)
+            if timeLabel then
+                timeLabel.Text = os.date("%H:%M")
+                logger:debug("Updated cluster time to: %s", timeLabel.Text)
+            end
         end
     end)
 
@@ -116,7 +118,9 @@ function Cluster:Destroy()
     if self.AvatarImage and self.AvatarImage.Destroy then
         self.AvatarImage:Destroy()
     end
-    self.Instance:Destroy()
+    if self.Instance then
+        self.Instance:Destroy()
+    end
     logger:info("Cluster destroyed")
 end
 
