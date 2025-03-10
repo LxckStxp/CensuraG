@@ -1,4 +1,4 @@
--- Window.lua: Enhanced draggable window with miltech styling and Y-axis sliding animation
+-- Window.lua: Enhanced draggable window with modern miltech styling
 local Window = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Window.__index = Window
 
@@ -12,61 +12,36 @@ function Window.new(title, x, y, width, height)
     local frame = Utilities.createInstance("Frame", {
         Parent = _G.CensuraG.ScreenGui,
         Size = UDim2.new(0, width, 0, height),
-        BackgroundTransparency = 0.5,
+        BackgroundTransparency = Styling.Transparency.Background,
         ZIndex = 2
     })
     Styling:Apply(frame, "Frame")
-    logger:debug("Created window frame: %s, Initial Position: %s, Size: %s, ZIndex: %d, Transparency: %.2f", title, tostring(frame.Position), tostring(frame.Size), frame.ZIndex, frame.BackgroundTransparency)
+    logger:debug("Created window frame: %s, Initial Position: %s, Size: %s, ZIndex: %d", title, tostring(frame.Position), tostring(frame.Size), frame.ZIndex)
 
-    local frameStroke = Utilities.createInstance("UIStroke", {
-        Parent = frame,
-        Thickness = 1,
-        Color = Color3.fromRGB(200, 200, 200),
-        Transparency = 0.2
-    })
-
-    local gradient = Utilities.createInstance("UIGradient", {
-        Parent = frame,
-        Color = ColorSequence.new(Styling.Colors.Base, Styling.Colors.Highlight),
-        Transparency = NumberSequence.new({
-            NumberSequenceKeypoint.new(0, 0.5),
-            NumberSequenceKeypoint.new(1, 0.7)
-        }),
-        Rotation = 45
-    })
-
-    local shadow = Utilities.createTaperedShadow(frame, 5, 5, 0.95)
+    local shadow = Utilities.createTaperedShadow(frame, 5, 5, 0.9)
+    shadow.ZIndex = 1
     logger:debug("Created shadow for window: %s, ZIndex: %d", title, shadow.ZIndex)
 
     local titleBar = Utilities.createInstance("TextLabel", {
         Parent = frame,
         Size = UDim2.new(1, 0, 0, 20),
         Text = title,
-        BackgroundTransparency = 0.3,
-        BackgroundColor3 = Styling.Colors.Highlight,
+        BackgroundTransparency = Styling.Transparency.Highlight,
         ZIndex = 3
     })
     Styling:Apply(titleBar, "TextLabel")
-    logger:debug("Created title bar for window: %s, Position: %s, Size: %s, ZIndex: %d, Visible: %s", title, tostring(titleBar.Position), tostring(titleBar.Size), titleBar.ZIndex, tostring(titleBar.Visible))
+    logger:debug("Created title bar for window: %s, Position: %s, Size: %s, ZIndex: %d", title, tostring(titleBar.Position), tostring(titleBar.Size), titleBar.ZIndex)
 
     local minimizeButton = Utilities.createInstance("TextButton", {
         Parent = titleBar,
         Position = UDim2.new(1, -20, 0, 0),
         Size = UDim2.new(0, 20, 0, 20),
         Text = "-",
-        BackgroundTransparency = 0.3,
-        BackgroundColor3 = Styling.Colors.Highlight,
+        BackgroundTransparency = Styling.Transparency.Highlight,
         ZIndex = 3
     })
     Styling:Apply(minimizeButton, "TextButton")
-    logger:debug("Created minimize button for window: %s, Position: %s, Size: %s, ZIndex: %d, Visible: %s", title, tostring(minimizeButton.Position), tostring(minimizeButton.Size), minimizeButton.ZIndex, tostring(minimizeButton.Visible))
-
-    local minimizeStroke = Utilities.createInstance("UIStroke", {
-        Parent = minimizeButton,
-        Thickness = 1,
-        Color = Color3.fromRGB(200, 200, 200),
-        Transparency = 0.5
-    })
+    logger:debug("Created minimize button for window: %s, Position: %s, Size: %s, ZIndex: %d", title, tostring(minimizeButton.Position), tostring(minimizeButton.Size), minimizeButton.ZIndex)
 
     local self = setmetatable({
         Instance = frame,
@@ -133,7 +108,6 @@ function Window:Minimize()
     else
         logger:error("Taskbar or AddWindow method is not available during minimize.")
     end
-    -- Removed WindowManager:RemoveWindow(self) to keep the window in the manager
 end
 
 function Window:Maximize()
@@ -168,8 +142,6 @@ function Window:Maximize()
             break
         end
     end
-
-    -- Removed WindowManager:AddWindow(self) since the window is already in the manager
 end
 
 function Window:Destroy()
