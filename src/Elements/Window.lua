@@ -1,4 +1,4 @@
--- Window.lua: Draggable and managed window
+-- Window.lua: Fixed minimize error and uses Draggable API
 local Window = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Window.__index = Window
 
@@ -32,10 +32,10 @@ function Window.new(title, x, y, width, height)
     
     local self = setmetatable({Instance = frame, Minimized = false}, Window)
     
-    -- Make draggable from title bar only
+    -- Use Draggable API for title bar dragging
     Draggable:MakeDraggable(frame, titleBar)
     
-    -- Register with WindowManager (overrides x, y)
+    -- Register with WindowManager
     _G.CensuraG.WindowManager:AddWindow(self)
     
     -- Minimize Logic with Animation
@@ -49,6 +49,7 @@ end
 function Window:Minimize()
     if self.Minimized then
         Animation:FadeIn(self.Instance)
+        _G.CensuraG.WindowManager:AddWindow(self) -- Re-add to manager when restored
     else
         Animation:FadeOut(self.Instance)
         _G.CensuraG.Taskbar:AddWindow(self)
