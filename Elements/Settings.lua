@@ -11,9 +11,9 @@ local logger = _G.CensuraG.Logger
 function Settings:Init()
     if self.Instance then return self end
     self.Instance = Window.new("Settings", 100, 100, 400, 400, { Name = "SettingsWindow" })
-    logger:debug("Settings window created: %s", self.Instance.TitleText.Text)
+    logger:debug("Settings window created: %s", self.Instance.TitleText.Text or "Unknown")
 
-    if not self.Instance or not self.Instance.ContentContainer then
+    if not self.Instance or not self.Instance.ContentContainer or not self.Instance.ContentContainer:IsA("Frame") then
         logger:error("Failed to initialize Settings: Invalid window or ContentContainer")
         return nil
     end
@@ -36,7 +36,7 @@ function Settings:Init()
 
     -- Content area
     local contentContainer = self.Instance.ContentContainer
-    logger:debug("Using ContentContainer: %s", contentContainer.Name)
+    logger:debug("Using ContentContainer: %s", contentContainer and contentContainer.Name or "nil")
 
     -- Appearance Tab Content
     self.appearanceElements = {}
@@ -51,6 +51,7 @@ function Settings:Init()
             Styling:SetTheme(theme)
         end
     })
+    if not self.appearanceElements.Theme then logger:warn("Failed to create Theme Dropdown") end
     contentY = contentY + 30 + spacing
 
     self.appearanceElements.Shadows = Switch.new(contentContainer, 10, contentY, {
@@ -63,6 +64,7 @@ function Settings:Init()
             Styling:UpdateAllElements()
         end
     })
+    if not self.appearanceElements.Shadows then logger:warn("Failed to create Shadows Switch") end
     contentY = contentY + 30 + spacing
 
     self.appearanceElements.WindowTransparency = Slider.new(contentContainer, 10, contentY, {
@@ -77,6 +79,7 @@ function Settings:Init()
             Styling:UpdateAllElements()
         end
     })
+    if not self.appearanceElements.WindowTransparency then logger:warn("Failed to create Window Transparency Slider") end
     contentY = contentY + 30 + spacing
 
     self.appearanceElements.ElementTransparency = Slider.new(contentContainer, 10, contentY, {
@@ -91,6 +94,7 @@ function Settings:Init()
             Styling:UpdateAllElements()
         end
     })
+    if not self.appearanceElements.ElementTransparency then logger:warn("Failed to create Element Transparency Slider") end
     contentY = contentY + 30 + spacing
 
     self.appearanceElements.TextSize = Slider.new(contentContainer, 10, contentY, {
@@ -107,6 +111,7 @@ function Settings:Init()
             Styling:UpdateAllElements()
         end
     })
+    if not self.appearanceElements.TextSize then logger:warn("Failed to create Text Size Slider") end
 
     self:RefreshUI()
     logger:info("Settings initialized")
