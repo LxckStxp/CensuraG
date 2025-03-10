@@ -31,7 +31,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
     local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
         Position = UDim2.new(0, x, 0, y),
-        Size = UDim2.new(0, width + 60 + 40, 0, height), -- Extra space for label and value
+        Size = UDim2.new(0, width + 40, 0, 35), -- Height includes label (20px) and track (15px)
         BackgroundTransparency = 1,
         ClipsDescendants = true,
         Visible = true,
@@ -42,7 +42,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
     -- Create the label (above the slider)
     local label = Utilities.createInstance("TextLabel", {
         Parent = frame,
-        Position = UDim2.new(0, 0, 0, -20), -- Above the slider
+        Position = UDim2.new(0, 0, 0, 0),
         Size = UDim2.new(0, width, 0, 20),
         Text = labelText,
         BackgroundTransparency = 1,
@@ -54,7 +54,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
     -- Create the track
     local track = Utilities.createInstance("Frame", {
         Parent = frame,
-        Position = UDim2.new(0, 0, 0, 0),
+        Position = UDim2.new(0, 0, 0, 20), -- Below the label
         Size = UDim2.new(0, width, 0, height),
         BackgroundTransparency = Styling.Transparency.Background,
         ZIndex = frame.ZIndex + 1
@@ -87,7 +87,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
 
     local labelValue = options.ShowValue and Utilities.createInstance("TextLabel", {
         Parent = frame,
-        Position = UDim2.new(0, width + 5, 0, 0), -- To the right of the track
+        Position = UDim2.new(0, width + 5, 0, 20), -- To the right of the track
         Size = UDim2.new(0, 40, 0, height),
         Text = tostring(default),
         BackgroundTransparency = 1,
