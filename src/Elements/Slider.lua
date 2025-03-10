@@ -1,4 +1,4 @@
--- Slider.lua: Draggable slider
+-- Slider.lua: Redesigned with a draggable notch
 local Slider = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Slider.__index = Slider
 
@@ -22,14 +22,32 @@ function Slider.new(parent, x, y, width, min, max, default, callback)
     })
     Styling:Apply(fill, "Frame")
     
-    local self = setmetatable({Instance = frame, Value = default, Min = min, Max = max, Fill = fill}, Slider)
+    -- Add a draggable notch
+    local notch = Utilities.createInstance("Frame", {
+        Parent = frame,
+        Position = UDim2.new((default - min) / (max - min), -5, 0, -5),
+        Size = UDim2.new(0, 10, 0, 20),
+        BackgroundColor3 = Styling.Colors.Accent,
+        BorderSizePixel = 1,
+        BorderColor3 = Styling.Colors.Border
+    })
     
-    -- Draggable slider logic
-    Draggable:MakeDraggable(frame, frame, nil, function(_, _)
-        local mouseX = UserInputService:GetMouseLocation().X - frame.AbsolutePosition.X
-        local ratio = math.clamp(mouseX / frame.AbsoluteSize.X, 0, 1)
+    local self = setmetatable({
+        Instance = frame,
+        Value = default,
+        Min = min,
+        Max = max,
+        Fill = fill,
+        Notch = notch
+    }, Slider)
+    
+    -- Draggable notch logic
+    Draggable:MakeDraggable(notch, notch, nil, function(_, newPos)
+        local relativeX = newPos.X.Offset - frame.AbsolutePosition.X
+        local ratio = math.clamp(relativeX / frame.AbsoluteSize.X, 0, 1)
         self.Value = min + (max - min) * ratio
         Animation:Tween(fill, {Size = UDim2.new(ratio, 0, 1, 0)})
+        Animation:Tween(notch, {Position = UDim2.new(ratio, -5, 0, -5)})
         if callback then callback(self.Value) end
     end)
     
