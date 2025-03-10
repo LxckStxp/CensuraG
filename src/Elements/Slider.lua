@@ -7,12 +7,15 @@ local Styling = _G.CensuraG.Styling
 local Animation = _G.CensuraG.Animation
 local Draggable = _G.CensuraG.Draggable
 local UserInputService = game:GetService("UserInputService")
+local logger = _G.CensuraG.Logger
 
 function Slider.new(parent, x, y, width, min, max, default, options)
     min = min or 0
     max = max or 100
     default = math.clamp(default or min, min, max)
     options = options or {}
+
+    logger:debug("Creating slider with parent: %s, Position: (%d, %d), Width: %d", tostring(parent.Instance), x, y, width)
 
     local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
@@ -21,6 +24,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         ClipsDescendants = true
     })
     Styling:Apply(frame, "Frame")
+    logger:debug("Slider frame created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Parent: %s", tostring(frame.Position), tostring(frame.Size), frame.ZIndex, tostring(frame.Visible), tostring(frame.Parent))
 
     local fill = Utilities.createInstance("Frame", {
         Parent = frame,
@@ -28,6 +32,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         Position = UDim2.new(0, 0, 0, 2),
         BackgroundColor3 = Styling.Colors.Accent
     })
+    logger:debug("Slider fill created: Position: %s, Size: %s, ZIndex: %d, Visible: %s", tostring(fill.Position), tostring(fill.Size), fill.ZIndex, tostring(fill.Visible))
 
     local notch = Utilities.createInstance("Frame", {
         Parent = frame,
@@ -36,6 +41,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         BackgroundColor3 = Color3.fromRGB(150, 150, 150),
         BorderSizePixel = 0
     })
+    logger:debug("Slider notch created: Position: %s, Size: %s, ZIndex: %d, Visible: %s", tostring(notch.Position), tostring(notch.Size), notch.ZIndex, tostring(notch.Visible))
 
     local label = options.ShowValue and Utilities.createInstance("TextLabel", {
         Parent = frame,
@@ -47,6 +53,9 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         Font = Enum.Font.Code,
         TextSize = 12
     }) or nil
+    if label then
+        logger:debug("Slider label created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Text: %s", tostring(label.Position), tostring(label.Size), label.ZIndex, tostring(label.Visible), label.Text)
+    end
 
     local self = setmetatable({
         Instance = frame,
@@ -77,6 +86,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         if options.OnChanged then
             options.OnChanged(newValue)
         end
+        logger:debug("Slider value updated: New Value: %d, Fill Size: %s, Notch Position: %s", newValue, tostring(self.Fill.Size), tostring(self.Notch.Position))
     end
 
     frame.InputBegan:Connect(function(input)
@@ -86,6 +96,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
             local frameSize = frame.AbsoluteSize
             local ratio = self.Orientation == "Horizontal" and math.clamp((mousePos.X - framePos.X) / frameSize.X, 0, 1) or math.clamp((mousePos.Y - framePos.Y) / frameSize.Y, 0, 1)
             self:UpdateValue(self.Min + (self.Max - self.Min) * ratio)
+            logger:debug("Slider clicked: Mouse Position: (%d, %d), Ratio: %.2f", mousePos.X, mousePos.Y, ratio)
         end
     end)
 
@@ -97,6 +108,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
             local frameSize = frame.AbsoluteSize
             local ratio = self.Orientation == "Horizontal" and math.clamp((mousePos.X - framePos.X) / frameSize.X, 0, 1) or math.clamp((mousePos.Y - framePos.Y) / frameSize.Y, 0, 1)
             self:UpdateValue(self.Min + (self.Max - self.Min) * ratio)
+            logger:debug("Slider dragged: Mouse Position: (%d, %d), Ratio: %.2f", mousePos.X, mousePos.Y, ratio)
         end
     end)
 
@@ -104,6 +116,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         connection:Disconnect()
         self.DragHandler:Destroy()
         self.Instance:Destroy()
+        logger:info("Slider destroyed")
     end
 
     self:UpdateValue(default)
