@@ -2,7 +2,7 @@
 local Taskbar = {}
 Taskbar.Windows = {}
 
-local Utilities = require(script.Parent.Utilities)
+local Utilities = _G.CensuraG.Utilities
 local UserInputService = game:GetService("UserInputService")
 
 function Taskbar:Init()
