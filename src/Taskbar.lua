@@ -21,7 +21,6 @@ function Taskbar:Init()
         self.Instance = taskbar
         logger:debug("Taskbar created: Position: %s, Size: %s, ZIndex: %d", tostring(taskbar.Position), tostring(taskbar.Size), taskbar.ZIndex)
 
-        -- Add a subtle gradient
         local gradient = Utilities.createInstance("UIGradient", {
             Parent = taskbar,
             Color = ColorSequence.new(Styling.Colors.Base, Styling.Colors.Highlight),
@@ -102,7 +101,6 @@ function Taskbar:AddWindow(window)
     Styling:Apply(button, "TextButton")
     logger:debug("Taskbar button created: Text: %s, Position: %s, Size: %s, ZIndex: %d, Visible: %s", title, tostring(button.Position), tostring(button.Size), button.ZIndex, tostring(button.Visible))
 
-    -- Add a thin white border
     local buttonStroke = Utilities.createInstance("UIStroke", {
         Parent = button,
         Thickness = 1,
