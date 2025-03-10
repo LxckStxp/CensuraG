@@ -11,6 +11,7 @@ local logger = _G.CensuraG.Logger
 function Window.new(title, x, y, width, height)
     local frame = Utilities.createInstance("Frame", {
         Parent = _G.CensuraG.ScreenGui,
+        Position = UDim2.new(0, x, 0, y),
         Size = UDim2.new(0, width, 0, height),
         BackgroundTransparency = Styling.Transparency.Background,
         ZIndex = 2
@@ -19,26 +20,27 @@ function Window.new(title, x, y, width, height)
     logger:debug("Created window frame: %s, Initial Position: %s, Size: %s, ZIndex: %d", title, tostring(frame.Position), tostring(frame.Size), frame.ZIndex)
 
     local shadow = Utilities.createTaperedShadow(frame, 5, 5, 0.9)
-    shadow.ZIndex = 1
+    shadow.ZIndex = frame.ZIndex - 1
     logger:debug("Created shadow for window: %s, ZIndex: %d", title, shadow.ZIndex)
 
+    local titleBarHeight = 20
     local titleBar = Utilities.createInstance("TextLabel", {
         Parent = frame,
-        Size = UDim2.new(1, 0, 0, 20),
+        Size = UDim2.new(1, -titleBarHeight - 5, 0, titleBarHeight),
         Text = title,
         BackgroundTransparency = Styling.Transparency.Highlight,
-        ZIndex = 3
+        ZIndex = frame.ZIndex + 1
     })
     Styling:Apply(titleBar, "TextLabel")
     logger:debug("Created title bar for window: %s, Position: %s, Size: %s, ZIndex: %d", title, tostring(titleBar.Position), tostring(titleBar.Size), titleBar.ZIndex)
 
     local minimizeButton = Utilities.createInstance("TextButton", {
-        Parent = titleBar,
-        Position = UDim2.new(1, -20, 0, 0),
-        Size = UDim2.new(0, 20, 0, 20),
+        Parent = frame,
+        Position = UDim2.new(1, -titleBarHeight, 0, 0),
+        Size = UDim2.new(0, titleBarHeight, 0, titleBarHeight),
         Text = "-",
         BackgroundTransparency = Styling.Transparency.Highlight,
-        ZIndex = 3
+        ZIndex = frame.ZIndex + 1
     })
     Styling:Apply(minimizeButton, "TextButton")
     logger:debug("Created minimize button for window: %s, Position: %s, Size: %s, ZIndex: %d", title, tostring(minimizeButton.Position), tostring(minimizeButton.Size), minimizeButton.ZIndex)
