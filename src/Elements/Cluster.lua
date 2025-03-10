@@ -60,10 +60,10 @@ function Cluster.new(parent)
     if not avatarImage then
         logger:error("Failed to create avatar ImageLabel for cluster")
     else
-        avatarImage.Instance.Visible = true
+        avatarImage.Image.Visible = true -- Access the ImageLabel directly
         task.wait(0.1)
-        if avatarImage.Instance.ImageTransparency > 0 then
-            avatarImage.Instance.ImageTransparency = 0
+        if avatarImage.Image.ImageTransparency > 0 then
+            avatarImage.Image.ImageTransparency = 0 -- Correct property access
             logger:debug("Forced avatar image visibility")
         end
     end
