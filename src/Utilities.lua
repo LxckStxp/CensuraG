@@ -10,19 +10,25 @@ function Utilities.createInstance(className, properties)
 end
 
 -- Method to create a tapered shadow effect using an ImageLabel
-function Utilities.createTaperedShadow(parent, offsetX, offsetY, sizeFactor, transparency)
-    local shadow = Utilities.createInstance("ImageLabel", {
-        Parent = parent.Parent, -- Parent to ScreenGui for independent movement
+function Utilities.createTaperedShadow(parent, offsetX, offsetY, transparency)
+    local shadow = Utilities.createInstance("Frame", {
+        Parent = parent.Parent,
         Size = UDim2.new(0, parent.Size.X.Offset + offsetX * 2, 0, parent.Size.Y.Offset + offsetY * 2),
         Position = UDim2.new(0, parent.Position.X.Offset - offsetX, 0, parent.Position.Y.Offset - offsetY),
         BackgroundTransparency = 1,
-        Image = "rbxassetid://5028857472", -- Pre-rendered blurred shadow image (adjust if needed)
-        ImageTransparency = transparency or 0.7,
-        ScaleType = Enum.ScaleType.Slice,
-        SliceCenter = Rect.new(10, 10, 50, 50), -- Defines the stretchable area
-        ZIndex = parent.ZIndex - 1 -- Below the window
+        ZIndex = parent.ZIndex - 1
     })
-    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0) -- Black shadow color
+
+    local gradient = Utilities.createInstance("UIGradient", {
+        Parent = shadow,
+        Color = ColorSequence.new(Color3.fromRGB(0, 0, 0)),
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, transparency or 0.9),
+            NumberSequenceKeypoint.new(1, 1)
+        }),
+        Rotation = 90 -- Vertical gradient
+    })
+
     return shadow
 end
 
