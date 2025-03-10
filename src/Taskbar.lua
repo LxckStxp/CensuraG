@@ -75,9 +75,9 @@ function Taskbar:Init()
                 if self.Cluster and self.Cluster.Instance then
                     self.Cluster.Instance.Visible = true
                     self.Cluster.Instance.BackgroundTransparency = Styling.Transparency.Background
-                    if self.Cluster.AvatarImage then
-                        self.Cluster.AvatarImage.Instance.Visible = true
-                        self.Cluster.AvatarImage.Instance.ImageTransparency = 0
+                    if self.Cluster.AvatarImage and self.Cluster.AvatarImage.Image then
+                        self.Cluster.AvatarImage.Image.Visible = true
+                        self.Cluster.AvatarImage.Image.ImageTransparency = 0
                     end
                     if self.Cluster.DisplayName then
                         self.Cluster.DisplayName.Visible = true
@@ -116,9 +116,9 @@ function Taskbar:Init()
             if self.Cluster and self.Cluster.Instance and taskbar.Visible then
                 self.Cluster.Instance.Visible = true
                 self.Cluster.Instance.BackgroundTransparency = Styling.Transparency.Background
-                if self.Cluster.AvatarImage then
-                    self.Cluster.AvatarImage.Instance.Visible = true
-                    self.Cluster.AvatarImage.Instance.ImageTransparency = 0
+                if self.Cluster.AvatarImage and self.Cluster.AvatarImage.Image then
+                    self.Cluster.AvatarImage.Image.Visible = true
+                    self.Cluster.AvatarImage.Image.ImageTransparency = 0
                 end
                 if self.Cluster.DisplayName then
                     self.Cluster.DisplayName.Visible = true
