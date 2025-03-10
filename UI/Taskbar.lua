@@ -440,7 +440,7 @@ function Taskbar:Destroy()
     if self.MouseCheckConnection then
         self.MouseCheckConnection:Disconnect()
         self.MouseCheckConnection = nil
-    }
+    ) -- FIXED: Changed } to )
     
     -- Clear windows
     for _, window in ipairs(self.Windows) do
