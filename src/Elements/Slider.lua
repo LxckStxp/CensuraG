@@ -1,4 +1,4 @@
--- Slider.lua: Slider with draggable notch
+-- Slider.lua: Slider with constrained draggable notch
 local Slider = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Slider.__index = Slider
 
@@ -41,15 +41,24 @@ function Slider.new(parent, x, y, width, min, max, default, callback)
         Notch = notch
     }, Slider)
     
-    -- Draggable notch
-    Draggable:MakeDraggable(notch, notch, nil, function()
-        local mouseX = UserInputService:GetMouseLocation().X - frame.AbsolutePosition.X
-        local ratio = math.clamp(mouseX / frame.AbsoluteSize.X, 0, 1)
-        self.Value = min + (max - min) * ratio
-        Animation:Tween(fill, {Size = UDim2.new(ratio, 0, 1, 0)})
-        Animation:Tween(notch, {Position = UDim2.new(ratio, -5, 0, -5)})
-        if callback then callback(self.Value) end
-    end)
+    -- Draggable notch with constraints
+    self.DragHandler = Draggable.new(notch, {
+        DragRegion = notch,
+        AxisLock = "X", -- Lock to horizontal movement
+        Bounds = {
+            MinX = -5, -- Notch offset
+            MaxX = width - 5, -- Width minus notch offset
+            MinY = -5,
+            MaxY = -5
+        },
+        OnDrag = function(_, newPos)
+            local relativeX = newPos.X.Offset + 5 -- Adjust for notch offset
+            local ratio = math.clamp(relativeX / width, 0, 1)
+            self.Value = min + (max - min) * ratio
+            Animation:Tween(fill, {Size = UDim2.new(ratio, 0, 1, 0)})
+            if callback then callback(self.Value) end
+        end
+    })
     
     return self
 end
