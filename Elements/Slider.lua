@@ -1,174 +1,212 @@
 -- Elements/Slider.lua
--- Value slider component
+-- Simplified slider using enhanced UIElement base
 
-local Slider = setmetatable({}, { __index = _G.CensuraG.UIElement })
+local Slider = {}
 Slider.__index = Slider
+setmetatable(Slider, { __index = _G.CensuraG.UIElement })
 
-local Utilities = _G.CensuraG.Utilities
-local Styling = _G.CensuraG.Styling
-local Animation = _G.CensuraG.Animation
-local EventManager = _G.CensuraG.EventManager
-local UserInputService = game:GetService("UserInputService")
-local logger = _G.CensuraG.Logger
+function Slider.new(options)
+    options = options or {}
+    
+    -- Set default properties for Slider
+    options.width = options.width or 200
+    options.height = options.height or 30
+    options.min = options.min or 0
+    options.max = options.max or 100
+    options.value = math.clamp(options.value or options.min, options.min, options.max)
+    options.step = options.step or 1
+    options.labelText = options.labelText or "Slider"
+    
+    -- Create the base element
+    local self = _G.CensuraG.UIElement.new(options.parent, options)
+    
+    -- Create label
+    local label = Instance.new("TextLabel")
+    label.Name = "Label"
+    label.Size = UDim2.new(0, 60, 0, 20)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.Text = options.labelText
+    label.BackgroundTransparency = 1
+    label.ZIndex = self.Instance.ZIndex + 1
+    label.Parent = self.Instance
+    _G.CensuraG.Styling:Apply(label, "TextLabel")
+    
+    -- Create track
+    local track = Instance.new("Frame")
+    track.Name = "Track"
+    track.Size = UDim2.new(0, options.width - 70, 0, 20)
+    track.Position = UDim2.new(0, 65, 0, 5)
+    track.ZIndex = self.Instance.ZIndex + 1
+    track.Parent = self.Instance
+    _G.CensuraG.Styling:Apply(track, "Frame")
+    
+    -- Calculate ratio
+    local ratio = (options.value - options.min) / (options.max - options.min)
+    
+    -- Create fill
+    local fill = Instance.new("Frame")
+    fill.Name = "Fill"
+    fill.Size = UDim2.new(ratio, 0, 1, 0)
+    fill.BackgroundColor3 = _G.CensuraG.Styling.Colors.Accent
+    fill.ZIndex = track.ZIndex + 1
+    fill.Parent = track
+    _G.CensuraG.Styling:Apply(fill, "Frame")
+    
+    -- Create knob
+    local knob = Instance.new("Frame")
+    knob.Name = "Knob"
+    knob.Size = UDim2.new(0, 20, 0, 20)
+    knob.Position = UDim2.new(ratio, -10, 0, 0)
+    knob.ZIndex = track.ZIndex + 2
+    knob.Parent = track
+    _G.CensuraG.Styling:Apply(knob, "Frame")
+    
+    -- Create value label if needed
+    local labelValue = nil
+    if options.showValue then
+        labelValue = Instance.new("TextLabel")
+        labelValue.Name = "ValueLabel"
+        labelValue.Size = UDim2.new(0, 40, 0, 20)
+        labelValue.Position = UDim2.new(0, options.width + 5, 0, 0)
+        labelValue.Text = tostring(options.value)
+        labelValue.BackgroundTransparency = 1
+        labelValue.ZIndex = self.Instance.ZIndex + 1
+        labelValue.Parent = self.Instance
+        _G.CensuraG.Styling:Apply(labelValue, "TextLabel")
+    end
+    
+    -- Set up properties
+    self.Label = label
+    self.Track = track
+    self.Fill = fill
+    self.Knob = knob
+    self.LabelValue = labelValue
+    self.Value = options.value
+    self.Min = options.min
+    self.Max = options.max
+    self.Step = options.step
+    self.OnChanged = options.onChange
+    self.IsDragging = false
+    
+    -- Set up input handlers
+    self:AddConnection(_G.CensuraG.EventManager:Connect(knob.InputBegan, function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then 
+            self.IsDragging = true 
+        end
+    end))
+    
+    self:AddConnection(_G.CensuraG.EventManager:Connect(track.InputBegan, function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local ratio = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+            self:UpdateValue(self.Min + (self.Max - self.Min) * ratio, true)
+        end
+    end))
+    
+    self:AddConnection(_G.CensuraG.EventManager:Connect(game:GetService("UserInputService").InputEnded, function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then 
+            self.IsDragging = false 
+        end
+    end))
+    
+    self:AddConnection(_G.CensuraG.EventManager:Connect(game:GetService("UserInputService").InputChanged, function(input)
+        if self.IsDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local ratio = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+            self:UpdateValue(self.Min + (self.Max - self.Min) * ratio, false)
+        end
+    end))
+    
+    -- Set metatable for this instance
+    return setmetatable(self, Slider)
+end
 
-function Slider.new(parent, x, y, width, min, max, default, options)
-	if not parent or not parent.Instance then
-		logger:error("Invalid parent for Slider")
-		return nil
-	end
-	options = options or {}
-	min = min or 0
-	max = max or 100
-	default = math.clamp(default or min, min, max)
-	width = width or 200
-	
-	local frame = Utilities.createInstance("Frame", {
-		Parent = parent.Instance,
-		Position = UDim2.new(0,x,0,y),
-		Size = UDim2.new(0,width+80,0,30),
-		BackgroundTransparency = 1,
-		ZIndex = parent.Instance.ZIndex + 1,
-		Name = "Slider_" .. (options.LabelText or "Slider")
-	})
-	
-	local label = Utilities.createInstance("TextLabel", {
-		Parent = frame,
-		Position = UDim2.new(0,0,0,0),
-		Size = UDim2.new(0,60,0,20),
-		Text = options.LabelText or "Slider",
-		ZIndex = frame.ZIndex + 1,
-		Name = "Label"
-	})
-	Styling:Apply(label, "TextLabel")
-	
-	local track = Utilities.createInstance("Frame", {
-		Parent = frame,
-		Position = UDim2.new(0,65,0,5),
-		Size = UDim2.new(0,width-70,0,20),
-		ZIndex = frame.ZIndex + 1,
-		Name = "Track"
-	})
-	Styling:Apply(track, "Frame")
-	
-	local ratio = (default - min) / (max - min)
-	local fill = Utilities.createInstance("Frame", {
-		Parent = track,
-		Size = UDim2.new(ratio,0,1,0),
-		BackgroundColor3 = Styling.Colors.Accent,
-		ZIndex = track.ZIndex + 1,
-		Name = "Fill"
-	})
-	Styling:Apply(fill, "Frame")
-	
-	local knob = Utilities.createInstance("Frame", {
-		Parent = track,
-		Position = UDim2.new(ratio, -10, 0, 0),
-		Size = UDim2.new(0,20,0,20),
-		ZIndex = track.ZIndex + 2,
-		Name = "Knob"
-	})
-	Styling:Apply(knob, "Frame")
-	
-	local labelValue = nil
-	if options.ShowValue then
-		labelValue = Utilities.createInstance("TextLabel", {
-			Parent = frame,
-			Position = UDim2.new(0,width+5,0,0),
-			Size = UDim2.new(0,40,0,20),
-			Text = tostring(default),
-			ZIndex = frame.ZIndex + 1,
-			Name = "ValueLabel"
-		})
-		Styling:Apply(labelValue, "TextLabel")
-	end
-	
-	local self = setmetatable({
-		Instance = frame,
-		Label = label,
-		Track = track,
-		Fill = fill,
-		Knob = knob,
-		LabelValue = labelValue,
-		Value = default,
-		Min = min,
-		Max = max,
-		Step = options.Step or 1,
-		OnChanged = options.OnChanged,
-		IsDragging = false,
-		Connections = {}
-	}, Slider)
-	
-	function self:UpdateValue(newValue, animate)
-		newValue = math.clamp(math.floor((newValue / self.Step)+0.5)*self.Step, self.Min, self.Max)
-		if newValue == self.Value then return self end
-		self.Value = newValue
-		local ratio = (newValue - self.Min)/(self.Max - self.Min)
-		if animate then
-			Animation:Tween(self.Fill, { Size = UDim2.new(ratio,0,1,0) }, 0.2)
-			Animation:Tween(self.Knob, { Position = UDim2.new(ratio, -10, 0, 0) }, 0.2)
-		else
-			self.Fill.Size = UDim2.new(ratio,0,1,0)
-			self.Knob.Position = UDim2.new(ratio, -10, 0, 0)
-		end
-		if self.LabelValue then self.LabelValue.Text = tostring(newValue) end
-		if self.OnChanged then
-			local ok, err = pcall(self.OnChanged, newValue)
-			if not ok then logger:warn("Slider callback error: %s", err) end
-		end
-		EventManager:FireEvent("SliderChanged", self, newValue)
-		return self
-	end
-	
-	table.insert(self.Connections, EventManager:Connect(knob.InputBegan, function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then self.IsDragging = true end
-	end))
-	
-	table.insert(self.Connections, EventManager:Connect(track.InputBegan, function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			local ratio = math.clamp((input.Position.X - track.AbsolutePosition.X)/track.AbsoluteSize.X, 0, 1)
-			self:UpdateValue(self.Min + (self.Max - self.Min)*ratio, true)
-		end
-	end))
-	
-	table.insert(self.Connections, EventManager:Connect(UserInputService.InputEnded, function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then self.IsDragging = false end
-	end))
-	
-	table.insert(self.Connections, EventManager:Connect(UserInputService.InputChanged, function(input)
-		if self.IsDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-			local ratio = math.clamp((input.Position.X - track.AbsolutePosition.X)/track.AbsoluteSize.X, 0, 1)
-			self:UpdateValue(self.Min + (self.Max - self.Min)*ratio, false)
-		end
-	end))
-	
-	function self:GetValue() return self.Value end
-	function self:SetCallback(cb) self.OnChanged = cb; return self end
-	function self:SetRange(newMin, newMax)
-		if newMin >= newMax then logger:warn("Invalid slider range") return self end
-		self.Min, self.Max = newMin, newMax
-		self:UpdateValue(math.clamp(self.Value, newMin, newMax), true)
-		return self
-	end
-	function self:SetStep(newStep)
-		if newStep <= 0 then logger:warn("Invalid slider step") return self end
-		self.Step = newStep
-		self:UpdateValue(math.floor((self.Value/newStep)+0.5)*newStep, true)
-		return self
-	end
-	function self:SetLabel(text)
-		if self.Label then
-			self.Label.Text = text
-		end
-		return self
-	end
-	function self:Destroy()
-		for _, conn in ipairs(self.Connections) do conn:Disconnect() end
-		self.Connections = {}
-		if self.Instance then self.Instance:Destroy() end
-		logger:info("Slider destroyed: %s", self.Label.Text)
-	end
-	
-	return self
+-- Update the slider value
+function Slider:UpdateValue(newValue, animate)
+    -- Clamp and step the value
+    newValue = math.clamp(
+        math.floor((newValue / self.Step) + 0.5) * self.Step, 
+        self.Min, 
+        self.Max
+    )
+    
+    -- Skip if unchanged
+    if newValue == self.Value then 
+        return self 
+    end
+    
+    self.Value = newValue
+    
+    -- Calculate the ratio
+    local ratio = (newValue - self.Min) / (self.Max - self.Min)
+    
+    -- Update UI
+    if animate then
+        _G.CensuraG.Animation:Tween(self.Fill, { Size = UDim2.new(ratio, 0, 1, 0) }, 0.2)
+        _G.CensuraG.Animation:Tween(self.Knob, { Position = UDim2.new(ratio, -10, 0, 0) }, 0.2)
+    else
+        self.Fill.Size = UDim2.new(ratio, 0, 1, 0)
+        self.Knob.Position = UDim2.new(ratio, -10, 0, 0)
+    end
+    
+    -- Update value label
+    if self.LabelValue then 
+        self.LabelValue.Text = tostring(newValue) 
+    end
+    
+    -- Call callback
+    if self.OnChanged then
+        _G.CensuraG.ErrorHandler:TryCatch(self.OnChanged, "Slider callback error", newValue)
+    end
+    
+    -- Fire event
+    _G.CensuraG.EventManager:FireEvent("SliderChanged", self, newValue)
+    
+    return self
+end
+
+-- Get current value
+function Slider:GetValue() 
+    return self.Value 
+end
+
+-- Set callback
+function Slider:SetCallback(callback) 
+    self.OnChanged = callback
+    return self 
+end
+
+-- Set range
+function Slider:SetRange(newMin, newMax)
+    if newMin >= newMax then
+        _G.CensuraG.Logger:warn("Invalid slider range")
+        return self
+    end
+    
+    self.Min = newMin
+    self.Max = newMax
+    self:UpdateValue(math.clamp(self.Value, newMin, newMax), true)
+    
+    return self
+end
+
+-- Set step
+function Slider:SetStep(newStep)
+    if newStep <= 0 then
+        _G.CensuraG.Logger:warn("Invalid slider step")
+        return self
+    end
+    
+    self.Step = newStep
+    self:UpdateValue(math.floor((self.Value / newStep) + 0.5) * newStep, true)
+    
+    return self
+end
+
+-- Set label
+function Slider:SetLabel(text)
+    if self.Label then
+        self.Label.Text = text
+    end
+    return self
 end
 
 return Slider
