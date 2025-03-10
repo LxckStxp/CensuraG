@@ -102,6 +102,19 @@ if not CensuraG.ScreenGui or not CensuraG.ScreenGui:IsA("ScreenGui") then
 end
 logger:info("ScreenGui initialized: %s", CensuraG.ScreenGui.Name)
 
+// Wait for ScreenGui to have a valid size
+local maxWait = 5 -- Maximum wait time in seconds
+local waitTime = 0
+repeat
+    task.wait(0.1)
+    waitTime = waitTime + 0.1
+    if waitTime > maxWait then
+        logger:warn("ScreenGui size not available after %d seconds, proceeding with default", maxWait)
+        break
+    end
+until CensuraG.ScreenGui.AbsoluteSize and CensuraG.ScreenGui.AbsoluteSize.X > 0 and CensuraG.ScreenGui.AbsoluteSize.Y > 0
+logger:info("ScreenGui size available: %s", tostring(CensuraG.ScreenGui.AbsoluteSize))
+
 function CensuraG.AddCustomElement(name, class)
     if not name or not class then
         logger:warn("Invalid parameters for AddCustomElement: name=%s, class=%s", tostring(name), tostring(class))
