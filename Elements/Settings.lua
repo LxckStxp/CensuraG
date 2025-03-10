@@ -339,7 +339,7 @@ function Settings:PopulateTabContent(tabName, contentFrame)
                 local colorWindow = _G.CensuraG.Window.new("Custom Theme Creator", 100, 100, 300, 400)
                 
                 -- Add implementation for custom theme creation here
-            },
+            end,
             {NoLabel = true}
         )
         
