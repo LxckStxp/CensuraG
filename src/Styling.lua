@@ -44,7 +44,7 @@ function Styling:Apply(element, elementType)
 
     if elementType == "TextLabel" or elementType == "TextButton" then
         element.TextColor3 = self.Colors.Text
-        element.Font = Enum.Font.SourceSansPro -- Modern font
+        element.Font = Enum.Font.Gotham -- Updated to a valid modern font
         element.TextSize = 14
         element.BackgroundColor3 = self.Colors.Secondary
         element.BackgroundTransparency = self.Transparency.Highlight
