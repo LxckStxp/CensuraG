@@ -1,4 +1,4 @@
--- Window.lua: Enhanced draggable window with synchronized shadow animations
+-- Window.lua: Enhanced draggable window with tapered shadow and slide animations
 local Window = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Window.__index = Window
 
@@ -15,15 +15,8 @@ function Window.new(title, x, y, width, height)
     })
     Styling:Apply(frame, "Frame")
 
-    -- Add shadow to the window
-    local shadow = Utilities.createInstance("Frame", {
-        Parent = _G.CensuraG.ScreenGui,
-        Size = UDim2.new(0, width + 20, 0, height + 20), -- Slightly larger for shadow offset
-        Position = UDim2.new(0, x - 10, 0, y - 10),
-        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-        BackgroundTransparency = 0.7,
-        ZIndex = 1 -- Below the window but above the taskbar
-    })
+    -- Add tapered shadow to the window
+    local shadow = Utilities.createTaperedShadow(frame, 10, 10, 1.2, 0.7)
 
     local titleBar = Utilities.createInstance("TextLabel", {
         Parent = frame,
@@ -58,6 +51,7 @@ function Window.new(title, x, y, width, height)
     -- Update shadow position when window moves
     self.DragHandler.OnDrag = function()
         self.Shadow.Position = UDim2.new(0, self.Instance.Position.X.Offset - 10, 0, self.Instance.Position.Y.Offset - 10)
+        self.Shadow.Size = UDim2.new(0, self.Instance.Size.X.Offset + 20, 0, self.Instance.Size.Y.Offset + 20)
     end
 
     -- Register with WindowManager
@@ -117,6 +111,7 @@ function Window:Maximize()
         self.Debounce = false
     end)
     Animation:Tween(self.Shadow, {Position = UDim2.new(0, self.OriginalPosition.X.Offset - 10, 0, self.OriginalPosition.Y.Offset - 10)}, 0.3)
+    Animation:Tween(self.Shadow, {Size = UDim2.new(0, self.Instance.Size.X.Offset + 20, 0, self.Instance.Size.Y.Offset + 20)}, 0.3)
 
     -- Remove the window from the taskbar
     for i, taskbarWindow in ipairs(_G.CensuraG.Taskbar.Windows) do
