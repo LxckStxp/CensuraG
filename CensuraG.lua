@@ -7,22 +7,32 @@ _G.CensuraG = CensuraG
 local oratioBaseUrl = "https://raw.githubusercontent.com/LxckStxp/Oratio/main/"
 local censuraBaseUrl = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/"
 
--- Load a script from a given URL
+-- Load a script from a given URL (returns a function, doesn't execute it)
 local function loadScript(url, path)
     local success, result = pcall(function()
-        return loadstring(game:HttpGet(url .. path, true))()
+        return game:HttpGet(url .. path, true)
     end)
     if not success then
-        warn("Failed to load " .. path .. ": " .. result)
+        warn("Failed to fetch script " .. path .. ": " .. result)
         return nil
     end
-    return result
+    local scriptFunc, err = loadstring(result)
+    if not scriptFunc then
+        warn("Failed to compile script " .. path .. ": " .. err)
+        return nil
+    end
+    return scriptFunc
 end
 
 -- Load Oratio first
-local Oratio = loadScript(oratioBaseUrl, "init.lua")
-if not Oratio then
+local OratioFunc = loadScript(oratioBaseUrl, "init.lua")
+if not OratioFunc then
     warn("Critical: Oratio logging system failed to load. Aborting CensuraG initialization.")
+    return CensuraG
+end
+local Oratio = OratioFunc()
+if not Oratio then
+    warn("Critical: Oratio initialization failed.")
     return CensuraG
 end
 
@@ -37,27 +47,33 @@ local logger = Oratio.new({
 CensuraG.Logger = logger
 logger:info("CensuraG initialization started.")
 
--- Load CensuraG dependencies
-CensuraG.Utilities = loadScript(censuraBaseUrl, "Utilities.lua")
-CensuraG.UIElement = loadScript(censuraBaseUrl, "UIElement.lua")
-CensuraG.Styling = loadScript(censuraBaseUrl, "Styling.lua")
-CensuraG.Animation = loadScript(censuraBaseUrl, "Animation.lua")
-CensuraG.Draggable = loadScript(censuraBaseUrl, "Draggable.lua")
-CensuraG.WindowManager = loadScript(censuraBaseUrl, "WindowManager.lua")
-CensuraG.Taskbar = loadScript(censuraBaseUrl, "Taskbar.lua")
-CensuraG.Window = loadScript(censuraBaseUrl, "Elements/Window.lua")
-CensuraG.TextButton = loadScript(censuraBaseUrl, "Elements/TextButton.lua")
-CensuraG.Slider = loadScript(censuraBaseUrl, "Elements/Slider.lua")
-CensuraG.Switch = loadScript(censuraBaseUrl, "Elements/Switch.lua")
+-- Load all CensuraG scripts as functions (don't execute yet)
+local scripts = {
+    Utilities = loadScript(censuraBaseUrl, "Utilities.lua"),
+    UIElement = loadScript(censuraBaseUrl, "UIElement.lua"),
+    Styling = loadScript(censuraBaseUrl, "Styling.lua"),
+    Animation = loadScript(censuraBaseUrl, "Animation.lua"),
+    Draggable = loadScript(censuraBaseUrl, "Draggable.lua"),
+    WindowManager = loadScript(censuraBaseUrl, "WindowManager.lua"),
+    Taskbar = loadScript(censuraBaseUrl, "Taskbar.lua"),
+    Window = loadScript(censuraBaseUrl, "Elements/Window.lua"),
+    TextButton = loadScript(censuraBaseUrl, "Elements/TextButton.lua"),
+    Slider = loadScript(censuraBaseUrl, "Elements/Slider.lua"),
+    Switch = loadScript(censuraBaseUrl, "Elements/Switch.lua")
+}
 
--- Log successful/failed loads
-for moduleName, module in pairs(CensuraG) do
-    if moduleName ~= "Logger" and moduleName ~= "ScreenGui" then
-        if module then
+-- Assign all modules to CensuraG (execute scripts after all are loaded)
+for moduleName, scriptFunc in pairs(scripts) do
+    if scriptFunc then
+        local success, result = pcall(scriptFunc)
+        if success and result then
+            CensuraG[moduleName] = result
             logger:debug("Loaded module: %s", moduleName)
         else
-            logger:warn("Failed to load module: %s", moduleName)
+            logger:warn("Failed to execute module: %s, Error: %s", moduleName, tostring(result))
         end
+    else
+        logger:warn("Failed to load module: %s", moduleName)
     end
 end
 
