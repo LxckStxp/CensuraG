@@ -6,6 +6,7 @@ local Utilities = _G.CensuraG.Utilities
 local Styling = _G.CensuraG.Styling
 local Animation = _G.CensuraG.Animation
 local Draggable = _G.CensuraG.Draggable
+local logger = _G.CensuraG.Logger
 
 function Window.new(title, x, y, width, height)
     local frame = Utilities.createInstance("Frame", {
@@ -14,8 +15,10 @@ function Window.new(title, x, y, width, height)
         ZIndex = 2
     })
     Styling:Apply(frame, "Frame")
+    logger:debug("Created window frame: %s, Position: %s, Size: %s, ZIndex: %d", title, tostring(frame.Position), tostring(frame.Size), frame.ZIndex)
 
     local shadow = Utilities.createTaperedShadow(frame, 5, 5, 0.9)
+    logger:debug("Created shadow for window: %s, ZIndex: %d", title, shadow.ZIndex)
 
     local titleBar = Utilities.createInstance("TextLabel", {
         Parent = frame,
@@ -24,6 +27,7 @@ function Window.new(title, x, y, width, height)
         ZIndex = 3
     })
     Styling:Apply(titleBar, "TextLabel")
+    logger:debug("Created title bar for window: %s, Position: %s, Size: %s, ZIndex: %d, Visible: %s", title, tostring(titleBar.Position), tostring(titleBar.Size), titleBar.ZIndex, tostring(titleBar.Visible))
 
     local minimizeButton = Utilities.createInstance("TextButton", {
         Parent = titleBar,
@@ -33,6 +37,7 @@ function Window.new(title, x, y, width, height)
         ZIndex = 3
     })
     Styling:Apply(minimizeButton, "TextButton")
+    logger:debug("Created minimize button for window: %s, Position: %s, Size: %s, ZIndex: %d, Visible: %s", title, tostring(minimizeButton.Position), tostring(minimizeButton.Size), minimizeButton.ZIndex, tostring(minimizeButton.Visible))
 
     local self = setmetatable({
         Instance = frame,
@@ -52,6 +57,7 @@ function Window.new(title, x, y, width, height)
 
     _G.CensuraG.WindowManager:AddWindow(self)
     self.OriginalPosition = frame.Position
+    logger:info("Window %s registered with WindowManager at Position: %s", title, tostring(self.OriginalPosition))
 
     Animation:HoverEffect(minimizeButton)
 
@@ -59,8 +65,10 @@ function Window.new(title, x, y, width, height)
         if self.Debounce then return end
         if self.Minimized then
             self:Maximize()
+            logger:info("Maximized window: %s", title)
         else
             self:Minimize()
+            logger:info("Minimized window: %s", title)
         end
     end)
 
@@ -81,6 +89,7 @@ function Window:Minimize()
         self.Debounce = false
         for _, child in pairs(self.Instance:GetChildren()) do
             child.Visible = false
+            logger:debug("Set child %s of window to Visible: false during minimize", child.Name)
         end
     end)
     Animation:Tween(self.Shadow, {Position = UDim2.new(0, self.OriginalPosition.X.Offset - 5, 0, offscreenY - 5)}, 0.3)
@@ -88,7 +97,7 @@ function Window:Minimize()
     if _G.CensuraG and _G.CensuraG.Taskbar and _G.CensuraG.Taskbar.AddWindow then
         _G.CensuraG.Taskbar:AddWindow(self)
     else
-        warn("Taskbar or AddWindow method is not available")
+        logger:error("Taskbar or AddWindow method is not available during minimize.")
     end
     _G.CensuraG.WindowManager:RemoveWindow(self)
 end
@@ -102,6 +111,7 @@ function Window:Maximize()
 
     for _, child in pairs(self.Instance:GetChildren()) do
         child.Visible = true
+        logger:debug("Set child %s of window to Visible: true during maximize", child.Name)
     end
 
     Animation:Tween(self.Instance, {Position = self.OriginalPosition}, 0.3, function()
@@ -115,6 +125,7 @@ function Window:Maximize()
             local button = _G.CensuraG.Taskbar.Instance:GetChildren()[i]
             if button then
                 button:Destroy()
+                logger:debug("Removed taskbar button for window during maximize")
             end
             table.remove(_G.CensuraG.Taskbar.Windows, i)
             break
@@ -128,6 +139,7 @@ function Window:Destroy()
     self.DragHandler:Destroy()
     self.Shadow:Destroy()
     self.Instance:Destroy()
+    logger:info("Destroyed window")
 end
 
 return Window
