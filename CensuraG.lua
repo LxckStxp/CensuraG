@@ -1,13 +1,10 @@
 -- CensuraG.lua: Entry point for the CensuraG UI API
--- Loads Oratio logging system first, then other scripts dynamically
 local CensuraG = {}
 _G.CensuraG = CensuraG
 
--- Base URLs for repositories
 local oratioBaseUrl = "https://raw.githubusercontent.com/LxckStxp/Oratio/main/"
 local censuraBaseUrl = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/"
 
--- Load a script from a given URL (returns a function, doesn't execute it)
 local function loadScript(url, path)
     local success, result = pcall(function()
         return game:HttpGet(url .. path, true)
@@ -24,7 +21,6 @@ local function loadScript(url, path)
     return scriptFunc
 end
 
--- Load Oratio first
 local OratioFunc = loadScript(oratioBaseUrl, "init.lua")
 if not OratioFunc then
     warn("Critical: Oratio logging system failed to load. Aborting CensuraG initialization.")
@@ -36,7 +32,6 @@ if not Oratio then
     return CensuraG
 end
 
--- Create a global logger for CensuraG
 local logger = Oratio.new({
     moduleName = "CensuraG",
     minLevel = "DEBUG",
@@ -47,7 +42,6 @@ local logger = Oratio.new({
 CensuraG.Logger = logger
 logger:info("CensuraG initialization started.")
 
--- Load all CensuraG scripts as functions (don't execute yet)
 local scripts = {
     Utilities = loadScript(censuraBaseUrl, "Utilities.lua"),
     UIElement = loadScript(censuraBaseUrl, "UIElement.lua"),
@@ -62,7 +56,6 @@ local scripts = {
     Switch = loadScript(censuraBaseUrl, "Elements/Switch.lua")
 }
 
--- Assign all modules to CensuraG (execute scripts after all are loaded)
 for moduleName, scriptFunc in pairs(scripts) do
     if scriptFunc then
         local success, result = pcall(scriptFunc)
@@ -77,7 +70,6 @@ for moduleName, scriptFunc in pairs(scripts) do
     end
 end
 
--- Verify all required modules are loaded
 local requiredModules = {"Utilities", "UIElement", "Styling", "Animation", "Draggable", "WindowManager", "Taskbar", "Window", "TextButton", "Slider", "Switch"}
 for _, moduleName in ipairs(requiredModules) do
     if not CensuraG[moduleName] then
@@ -85,7 +77,6 @@ for _, moduleName in ipairs(requiredModules) do
     end
 end
 
--- Initialize ScreenGui
 local success, playerGui = pcall(function()
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
@@ -103,13 +94,11 @@ CensuraG.ScreenGui = playerGui:FindFirstChild("CensuraGGui") or CensuraG.Utiliti
 })
 logger:info("ScreenGui initialized: %s", CensuraG.ScreenGui.Name)
 
--- API extension method
 function CensuraG.AddCustomElement(name, class)
     CensuraG[name] = class
     logger:debug("Added custom element: %s", name)
 end
 
--- Initialize WindowManager and Taskbar
 if CensuraG.WindowManager then
     CensuraG.WindowManager:Init()
     logger:info("WindowManager initialized.")
