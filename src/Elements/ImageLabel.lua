@@ -15,7 +15,6 @@ function ImageLabel.new(parent, imageUrl, x, y, width, height, options)
 
     logger:debug("Creating ImageLabel with parent: %s, ImageURL: %s, Position: (%d, %d)", tostring(parent.Instance), imageUrl, x, y)
 
-    -- Create the main frame
     local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
         Position = UDim2.new(0, x, 0, y),
@@ -24,12 +23,11 @@ function ImageLabel.new(parent, imageUrl, x, y, width, height, options)
         ZIndex = parent.Instance.ZIndex + 1
     })
 
-    -- Create the image
     local image = Utilities.createInstance("ImageLabel", {
         Parent = frame,
         Position = UDim2.new(0, 0, 0, 0),
         Size = UDim2.new(0, width or 50, 0, height or 50),
-        BackgroundTransparency = 1,
+        BackgroundTransparency = Styling.Transparency.ElementBackground,
         Image = imageUrl or "",
         Visible = true,
         ZIndex = frame.ZIndex + 1
