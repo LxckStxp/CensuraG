@@ -74,13 +74,18 @@ function Cluster.new(parent)
         Size = UDim2.new(0, 110, 0, 30),
         BackgroundTransparency = 1,
         Text = localPlayer.DisplayName,
-        ZIndex = frame.ZIndex + 1
+        ZIndex = frame.ZIndex + 2
     })
     Styling:Apply(displayName, "TextLabel")
+    -- Force text visibility
+    displayName.TextTransparency = 0
+    displayName.Visible = true
     logger:debug("Cluster display name created: Position: %s, Size: %s, ZIndex: %d, Text: %s", tostring(displayName.Position), tostring(displayName.Size), displayName.ZIndex, displayName.Text)
 
     localPlayer:GetPropertyChangedSignal("DisplayName"):Connect(function()
         displayName.Text = localPlayer.DisplayName
+        displayName.TextTransparency = 0
+        displayName.Visible = true
         logger:debug("Updated cluster display name to: %s", displayName.Text)
     end)
 
@@ -90,15 +95,20 @@ function Cluster.new(parent)
         Size = UDim2.new(0, 40, 0, 30),
         BackgroundTransparency = 1,
         Text = os.date("%H:%M"),
-        ZIndex = frame.ZIndex + 1
+        ZIndex = frame.ZIndex + 2
     })
     Styling:Apply(timeLabel, "TextLabel")
+    -- Force text visibility
+    timeLabel.TextTransparency = 0
+    timeLabel.Visible = true
     logger:debug("Cluster time label created: Position: %s, Size: %s, ZIndex: %d, Text: %s", tostring(timeLabel.Position), tostring(timeLabel.Size), timeLabel.ZIndex, timeLabel.Text)
 
     spawn(function()
         while wait(10) do
             if timeLabel then
                 timeLabel.Text = os.date("%H:%M")
+                timeLabel.TextTransparency = 0
+                timeLabel.Visible = true
                 logger:debug("Updated cluster time to: %s", timeLabel.Text)
             end
         end
