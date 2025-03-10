@@ -1,8 +1,8 @@
 -- TextButton.lua: TextButton class
-local TextButton = setmetatable({}, {__index = require(script.Parent.Parent.UIElement)})
+local TextButton = setmetatable({}, {__index = _G.CensuraG.UIElement})
 TextButton.__index = TextButton
 
-local Utilities = require(script.Parent.Parent.Utilities)
+local Utilities = _G.CensuraG.Utilities
 
 function TextButton.new(parent, text, x, y, width, height, callback)
     local button = Utilities.createInstance("TextButton", {
