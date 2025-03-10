@@ -83,9 +83,11 @@ function Taskbar:Init()
                     end
                     if self.Cluster.DisplayName then
                         self.Cluster.DisplayName.Visible = true
+                        self.Cluster.DisplayName.TextTransparency = 0
                     end
                     if self.Cluster.TimeLabel then
                         self.Cluster.TimeLabel.Visible = true
+                        self.Cluster.TimeLabel.TextTransparency = 0
                     end
                     logger:debug("Cluster set to visible: %s, Position: %s, ZIndex: %d", tostring(self.Cluster.Instance.Visible), tostring(self.Cluster.Instance.Position), self.Cluster.Instance.ZIndex)
                 end
@@ -126,9 +128,11 @@ function Taskbar:Init()
                 end
                 if self.Cluster.DisplayName then
                     self.Cluster.DisplayName.Visible = true
+                    self.Cluster.DisplayName.TextTransparency = 0
                 end
                 if self.Cluster.TimeLabel then
                     self.Cluster.TimeLabel.Visible = true
+                    self.Cluster.TimeLabel.TextTransparency = 0
                 end
                 logger:debug("Cluster refreshed: Visible: %s, Position: %s, ZIndex: %d", tostring(self.Cluster.Instance.Visible), tostring(self.Cluster.Instance.Position), self.Cluster.Instance.ZIndex)
             end
@@ -169,6 +173,9 @@ function Taskbar:AddWindow(window)
         ZIndex = self.Instance.ZIndex + 2
     })
     Styling:Apply(button, "TextButton")
+    -- Force text visibility
+    button.TextTransparency = 0
+    button.Visible = true
     logger:debug("Taskbar button created: Text: %s, Position: %s, Size: %s, ZIndex: %d", title, tostring(button.Position), tostring(button.Size), button.ZIndex)
 
     local buttonShadow = Utilities.createTaperedShadow(button, 3, 3, 0.95)
