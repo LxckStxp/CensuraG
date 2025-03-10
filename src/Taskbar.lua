@@ -46,6 +46,10 @@ function Taskbar:Init()
         local shadow = Utilities.createTaperedShadow(taskbar, 5, 5, 0.9)
         shadow.ZIndex = 1
 
+        -- Ensure buttonContainer is fully instantiated before creating cluster
+        task.wait() -- Small delay to ensure instantiation
+        logger:debug("Button container created: Parent: %s, Size: %s, ZIndex: %d", tostring(buttonContainer.Parent), tostring(buttonContainer.Size), buttonContainer.ZIndex)
+
         -- Initialize cluster on the right side, parented to buttonContainer
         self.Cluster = _G.CensuraG.Cluster.new({Instance = buttonContainer})
         if self.Cluster and self.Cluster.Instance then
