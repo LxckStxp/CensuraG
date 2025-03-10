@@ -1,4 +1,4 @@
--- Elements/Window.lua (partial update, ensuring ContentContainer)
+-- Elements/Window.lua
 local Window = setmetatable({}, { __index = _G.CensuraG.UIElement })
 Window.__index = Window
 
@@ -18,7 +18,7 @@ function Window.new(title, x, y, width, height, options)
         Parent = _G.CensuraG.ScreenGui,
         Position = UDim2.new(0, x or 100, 0, y or 100),
         Size = UDim2.new(0, width, 0, height),
-        ZIndex = 100,
+        ZIndex = (_G.CensuraG.ZIndexManager and _G.CensuraG.ZIndexManager.BaseZIndex) or 100,
         Name = "Window_"..(options.Name or title or "Unnamed")
     })
     Styling:Apply(frame, "Window")
@@ -78,6 +78,7 @@ function Window.new(title, x, y, width, height, options)
         Name = "ContentContainer"
     })
     Styling:Apply(contentContainer, "Frame")
+    logger:debug("Created ContentContainer for window: %s", title or "Unnamed")
 
     local self = setmetatable({
         Instance = frame,
