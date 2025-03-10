@@ -23,7 +23,7 @@ function Cluster.new(parent)
 
     local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
-        Position = UDim2.new(1, -200, 0, 5), -- Right side, with some padding
+        Position = UDim2.new(1, -200, 0, 5),
         Size = UDim2.new(0, 190, 0, 30),
         BackgroundTransparency = 0.5,
         BackgroundColor3 = Styling.Colors.Highlight,
@@ -33,7 +33,6 @@ function Cluster.new(parent)
     Styling:Apply(frame, "Frame")
     logger:debug("Cluster frame created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Parent: %s", tostring(frame.Position), tostring(frame.Size), frame.ZIndex, tostring(frame.Visible), tostring(frame.Parent))
 
-    -- Add a thin white border
     local frameStroke = Utilities.createInstance("UIStroke", {
         Parent = frame,
         Thickness = 1,
@@ -41,17 +40,25 @@ function Cluster.new(parent)
         Transparency = 0.5
     })
 
-    -- Avatar image
-    local avatarImage = Utilities.createInstance("ImageLabel", {
-        Parent = frame,
-        Position = UDim2.new(0, 5, 0, 2),
-        Size = UDim2.new(0, 26, 0, 26),
-        BackgroundTransparency = 1,
-        Image = localPlayer and "rbxthumb://id=" .. localPlayer.UserId .. "?width=420&height=420" or "",
-        Visible = true,
-        ZIndex = 3
-    })
-    logger:debug("Cluster avatar image created: Position: %s, Size: %s, ZIndex: %d, Visible: %s", tostring(avatarImage.Position), tostring(avatarImage.Size), avatarImage.ZIndex, tostring(avatarImage.Visible))
+    -- Fetch avatar image using GetUserThumbnailAsync
+    local avatarImageUrl = ""
+    local success, content = pcall(function()
+        return Players:GetUserThumbnailAsync(localPlayer.UserId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size150x150)
+    end)
+    if success and content then
+        avatarImageUrl = content
+    else
+        logger:warn("Failed to fetch avatar image for user %d: %s", localPlayer.UserId, tostring(content))
+        avatarImageUrl = "" -- Fallback to empty image
+    end
+
+    -- Avatar image using ImageLabel element
+    local avatarImage = _G.CensuraG.ImageLabel.new(frame, avatarImageUrl, 5, 2, 26, 26, {Shadow = true})
+    if not avatarImage then
+        logger:error("Failed to create avatar ImageLabel for cluster")
+    else
+        logger:debug("Cluster avatar image created: ImageURL: %s", avatarImageUrl)
+    end
 
     -- Display name
     local displayName = Utilities.createInstance("TextLabel", {
@@ -104,6 +111,9 @@ function Cluster.new(parent)
 end
 
 function Cluster:Destroy()
+    if self.AvatarImage and self.AvatarImage.Destroy then
+        self.AvatarImage:Destroy()
+    end
     self.Instance:Destroy()
     logger:info("Cluster destroyed")
 end
