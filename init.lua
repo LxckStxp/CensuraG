@@ -87,7 +87,8 @@ local moduleLoadOrder = {
     { name = "Slider", path = "Elements/Slider.lua" },
     { name = "Switch", path = "Elements/Switch.lua" },
     { name = "Dropdown", path = "Elements/Dropdown.lua" },
-    { name = "Cluster", path = "Elements/Cluster.lua" }
+    { name = "Cluster", path = "Elements/Cluster.lua" },
+    { name = "Settings", path = "Elements/Settings.lua" }
 }
 
 -- Load all modules in order
@@ -162,6 +163,16 @@ if CensuraG.Taskbar then
     CensuraG.Logger:info("Taskbar initialized")
 end
 
+-- Initialize settings menu
+if CensuraG.Settings then
+    task.spawn(function()
+        -- Small delay to ensure everything else is loaded
+        task.wait(0.5)
+        CensuraG.Settings:Init()
+        CensuraG.Logger:info("Settings menu auto-initialized")
+    end)
+end
+
 -- API for adding custom elements
 function CensuraG.AddCustomElement(name, class)
     if not name or not class then
@@ -171,6 +182,33 @@ function CensuraG.AddCustomElement(name, class)
     CensuraG[name] = class
     CensuraG.Logger:debug("Added custom element: %s", name)
 end
+
+-- Add settings toggle to taskbar
+function CensuraG.ToggleSettings()
+    if CensuraG.Settings then
+        CensuraG.Settings:Toggle()
+    else
+        CensuraG.Logger:warn("Settings module not loaded")
+    end
+end
+
+-- Open settings directly
+function CensuraG.OpenSettings()
+    if CensuraG.Settings then
+        CensuraG.Settings:Show()
+    else
+        CensuraG.Logger:warn("Settings module not loaded")
+    end
+end
+
+-- Global configuration settings
+CensuraG.Config = {
+    EnableShadows = true,
+    AnimationQuality = 1.0,
+    AnimationSpeed = 1.0,
+    WindowSnapEnabled = true,
+    DebugMode = false
+}
 
 -- Clean up function for proper resource management
 function CensuraG.Destroy()
@@ -194,6 +232,30 @@ function CensuraG.Destroy()
     
     CensuraG.Logger:info("CensuraG framework destroyed")
     _G.CensuraG = nil
+end
+
+-- Example usage demonstration
+if false then -- Set to true to show examples when loading
+    task.spawn(function()
+        task.wait(1) -- Wait for everything to initialize
+        
+        -- Example window
+        local demoWindow = CensuraG.Window.new("CensuraG Demo", 100, 100, 400, 300)
+        
+        -- Add some elements
+        CensuraG.TextButton.new(demoWindow, "Open Settings", 10, 10, 120, 30, function()
+            CensuraG.OpenSettings()
+        })
+        
+        CensuraG.TextButton.new(demoWindow, "Toggle Theme", 10, 50, 120, 30, function()
+            local themes = {"Dark", "Light", "Military"}
+            local currentIndex = table.find(themes, CensuraG.Styling.CurrentTheme) or 1
+            local nextIndex = (currentIndex % #themes) + 1
+            CensuraG.Styling:SetTheme(themes[nextIndex])
+        })
+        
+        CensuraG.Logger:info("Demo window created")
+    end)
 end
 
 CensuraG.Logger:info("CensuraG initialization completed successfully")
