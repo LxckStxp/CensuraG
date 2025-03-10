@@ -1,4 +1,4 @@
--- Slider.lua: Enhanced slider with draggable notch, click support, and customization
+-- Slider.lua: Enhanced slider with draggable notch
 local Slider = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Slider.__index = Slider
 
@@ -17,39 +17,24 @@ function Slider.new(parent, x, y, width, min, max, default, options)
     local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
         Position = UDim2.new(0, x, 0, y),
-        Size = UDim2.new(0, width, 0, 20), -- Increased height for better visibility
+        Size = UDim2.new(0, width, 0, 15),
         ClipsDescendants = true
     })
     Styling:Apply(frame, "Frame")
-
-    -- Add UIStroke for glow effect
-    local stroke = Utilities.createInstance("UIStroke", {
-        Parent = frame,
-        Thickness = 1,
-        Color = Color3.fromRGB(0, 50, 100),
-        Transparency = 0.7
-    })
 
     local fill = Utilities.createInstance("Frame", {
         Parent = frame,
         Size = UDim2.new((default - min) / (max - min), 0, 0.8, 0),
         Position = UDim2.new(0, 0, 0, 2),
-        BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+        BackgroundColor3 = Styling.Colors.Accent
     })
 
     local notch = Utilities.createInstance("Frame", {
         Parent = frame,
         Position = UDim2.new((default - min) / (max - min), -5, 0, -5),
-        Size = UDim2.new(0, 10, 0, 30),
-        BackgroundColor3 = Color3.fromRGB(200, 200, 200),
-        BorderSizePixel = 1,
-        BorderColor3 = Color3.fromRGB(80, 80, 80)
-    })
-    local notchStroke = Utilities.createInstance("UIStroke", {
-        Parent = notch,
-        Thickness = 1,
-        Color = Color3.fromRGB(0, 80, 160),
-        Transparency = 0.5
+        Size = UDim2.new(0, 10, 0, 25),
+        BackgroundColor3 = Color3.fromRGB(150, 150, 150),
+        BorderSizePixel = 0
     })
 
     local label = options.ShowValue and Utilities.createInstance("TextLabel", {
@@ -58,7 +43,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         Size = UDim2.new(1, 0, 0, 20),
         Text = tostring(default),
         BackgroundTransparency = 1,
-        TextColor3 = Color3.fromRGB(200, 200, 200),
+        TextColor3 = Styling.Colors.Text,
         Font = Enum.Font.Code,
         TextSize = 12
     }) or nil
@@ -99,12 +84,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
             local mousePos = input.Position
             local framePos = frame.AbsolutePosition
             local frameSize = frame.AbsoluteSize
-            local ratio
-            if self.Orientation == "Horizontal" then
-                ratio = math.clamp((mousePos.X - framePos.X) / frameSize.X, 0, 1)
-            else
-                ratio = math.clamp((mousePos.Y - framePos.Y) / frameSize.Y, 0, 1)
-            end
+            local ratio = self.Orientation == "Horizontal" and math.clamp((mousePos.X - framePos.X) / frameSize.X, 0, 1) or math.clamp((mousePos.Y - framePos.Y) / frameSize.Y, 0, 1)
             self:UpdateValue(self.Min + (self.Max - self.Min) * ratio)
         end
     end)
@@ -115,12 +95,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
             local mousePos = input.Position
             local framePos = frame.AbsolutePosition
             local frameSize = frame.AbsoluteSize
-            local ratio
-            if self.Orientation == "Horizontal" then
-                ratio = math.clamp((mousePos.X - framePos.X) / frameSize.X, 0, 1)
-            else
-                ratio = math.clamp((mousePos.Y - framePos.Y) / frameSize.Y, 0, 1)
-            end
+            local ratio = self.Orientation == "Horizontal" and math.clamp((mousePos.X - framePos.X) / frameSize.X, 0, 1) or math.clamp((mousePos.Y - framePos.Y) / frameSize.Y, 0, 1)
             self:UpdateValue(self.Min + (self.Max - self.Min) * ratio)
         end
     end)
