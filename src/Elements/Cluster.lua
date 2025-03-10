@@ -52,7 +52,7 @@ function Cluster.new(parent)
         BackgroundTransparency = 0.6,
         BackgroundColor3 = Styling.Colors.Highlight,
         Visible = true,
-        ZIndex = 2
+        ZIndex = 4 -- Match Taskbar’s setting
     })
     Styling:Apply(frame, "Frame")
     logger:debug("Cluster frame created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Parent: %s", tostring(frame.Position), tostring(frame.Size), frame.ZIndex, tostring(frame.Visible), tostring(frame.Parent))
@@ -70,8 +70,7 @@ function Cluster.new(parent)
     if not avatarImage then
         logger:error("Failed to create avatar ImageLabel for cluster")
     else
-        logger:debug("Cluster avatar image created with URL: %s", avatarImageUrl)
-        -- Ensure visibility and force a render delay
+        logger:debug("Cluster avatar image created with URL: %s, Position: %s, Visible: %s, ZIndex: %d", avatarImageUrl, tostring(avatarImage.Instance.Position), tostring(avatarImage.Instance.Visible), avatarImage.Instance.ZIndex)
         avatarImage.Instance.Visible = true
         task.wait(0.1) -- Small delay to allow image to load
         if avatarImage.Instance.ImageTransparency > 0 then
@@ -93,7 +92,7 @@ function Cluster.new(parent)
         TextXAlignment = Enum.TextXAlignment.Left,
         TextTruncate = Enum.TextTruncate.AtEnd,
         Visible = true,
-        ZIndex = 4
+        ZIndex = 5
     })
     Styling:Apply(displayName, "TextLabel")
     logger:debug("Cluster display name created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Text: %s", tostring(displayName.Position), tostring(displayName.Size), displayName.ZIndex, tostring(displayName.Visible), displayName.Text)
@@ -116,7 +115,7 @@ function Cluster.new(parent)
         TextSize = 14,
         TextXAlignment = Enum.TextXAlignment.Right,
         Visible = true,
-        ZIndex = 4
+        ZIndex = 5
     })
     Styling:Apply(timeLabel, "TextLabel")
     logger:debug("Cluster time label created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Text: %s", tostring(timeLabel.Position), tostring(timeLabel.Size), timeLabel.ZIndex, tostring(timeLabel.Visible), timeLabel.Text)
