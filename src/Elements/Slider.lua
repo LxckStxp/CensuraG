@@ -1,11 +1,10 @@
--- Slider.lua: Enhanced slider with miltech styling and smooth animations
+-- Slider.lua: Simplified slider with miltech styling and constrained knob movement
 local Slider = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Slider.__index = Slider
 
 local Utilities = _G.CensuraG.Utilities
 local Styling = _G.CensuraG.Styling
 local Animation = _G.CensuraG.Animation
-local Draggable = _G.CensuraG.Draggable
 local UserInputService = game:GetService("UserInputService")
 local logger = _G.CensuraG.Logger
 
@@ -24,6 +23,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
     default = math.clamp(default or min, min, max)
     options = options or {}
     width = width or 200
+    local height = 15 -- Fixed height for simplicity
 
     logger:debug("Creating slider with parent: %s, Position: (%d, %d), Width: %d", tostring(parent.Instance), x, y, width)
 
@@ -31,72 +31,46 @@ function Slider.new(parent, x, y, width, min, max, default, options)
     local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
         Position = UDim2.new(0, x, 0, y),
-        Size = UDim2.new(0, width, 0, 15),
-        BackgroundTransparency = 0.8, -- More transparent to match miltech style
+        Size = UDim2.new(0, width, 0, height),
+        BackgroundTransparency = 0.8,
         BackgroundColor3 = Styling.Colors.Base,
-        ClipsDescendants = true,
+        ClipsDescendants = true, -- Clip notch to stay within frame
         Visible = true,
         ZIndex = 3
     })
-    logger:debug("Slider frame created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Parent: %s", tostring(frame.Position), tostring(frame.Size), frame.ZIndex, tostring(frame.Visible), tostring(frame.Parent))
-
-    -- Add a border to the frame
-    local frameStroke = Utilities.createInstance("UIStroke", {
-        Parent = frame,
-        Thickness = 1,
-        Color = Color3.fromRGB(200, 200, 200),
-        Transparency = 0.4
-    })
+    logger:debug("Slider frame created: Position: %s, Size: %s, ZIndex: %d", tostring(frame.Position), tostring(frame.Size), frame.ZIndex)
 
     -- Create the fill bar
     local fill = Utilities.createInstance("Frame", {
         Parent = frame,
-        Size = UDim2.new((default - min) / (max - min), 0, 0.8, 0),
-        Position = UDim2.new(0, 0, 0.1, 0),
+        Size = UDim2.new((default - min) / (max - min), 0, 1, 0), -- Full height of track
+        Position = UDim2.new(0, 0, 0, 0),
         BackgroundColor3 = Styling.Colors.Accent,
-        BackgroundTransparency = 0.3, -- Slightly more opaque for visibility
+        BackgroundTransparency = 0.3,
         Visible = true,
         ZIndex = 4
     })
-    logger:debug("Slider fill created: Position: %s, Size: %s, ZIndex: %d, Visible: %s", tostring(fill.Position), tostring(fill.Size), fill.ZIndex, tostring(fill.Visible))
-
-    -- Add a subtle gradient to the fill
-    local fillGradient = Utilities.createInstance("UIGradient", {
-        Parent = fill,
-        Color = ColorSequence.new(Styling.Colors.Accent, Styling.Colors.Highlight),
-        Transparency = NumberSequence.new(0.3),
-        Rotation = 90
-    })
+    logger:debug("Slider fill created: Position: %s, Size: %s", tostring(fill.Position), tostring(fill.Size))
 
     -- Create the notch
+    local notchSize = 10 -- Fixed size for simplicity
     local notch = Utilities.createInstance("Frame", {
         Parent = frame,
-        Position = UDim2.new((default - min) / (max - min), -5, 0, -5),
-        Size = UDim2.new(0, 10, 0, 25),
-        BackgroundColor3 = Color3.fromRGB(150, 150, 150),
+        Position = UDim2.new((default - min) / (max - min), -(notchSize / 2), 0, -(height / 2)), -- Center notch on track
+        Size = UDim2.new(0, notchSize, 0, height),
+        BackgroundColor3 = Styling.Colors.Highlight,
         BackgroundTransparency = 0.2,
         BorderSizePixel = 0,
         Visible = true,
         ZIndex = 5
     })
-    logger:debug("Slider notch created: Position: %s, Size: %s, ZIndex: %d, Visible: %s", tostring(notch.Position), tostring(notch.Size), notch.ZIndex, tostring(notch.Visible))
-
-    local notchStroke = Utilities.createInstance("UIStroke", {
-        Parent = notch,
-        Thickness = 1,
-        Color = Color3.fromRGB(200, 200, 200),
-        Transparency = 0.4
-    })
-
-    -- Add a shadow to the notch for depth
-    local notchShadow = Utilities.createTaperedShadow(notch, 3, 3, 0.95)
-    notchShadow.ZIndex = 4
+    logger:debug("Slider notch created: Position: %s, Size: %s", tostring(notch.Position), tostring(notch.Size))
 
     -- Add a value label if enabled
     local label = options.ShowValue and Utilities.createInstance("TextLabel", {
         Parent = frame,
-        Position = UDim2.new(0, 0, 0, -25),
-        Size = UDim2.new(1, 0, 0, 20),
+        Position = UDim2.new(0, 0, 0, -20),
+        Size = UDim2.new(1, 0, 0, 15),
         Text = tostring(default),
         BackgroundTransparency = 1,
         TextColor3 = Styling.Colors.Text,
@@ -108,7 +82,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
     }) or nil
     if label then
         Styling:Apply(label, "TextLabel")
-        logger:debug("Slider label created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Text: %s", tostring(label.Position), tostring(label.Size), label.ZIndex, tostring(label.Visible), label.Text)
+        logger:debug("Slider label created: Position: %s, Size: %s, Text: %s", tostring(label.Position), tostring(label.Size), label.Text)
     end
 
     -- Initialize the slider object
@@ -119,25 +93,27 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         Max = max,
         Fill = fill,
         Notch = notch,
-        NotchShadow = notchShadow,
         Label = label,
         Step = options.Step or 1,
         Orientation = options.Orientation or "Horizontal",
-        Connections = {} -- Store connections for cleanup
+        Connections = {}
     }, Slider)
 
     -- Update function for the slider value
     function self:UpdateValue(newValue)
         newValue = math.clamp(math.floor(newValue / self.Step) * self.Step, self.Min, self.Max)
-        if newValue == self.Value then return end -- Avoid unnecessary updates
+        if newValue == self.Value then return end
         self.Value = newValue
-        local ratio = (newValue - self.Min) / (self.Max - self.Min)
+        local ratio = (newValue - self.Min) / (max - min)
         if self.Orientation == "Horizontal" then
-            Animation:Tween(self.Fill, {Size = UDim2.new(ratio, 0, 0.8, 0)}, 0.2)
-            Animation:Tween(self.Notch, {Position = UDim2.new(ratio, -5, 0, -5)}, 0.2)
+            Animation:Tween(self.Fill, {Size = UDim2.new(ratio, 0, 1, 0)}, 0.2)
+            -- Constrain notch position within frame
+            local newX = math.clamp(ratio, 0, 1) -- Ensure ratio stays between 0 and 1
+            notch.Position = UDim2.new(newX, -(notchSize / 2), 0, -(height / 2))
         else
-            Animation:Tween(self.Fill, {Size = UDim2.new(0.8, 0, ratio, 0)}, 0.2)
-            Animation:Tween(self.Notch, {Position = UDim2.new(0, -5, ratio, -5)}, 0.2)
+            Animation:Tween(self.Fill, {Size = UDim2.new(1, 0, ratio, 0)}, 0.2)
+            local newY = math.clamp(ratio, 0, 1)
+            notch.Position = UDim2.new(0, -(notchSize / 2), newY, -(height / 2))
         end
         if self.Label then
             self.Label.Text = tostring(newValue)
@@ -145,7 +121,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         if options.OnChanged then
             options.OnChanged(newValue)
         end
-        logger:debug("Slider value updated: New Value: %d, Fill Size: %s, Notch Position: %s", newValue, tostring(self.Fill.Size), tostring(self.Notch.Position))
+        logger:debug("Slider value updated: New Value: %d, Fill Size: %s, Notch Position: %s", newValue, tostring(self.Fill.Size), tostring(notch.Position))
     end
 
     -- Click handling
@@ -156,25 +132,19 @@ function Slider.new(parent, x, y, width, min, max, default, options)
             local frameSize = frame.AbsoluteSize
             local ratio = self.Orientation == "Horizontal" and math.clamp((mousePos.X - framePos.X) / frameSize.X, 0, 1) or math.clamp((mousePos.Y - framePos.Y) / frameSize.Y, 0, 1)
             self:UpdateValue(self.Min + (self.Max - self.Min) * ratio)
-            logger:debug("Slider clicked: Mouse Position: (%d, %d), Ratio: %.2f", mousePos.X, mousePos.Y, ratio)
         end
     end))
 
-    -- Dragging handling
-    self.DragHandler = Draggable.new(notch, notch)
+    -- Dragging handling (simplified, no separate Draggable object)
     table.insert(self.Connections, UserInputService.InputChanged:Connect(function(input)
-        if self.DragHandler.Dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        if input.UserInputType == Enum.UserInputType.MouseMovement and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
             local mousePos = input.Position
             local framePos = frame.AbsolutePosition
             local frameSize = frame.AbsoluteSize
             local ratio = self.Orientation == "Horizontal" and math.clamp((mousePos.X - framePos.X) / frameSize.X, 0, 1) or math.clamp((mousePos.Y - framePos.Y) / frameSize.Y, 0, 1)
             self:UpdateValue(self.Min + (self.Max - self.Min) * ratio)
-            logger:debug("Slider dragged: Mouse Position: (%d, %d), Ratio: %.2f", mousePos.X, mousePos.Y, ratio)
         end
     end))
-
-    -- Add hover effect to the notch
-    Animation:HoverEffect(notch)
 
     -- Cleanup method
     function self:Destroy()
@@ -182,12 +152,6 @@ function Slider.new(parent, x, y, width, min, max, default, options)
             connection:Disconnect()
         end
         self.Connections = {}
-        if self.DragHandler then
-            self.DragHandler:Destroy()
-        end
-        if self.NotchShadow then
-            self.NotchShadow:Destroy()
-        end
         self.Instance:Destroy()
         logger:info("Slider destroyed")
     end
