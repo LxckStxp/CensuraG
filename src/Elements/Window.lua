@@ -1,4 +1,4 @@
--- Window.lua: Enhanced draggable window with subtle shadow and slide animations
+-- Window.lua: Enhanced draggable window with miltech styling
 local Window = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Window.__index = Window
 
@@ -12,19 +12,41 @@ function Window.new(title, x, y, width, height)
     local frame = Utilities.createInstance("Frame", {
         Parent = _G.CensuraG.ScreenGui,
         Size = UDim2.new(0, width, 0, height),
+        BackgroundTransparency = 0.5, -- Semi-transparent background
         ZIndex = 2
     })
     Styling:Apply(frame, "Frame")
-    logger:debug("Created window frame: %s, Position: %s, Size: %s, ZIndex: %d", title, tostring(frame.Position), tostring(frame.Size), frame.ZIndex)
+    logger:debug("Created window frame: %s, Position: %s, Size: %s, ZIndex: %d, Transparency: %.2f", title, tostring(frame.Position), tostring(frame.Size), frame.ZIndex, frame.BackgroundTransparency)
 
-    local shadow = Utilities.createTaperedShadow(frame, 5, 5, 0.9)
+    -- Add a thin white border with UIStroke
+    local frameStroke = Utilities.createInstance("UIStroke", {
+        Parent = frame,
+        Thickness = 1,
+        Color = Color3.fromRGB(200, 200, 200),
+        Transparency = 0.2
+    })
+
+    -- Add a subtle gradient to the background
+    local gradient = Utilities.createInstance("UIGradient", {
+        Parent = frame,
+        Color = ColorSequence.new(Styling.Colors.Base, Styling.Colors.Highlight),
+        Transparency = NumberSequence.new({
+            NumberSequenceKeypoint.new(0, 0.5),
+            NumberSequenceKeypoint.new(1, 0.7)
+        }),
+        Rotation = 45
+    })
+
+    local shadow = Utilities.createTaperedShadow(frame, 5, 5, 0.95) -- Fainter shadow
     logger:debug("Created shadow for window: %s, ZIndex: %d", title, shadow.ZIndex)
 
     local titleBar = Utilities.createInstance("TextLabel", {
         Parent = frame,
         Size = UDim2.new(1, 0, 0, 20),
         Text = title,
-        ZIndex = 3
+        ZIndex = 3,
+        BackgroundTransparency = 0.3,
+        BackgroundColor3 = Styling.Colors.Highlight
     })
     Styling:Apply(titleBar, "TextLabel")
     logger:debug("Created title bar for window: %s, Position: %s, Size: %s, ZIndex: %d, Visible: %s", title, tostring(titleBar.Position), tostring(titleBar.Size), titleBar.ZIndex, tostring(titleBar.Visible))
@@ -34,10 +56,20 @@ function Window.new(title, x, y, width, height)
         Position = UDim2.new(1, -20, 0, 0),
         Size = UDim2.new(0, 20, 0, 20),
         Text = "-",
-        ZIndex = 3
+        ZIndex = 3,
+        BackgroundTransparency = 0.3,
+        BackgroundColor3 = Styling.Colors.Highlight
     })
     Styling:Apply(minimizeButton, "TextButton")
     logger:debug("Created minimize button for window: %s, Position: %s, Size: %s, ZIndex: %d, Visible: %s", title, tostring(minimizeButton.Position), tostring(minimizeButton.Size), minimizeButton.ZIndex, tostring(minimizeButton.Visible))
+
+    -- Add a white border to the minimize button
+    local minimizeStroke = Utilities.createInstance("UIStroke", {
+        Parent = minimizeButton,
+        Thickness = 1,
+        Color = Color3.fromRGB(200, 200, 200),
+        Transparency = 0.5
+    })
 
     local self = setmetatable({
         Instance = frame,
