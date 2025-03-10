@@ -49,7 +49,7 @@ function Cluster.new(parent)
         Parent = parent.Instance,
         Position = UDim2.new(1, -210, 0, 5),
         Size = UDim2.new(0, 200, 0, 30),
-        BackgroundTransparency = Styling.Transparency.Background,
+        BackgroundTransparency = Styling.Transparency.ElementBackground,
         ZIndex = parent.Instance.ZIndex + 1
     })
     Styling:Apply(frame, "Frame")
