@@ -143,6 +143,11 @@ function UIElement:Destroy()
     end
     self.Connections = {}
     
+    -- Clean up hover effects
+    if _G.CensuraG.Animation then
+        _G.CensuraG.Animation:CleanupHoverEffects(self.Instance)
+    end
+    
     -- Destroy the instance
     if self.Instance then
         self.Instance:Destroy()
