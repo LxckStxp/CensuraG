@@ -1,12 +1,11 @@
--- Styling.lua: Centralized styling for a miltech-inspired look
 local Styling = {}
 
 Styling.Colors = {
-    Base = Color3.fromRGB(30, 30, 30),
-    Accent = Color3.fromRGB(0, 120, 215),
-    Highlight = Color3.fromRGB(50, 50, 50),
-    Text = Color3.fromRGB(200, 200, 200),
-    Border = Color3.fromRGB(80, 80, 80)
+    Base = Color3.fromRGB(30, 30, 30),        -- Dark grey (unchanged, fits miltech)
+    Accent = Color3.fromRGB(0, 80, 120),      -- Darker, desaturated blue for interactivity
+    Highlight = Color3.fromRGB(50, 50, 50),   -- Slightly lighter grey (unchanged)
+    Text = Color3.fromRGB(200, 200, 200),     -- Light grey for readability (unchanged)
+    Border = Color3.fromRGB(80, 80, 80)       -- Medium grey (unchanged)
 }
 
 function Styling:Apply(element, elementType)
