@@ -102,14 +102,14 @@ if not CensuraG.ScreenGui or not CensuraG.ScreenGui:IsA("ScreenGui") then
 end
 logger:info("ScreenGui initialized: %s", CensuraG.ScreenGui.Name)
 
-// Wait for ScreenGui to have a valid size
+-- Wait for ScreenGui to have a valid size
 local maxWait = 5 -- Maximum wait time in seconds
 local waitTime = 0
 repeat
     task.wait(0.1)
     waitTime = waitTime + 0.1
     if waitTime > maxWait then
-        logger:warn("ScreenGui size not available after %d seconds, proceeding with default", maxWait)
+        logger:warn("ScreenGui size not available after %d seconds, proceeding with default size (800x600)", maxWait)
         break
     end
 until CensuraG.ScreenGui.AbsoluteSize and CensuraG.ScreenGui.AbsoluteSize.X > 0 and CensuraG.ScreenGui.AbsoluteSize.Y > 0
@@ -127,16 +127,16 @@ end
 local function initializeManagers()
     if CensuraG.WindowManager and type(CensuraG.WindowManager.Init) == "function" then
         CensuraG.WindowManager:Init()
-        logger:info("WindowManager initialized.")
+        logger:info("WindowManager initialized with WindowCount: %d, ZIndexCounter: %d", #CensuraG.WindowManager.Windows, CensuraG.WindowManager.ZIndexCounter)
     else
-        logger:error("WindowManager failed to initialize or Init method is missing.")
+        logger:error("WindowManager or its Init function is missing.")
     end
 
     if CensuraG.Taskbar and type(CensuraG.Taskbar.Init) == "function" then
         CensuraG.Taskbar:Init()
         logger:info("Taskbar initialized.")
     else
-        logger:error("Taskbar failed to initialize or Init method is missing.")
+        logger:error("Taskbar or its Init function is missing.")
     end
 end
 
