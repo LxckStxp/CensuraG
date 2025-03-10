@@ -1,3 +1,4 @@
+-- Styling.lua: Centralized miltech-inspired styling
 local Styling = {}
 
 Styling.Colors = {
@@ -5,21 +6,21 @@ Styling.Colors = {
     Accent = Color3.fromRGB(200, 200, 210),
     Secondary = Color3.fromRGB(50, 50, 55),
     Text = Color3.fromRGB(220, 220, 230),
-    Highlight = Color3.fromRGB(90, 90, 100),
+    Highlight = Color3.fromRGB(90, 90, 100)
 }
 
 Styling.Transparency = {
     WindowBackground = 0.2,
     ElementBackground = 0.25,
     Highlight = 0.15,
-    Text = 0,
+    Text = 0
 }
 
 Styling.TextSizes = {
     Title = 18,
     Label = 16,
     Button = 16,
-    Value = 14,
+    Value = 14
 }
 
 function Styling:Apply(element, elementType)
@@ -42,22 +43,12 @@ function Styling:Apply(element, elementType)
     stroke.Transparency = 0.8
     stroke.Parent = element
 
-    local gradient = Instance.new("UIGradient")
-    gradient.Color = ColorSequence.new(self.Colors.Base, self.Colors.Secondary)
-    gradient.Transparency = NumberSequence.new({
-        NumberSequenceKeypoint.new(0, element.BackgroundTransparency),
-        NumberSequenceKeypoint.new(1, element.BackgroundTransparency + 0.1)
-    })
-    gradient.Rotation = 90
-    gradient.Parent = element
-
     if elementType == "TextLabel" or elementType == "TextButton" then
         element.TextColor3 = self.Colors.Text
         element.Font = Enum.Font.Gotham
         element.TextSize = elementType == "TextButton" and self.TextSizes.Button or self.TextSizes.Label
-        element.BackgroundTransparency = self.Transparency.ElementBackground
         element.TextTransparency = 0
-        element.Visible = true
+        element.BackgroundTransparency = self.Transparency.ElementBackground
     end
 end
 
