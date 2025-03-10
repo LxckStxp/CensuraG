@@ -26,6 +26,7 @@ CensuraG.Draggable = loadScript("Draggable.lua")
 CensuraG.Window = loadScript("Elements/Window.lua")
 CensuraG.TextButton = loadScript("Elements/TextButton.lua")
 CensuraG.Slider = loadScript("Elements/Slider.lua")
+CensuraG.Switch = loadScript("Elements/Switch.lua") -- Added
 
 -- Initialize ScreenGui
 local Players = game:GetService("Players")
