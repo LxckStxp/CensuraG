@@ -12,19 +12,19 @@ WindowManager.Grid = {columns = 2, spacing = 20} -- Default 2-column grid with 2
 
 function WindowManager:Init()
     logger:info("Initializing WindowManager with WindowCount: %d, ZIndexCounter: %d", self.WindowCount, self.ZIndexCounter)
-    self.Background = Utilities.createInstance("Frame", {
-        Parent = _G.CensuraG.ScreenGui,
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 0.7,
-        ZIndex = 1
-    })
-    Styling:Apply(self.Background, "Frame")
-    if self.Background then
-        self.Background.Visible = true
-        logger:debug("Background frame created: Size: %s, ZIndex: %d", tostring(self.Background.Size), self.Background.ZIndex)
-    else
-        logger:warn("Background frame creation failed")
-    end
+    -- Removed background frame to eliminate dark layer
+    -- self.Background = Utilities.createInstance("Frame", {
+    --     Parent = _G.CensuraG.ScreenGui,
+    --     Size = UDim2.new(1, 0, 1, 0),
+    --     BackgroundTransparency = 0.7,
+    --     ZIndex = 1
+    -- })
+    -- if self.Background then
+    --     self.Background.Visible = true
+    --     logger:debug("Background frame created: Size: %s, ZIndex: %d", tostring(self.Background.Size), self.Background.ZIndex)
+    -- else
+    --     logger:warn("Background frame creation failed")
+    -- end
 end
 
 function WindowManager:AddWindow(window)
@@ -74,9 +74,9 @@ function WindowManager:Destroy()
             window:Destroy()
         end
     end
-    if self.Background then
-        self.Background:Destroy()
-    end
+    -- if self.Background then
+    --     self.Background:Destroy()
+    -- end
     self.Windows = {}
     self.WindowCount = 0
     self.ZIndexCounter = 2
