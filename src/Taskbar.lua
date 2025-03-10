@@ -58,7 +58,7 @@ function Taskbar:Init()
                 return
             end
 
-            local screenHeight = _G.CensuraG.ScreenGui.AbsoluteSize.Y
+            local screenHeight = _G.CensuraG.ScreenGui and _G.CensuraG.ScreenGui.AbsoluteSize and _G.CensuraG.ScreenGui.AbsoluteSize.Y or 600 -- Default to 600 if unavailable
             local mouseY = input.Position.Y
             local threshold = screenHeight * 0.2
             local padding = 5
