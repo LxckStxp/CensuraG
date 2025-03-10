@@ -54,7 +54,8 @@ local scripts = {
     TextButton = loadScript(censuraBaseUrl, "Elements/TextButton.lua"),
     Slider = loadScript(censuraBaseUrl, "Elements/Slider.lua"),
     Switch = loadScript(censuraBaseUrl, "Elements/Switch.lua"),
-    Cluster = loadScript(censuraBaseUrl, "Elements/Cluster.lua")
+    Cluster = loadScript(censuraBaseUrl, "Elements/Cluster.lua"),
+    ImageLabel = loadScript(censuraBaseUrl, "Elements/ImageLabel.lua")
 }
 
 for moduleName, scriptFunc in pairs(scripts) do
@@ -71,7 +72,7 @@ for moduleName, scriptFunc in pairs(scripts) do
     end
 end
 
-local requiredModules = {"Utilities", "UIElement", "Styling", "Animation", "Draggable", "WindowManager", "Taskbar", "Window", "TextButton", "Slider", "Switch", "Cluster"}
+local requiredModules = {"Utilities", "UIElement", "Styling", "Animation", "Draggable", "WindowManager", "Taskbar", "Window", "TextButton", "Slider", "Switch", "Cluster", "ImageLabel"}
 for _, moduleName in ipairs(requiredModules) do
     if not CensuraG[moduleName] then
         logger:error("Required module %s is missing after loading", moduleName)
