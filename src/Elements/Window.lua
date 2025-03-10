@@ -116,7 +116,7 @@ function Window:Minimize()
     local screenHeight = _G.CensuraG.ScreenGui.AbsoluteSize.Y
     local offscreenY = screenHeight + self.Instance.Size.Y.Offset
 
-    Animation:SlideY(self.Instance, offscreenY, 0.3, function()
+    Animation:SlideY(self.Instance, offscreenY, 0.3, nil, nil, function()
         self.Instance.Visible = false
         self.Shadow.Visible = false
         self.Debounce = false
@@ -144,7 +144,7 @@ function Window:Maximize()
     self.Shadow.Visible = true
 
     local targetY = (self.CurrentPosition or self.OriginalPosition).Y.Offset
-    Animation:SlideY(self.Instance, targetY, 0.3, function()
+    Animation:SlideY(self.Instance, targetY, 0.3, nil, nil, function()
         self.Debounce = false
     end)
     Animation:SlideY(self.Shadow, targetY - 5, 0.3)
