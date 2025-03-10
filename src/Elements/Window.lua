@@ -18,10 +18,10 @@ function Window.new(title, x, y, width, height)
         Parent = _G.CensuraG.ScreenGui,
         Position = UDim2.new(0, x, 0, y),
         Size = UDim2.new(0, width, 0, height),
-        BackgroundTransparency = 1, -- Fully transparent for better visibility
+        BackgroundTransparency = Styling.Transparency.WindowBackground, -- Use defined transparency
         ZIndex = 2
     })
-    Styling:Apply(frame, "Frame")
+    Styling:Apply(frame, "Window") -- Specify Window type for styling
     logger:debug("Created window frame: %s, Initial Position: %s, Size: %s, ZIndex: %d", title, tostring(frame.Position), tostring(frame.Size), frame.ZIndex)
 
     local shadow = Utilities.createTaperedShadow(frame, 5, 5, 0.9)
@@ -33,7 +33,7 @@ function Window.new(title, x, y, width, height)
         Parent = frame,
         Size = UDim2.new(1, -titleBarHeight - 5, 0, titleBarHeight),
         Text = title,
-        BackgroundTransparency = Styling.Transparency.Highlight,
+        BackgroundTransparency = Styling.Transparency.ElementBackground,
         ZIndex = frame.ZIndex + 1
     })
     Styling:Apply(titleBar, "TextLabel")
@@ -44,7 +44,7 @@ function Window.new(title, x, y, width, height)
         Position = UDim2.new(1, -titleBarHeight, 0, 0),
         Size = UDim2.new(0, titleBarHeight, 0, titleBarHeight),
         Text = "-",
-        BackgroundTransparency = Styling.Transparency.Highlight,
+        BackgroundTransparency = Styling.Transparency.ElementBackground,
         ZIndex = frame.ZIndex + 1
     })
     Styling:Apply(minimizeButton, "TextButton")
