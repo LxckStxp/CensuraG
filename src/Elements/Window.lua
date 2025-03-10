@@ -11,8 +11,9 @@ local logger = _G.CensuraG.Logger
 function Window.new(title, x, y, width, height)
     local frame = Utilities.createInstance("Frame", {
         Parent = _G.CensuraG.ScreenGui,
+        Position = UDim2.new(0, x, 0, y),
         Size = UDim2.new(0, width, 0, height),
-        BackgroundTransparency = 0.5, -- Semi-transparent background
+        BackgroundTransparency = 0.5,
         ZIndex = 2
     })
     Styling:Apply(frame, "Frame")
@@ -37,16 +38,16 @@ function Window.new(title, x, y, width, height)
         Rotation = 45
     })
 
-    local shadow = Utilities.createTaperedShadow(frame, 5, 5, 0.95) -- Fainter shadow
+    local shadow = Utilities.createTaperedShadow(frame, 5, 5, 0.95)
     logger:debug("Created shadow for window: %s, ZIndex: %d", title, shadow.ZIndex)
 
     local titleBar = Utilities.createInstance("TextLabel", {
         Parent = frame,
         Size = UDim2.new(1, 0, 0, 20),
         Text = title,
-        ZIndex = 3,
         BackgroundTransparency = 0.3,
-        BackgroundColor3 = Styling.Colors.Highlight
+        BackgroundColor3 = Styling.Colors.Highlight,
+        ZIndex = 3
     })
     Styling:Apply(titleBar, "TextLabel")
     logger:debug("Created title bar for window: %s, Position: %s, Size: %s, ZIndex: %d, Visible: %s", title, tostring(titleBar.Position), tostring(titleBar.Size), titleBar.ZIndex, tostring(titleBar.Visible))
@@ -56,14 +57,13 @@ function Window.new(title, x, y, width, height)
         Position = UDim2.new(1, -20, 0, 0),
         Size = UDim2.new(0, 20, 0, 20),
         Text = "-",
-        ZIndex = 3,
         BackgroundTransparency = 0.3,
-        BackgroundColor3 = Styling.Colors.Highlight
+        BackgroundColor3 = Styling.Colors.Highlight,
+        ZIndex = 3
     })
     Styling:Apply(minimizeButton, "TextButton")
     logger:debug("Created minimize button for window: %s, Position: %s, Size: %s, ZIndex: %d, Visible: %s", title, tostring(minimizeButton.Position), tostring(minimizeButton.Size), minimizeButton.ZIndex, tostring(minimizeButton.Visible))
 
-    -- Add a white border to the minimize button
     local minimizeStroke = Utilities.createInstance("UIStroke", {
         Parent = minimizeButton,
         Thickness = 1,
@@ -120,12 +120,13 @@ function Window:Minimize()
         self.Shadow.Visible = false
         self.Debounce = false
         for _, child in pairs(self.Instance:GetChildren()) do
-            child.Visible = false
-            logger:debug("Set child %s of window to Visible: false during minimize", child.Name)
+            if child:IsA("GuiObject") then -- Only set Visible on GuiObjects
+                child.Visible = false
+                logger:debug("Set child %s of window to Visible: false during minimize", child.Name)
+            end
         end
     end)
     Animation:Tween(self.Shadow, {Position = UDim2.new(0, self.OriginalPosition.X.Offset - 5, 0, offscreenY - 5)}, 0.3)
-
     if _G.CensuraG and _G.CensuraG.Taskbar and _G.CensuraG.Taskbar.AddWindow then
         _G.CensuraG.Taskbar:AddWindow(self)
     else
@@ -142,8 +143,10 @@ function Window:Maximize()
     self.Shadow.Visible = true
 
     for _, child in pairs(self.Instance:GetChildren()) do
-        child.Visible = true
-        logger:debug("Set child %s of window to Visible: true during maximize", child.Name)
+        if child:IsA("GuiObject") then -- Only set Visible on GuiObjects
+            child.Visible = true
+            logger:debug("Set child %s of window to Visible: true during maximize", child.Name)
+        end
     end
 
     Animation:Tween(self.Instance, {Position = self.OriginalPosition}, 0.3, function()
