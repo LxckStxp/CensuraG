@@ -1,41 +1,24 @@
--- Animation.lua: Subtle animations for UI elements
+-- Animation.lua: Simple animation utilities
 local Animation = {}
 local TweenService = game:GetService("TweenService")
 
--- Default tween settings for a smooth, subtle effect
-local defaultTweenInfo = TweenInfo.new(
-    0.3,                  -- Duration
-    Enum.EasingStyle.Quad,-- Easing style (smooth start/end)
-    Enum.EasingDirection.Out
-)
-
--- Animate an instance
-function Animation:Tween(instance, properties, tweenInfo)
-    tweenInfo = tweenInfo or defaultTweenInfo
-    local tween = TweenService:Create(instance, tweenInfo, properties)
+function Animation:Tween(element, properties, duration, callback)
+    local tweenInfo = TweenInfo.new(duration or 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(element, tweenInfo, properties)
+    if callback then
+        tween.Completed:Connect(callback)
+    end
     tween:Play()
     return tween
 end
 
--- Common animations
-function Animation:FadeIn(instance)
-    instance.Visible = true
-    self:Tween(instance, {BackgroundTransparency = 0.1, TextTransparency = 0})
-end
-
-function Animation:FadeOut(instance)
-    local tween = self:Tween(instance, {BackgroundTransparency = 1, TextTransparency = 1})
-    tween.Completed:Connect(function()
-        instance.Visible = false
+function Animation:HoverEffect(button)
+    local originalColor = button.BackgroundColor3
+    button.MouseEnter:Connect(function()
+        self:Tween(button, {BackgroundColor3 = Styling.Colors.Accent})
     end)
-end
-
-function Animation:HoverEffect(instance)
-    instance.MouseEnter:Connect(function()
-        self:Tween(instance, {BackgroundColor3 = _G.CensuraG.Styling.Colors.Highlight})
-    end)
-    instance.MouseLeave:Connect(function()
-        self:Tween(instance, {BackgroundColor3 = _G.CensuraG.Styling.Colors.Accent})
+    button.MouseLeave:Connect(function()
+        self:Tween(button, {BackgroundColor3 = originalColor})
     end)
 end
 
