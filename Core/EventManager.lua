@@ -74,20 +74,24 @@ function EventManager:UnsubscribeFromEvent(eventName, callbackId)
 end
 
 function EventManager:FireEvent(eventName, ...)
-	if not events[eventName] then
-		logger:warn("Attempt to fire non-existent event: %s", eventName)
-		return 0
-	end
-	local fired = 0
-	for _, callback in pairs(events[eventName].Callbacks) do
-		local success, err = pcall(callback, ...)
-		if not success then
-			logger:warn("Error in %s callback: %s", eventName, err)
-		end
-		fired = fired + 1
-	end
-	logger:debug("Fired %s to %d subscribers", eventName, fired)
-	return fired
+    if not events[eventName] then
+        logger:warn("Event %s did not exist, creating it now", eventName)
+        self:CreateEvent(eventName)
+    end
+    if not events[eventName] then
+        logger:warn("Attempt to fire non-existent event: %s", eventName)
+        return 0
+    end
+    local fired = 0
+    for _, callback in pairs(events[eventName].Callbacks) do
+        local success, err = pcall(callback, ...)
+        if not success then
+            logger:warn("Error in %s callback: %s", eventName, err)
+        end
+        fired = fired + 1
+    end
+    logger:debug("Fired %s to %d subscribers", eventName, fired)
+    return fired
 end
 
 function EventManager:GetSubscriberCount(eventName)
