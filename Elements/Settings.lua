@@ -233,7 +233,7 @@ function Settings:PopulateTabContent(tabName, contentFrame)
                     _G.CensuraG.WindowManager:ArrangeWindows()
                     logger:info("Reset all window positions")
                 end
-            },
+            end,
             {NoLabel = true}
         )
         
@@ -281,7 +281,7 @@ function Settings:PopulateTabContent(tabName, contentFrame)
             function(selected)
                 Styling:SetTheme(selected)
                 logger:info("Changed theme to: %s", selected)
-            }
+            end
         )
         
         -- Transparency slider
