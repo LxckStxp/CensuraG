@@ -13,17 +13,19 @@ local function loadModule(url, moduleName)
     if ModuleCache[moduleName] then
         return ModuleCache[moduleName]
     end
-    local response = game:HttpGet(url, true)
-    if not response then
-        error("Failed to fetch module [" .. moduleName .. "] from URL: " .. url)
+    local success, response = pcall(function()
+        return game:HttpGet(url, true)
+    end)
+    if not success or not response then
+        return nil, "Failed to fetch module [" .. moduleName .. "] from URL: " .. url .. " - " .. tostring(response)
     end
     local moduleFunc, err = loadstring(response)
     if not moduleFunc then
-        error("Failed to compile [" .. moduleName .. "]: " .. err)
+        return nil, "Failed to compile [" .. moduleName .. "]: " .. err
     end
     local success, result = pcall(moduleFunc)
     if not success then
-        error("Failed to execute module [" .. moduleName .. "]: " .. result)
+        return nil, "Failed to execute module [" .. moduleName .. "]: " .. result
     end
     ModuleCache[moduleName] = result
     return result
@@ -34,7 +36,7 @@ local baseUrl = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/"
 local oratioUrl = "https://raw.githubusercontent.com/LxckStxp/Oratio/main/init.lua"
 
 -- Load Oratio first to create our logger.
-local Oratio = loadModule(oratioUrl, "Oratio")
+local Oratio, oratioErr = loadModule(oratioUrl, "Oratio")
 if Oratio then
     -- Create the logger using Oratio.new. (Oratio's dependencies are loaded in its init)
     CensuraG.Logger = Oratio.new({
@@ -52,6 +54,7 @@ else
         error = function(...) warn("[ERROR][CensuraG]", ...) end,
         critical = function(...) warn("[CRITICAL][CensuraG]", ...) end
     }
+    CensuraG.Logger:warn("Failed to load Oratio: %s", oratioErr or "Unknown error")
 end
 
 CensuraG.Logger:info("Initializing CensuraG v%s", CensuraG._VERSION)
@@ -78,17 +81,38 @@ local modules = {
     { name = "Settings", path = "Elements/Settings.lua" }
 }
 
--- Load each module into CensuraG using DependencyManager
+-- Load all modules into CensuraG first
+local loadedModules = {}
 for _, mod in ipairs(modules) do
     local moduleUrl = baseUrl .. mod.path
-    local module = loadModule(moduleUrl, mod.name)
+    local module, err = loadModule(moduleUrl, mod.name)
     if module then
         CensuraG[mod.name] = module
-        CensuraG.DependencyManager:Register(mod.name, module)
-        CensuraG.Logger:debug("Loaded and registered module: %s", mod.name)
+        loadedModules[mod.name] = module
+        CensuraG.Logger:debug("Loaded module: %s", mod.name)
     else
-        CensuraG.Logger:error("Failed to load module: %s", mod.name)
+        CensuraG.Logger:error("Failed to load module: %s - %s", mod.name, err or "Unknown error")
     end
+end
+
+-- Register modules with DependencyManager if available
+if CensuraG.DependencyManager then
+    for name, module in pairs(loadedModules) do
+        CensuraG.DependencyManager:Register(name, module)
+        CensuraG.Logger:debug("Registered module: %s", name)
+    end
+else
+    CensuraG.Logger:warn("DependencyManager not available, skipping module registration")
+    -- Create a fallback DependencyManager with no-op functions
+    CensuraG.DependencyManager = {
+        Register = function() end,
+        Get = function(_, name) return loadedModules[name] end,
+        HasDependency = function(_, name) return loadedModules[name] ~= nil end,
+        ListDependencies = function() return loadedModules end,
+        Remove = function() return false end,
+        Clear = function() return 0 end,
+        RegisterBatch = function() return 0 end
+    }
 end
 
 -- Initialize the ScreenGui with fallback for external contexts
@@ -168,7 +192,9 @@ function CensuraG.AddCustomElement(name, class)
         return
     end
     CensuraG[name] = class
-    CensuraG.DependencyManager:Register(name, class)
+    if CensuraG.DependencyManager then
+        CensuraG.DependencyManager:Register(name, class)
+    end
     CensuraG.Logger:debug("Added custom element: %s", name)
 end
 
