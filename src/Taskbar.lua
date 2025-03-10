@@ -58,7 +58,7 @@ function Taskbar:Init()
                 return
             end
 
-            local screenHeight = _G.CensuraG.ScreenGui and _G.CensuraG.ScreenGui.AbsoluteSize and _G.CensuraG.ScreenGui.AbsoluteSize.Y or 600 -- Default to 600 if unavailable
+            local screenHeight = _G.CensuraG.ScreenGui and _G.CensuraG.ScreenGui.AbsoluteSize and _G.CensuraG.ScreenGui.AbsoluteSize.Y or 600
             local mouseY = input.Position.Y
             local threshold = screenHeight * 0.2
             local padding = 5
@@ -77,7 +77,9 @@ function Taskbar:Init()
                     self.Cluster.Instance.BackgroundTransparency = Styling.Transparency.Background
                     if self.Cluster.AvatarImage and self.Cluster.AvatarImage.Image then
                         self.Cluster.AvatarImage.Image.Visible = true
-                        self.Cluster.AvatarImage.Image.ImageTransparency = 0
+                        if self.Cluster.AvatarImage.Image.ImageTransparency then
+                            self.Cluster.AvatarImage.Image.ImageTransparency = 0
+                        end
                     end
                     if self.Cluster.DisplayName then
                         self.Cluster.DisplayName.Visible = true
@@ -118,7 +120,9 @@ function Taskbar:Init()
                 self.Cluster.Instance.BackgroundTransparency = Styling.Transparency.Background
                 if self.Cluster.AvatarImage and self.Cluster.AvatarImage.Image then
                     self.Cluster.AvatarImage.Image.Visible = true
-                    self.Cluster.AvatarImage.Image.ImageTransparency = 0
+                    if self.Cluster.AvatarImage.Image.ImageTransparency then
+                        self.Cluster.AvatarImage.Image.ImageTransparency = 0
+                    end
                 end
                 if self.Cluster.DisplayName then
                     self.Cluster.DisplayName.Visible = true
