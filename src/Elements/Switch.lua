@@ -32,7 +32,6 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
     Styling:Apply(frame, "Frame")
     logger:debug("Switch frame created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Parent: %s", tostring(frame.Position), tostring(frame.Size), frame.ZIndex, tostring(frame.Visible), tostring(frame.Parent))
 
-    -- Add a thin white border
     local frameStroke = Utilities.createInstance("UIStroke", {
         Parent = frame,
         Thickness = 1,
