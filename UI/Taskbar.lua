@@ -104,7 +104,7 @@ function Taskbar:SetupAutoHide()
     -- Initially hide the taskbar
     self.Instance.Visible = false
     logger:debug("Taskbar auto-hide behavior set up")
-}
+end
 
 -- Add a window to the taskbar
 function Taskbar:AddWindow(window)
@@ -196,7 +196,7 @@ function Taskbar:UpdateButtonPositions()
     
     -- Update canvas size
     self.ButtonContainer.CanvasSize = UDim2.new(0, #self.Windows * (self.ButtonWidth + 5), 0, 0)
-}
+end
 
 -- Refresh the user info cluster
 function Taskbar:RefreshCluster()
@@ -231,11 +231,11 @@ function Taskbar:Show(instant)
     else
         Animation:SlideY(self.Instance, -self.Height, 0.3, nil, nil, function()
             self.Visible = true
-        })
+        end)
     end
     
     logger:debug("Taskbar shown")
-}
+end
 
 -- Hide the taskbar
 function Taskbar:Hide(instant)
@@ -249,11 +249,11 @@ function Taskbar:Hide(instant)
         Animation:SlideY(self.Instance, self.Height, 0.3, nil, nil, function()
             self.Instance.Visible = false
             self.Visible = false
-        })
+        end)
     end
     
     logger:debug("Taskbar hidden")
-}
+end
 
 -- Toggle taskbar visibility
 function Taskbar:Toggle()
@@ -262,7 +262,7 @@ function Taskbar:Toggle()
     else
         self:Show()
     end
-}
+end
 
 -- Clean up resources
 function Taskbar:Destroy()
@@ -288,6 +288,6 @@ function Taskbar:Destroy()
     end
     
     logger:info("Taskbar destroyed")
-}
+end
 
 return Taskbar
