@@ -1,4 +1,4 @@
--- Elements/ImageLabel.lua: Styled image label with modern miltech styling
+-- Elements/ImageLabel.lua: Styled image label
 local ImageLabel = setmetatable({}, {__index = _G.CensuraG.UIElement})
 ImageLabel.__index = ImageLabel
 
@@ -8,12 +8,7 @@ local logger = _G.CensuraG.Logger
 
 function ImageLabel.new(parent, imageUrl, x, y, width, height, options)
     options = options or {}
-    if not parent or not parent.Instance then
-        logger:error("Invalid parent for ImageLabel: %s", tostring(parent))
-        return nil
-    end
-
-    logger:debug("Creating ImageLabel with parent: %s, ImageURL: %s, Position: (%d, %d)", tostring(parent.Instance), imageUrl, x, y)
+    if not parent or not parent.Instance then return nil end
 
     local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
@@ -25,15 +20,12 @@ function ImageLabel.new(parent, imageUrl, x, y, width, height, options)
 
     local image = Utilities.createInstance("ImageLabel", {
         Parent = frame,
-        Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(0, width or 50, 0, height or 50),
-        BackgroundTransparency = Styling.Transparency.ElementBackground,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
         Image = imageUrl or "",
-        Visible = true,
         ZIndex = frame.ZIndex + 1
     })
     Styling:Apply(image, "ImageLabel")
-    logger:debug("ImageLabel created: Position: %s, Size: %s, ZIndex: %d", tostring(image.Position), tostring(image.Size), image.ZIndex)
 
     local self = setmetatable({
         Instance = frame,
@@ -42,7 +34,7 @@ function ImageLabel.new(parent, imageUrl, x, y, width, height, options)
 
     function self:SetImage(url)
         self.Image.Image = url
-        logger:debug("Updated ImageLabel image to: %s", url)
+        logger:debug("ImageLabel updated to: %s", url)
     end
 
     function self:Destroy()
