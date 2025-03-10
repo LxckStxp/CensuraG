@@ -1,5 +1,5 @@
 -- UI/WindowManager.lua
--- Enhanced window management with improved structure and functionality
+-- Enhanced window management with improved structure and organization
 
 local WindowManager = {}
 local logger = _G.CensuraG.Logger
@@ -7,7 +7,9 @@ local Utilities = _G.CensuraG.Utilities
 local Styling = _G.CensuraG.Styling
 local Animation = _G.CensuraG.Animation
 local EventManager = _G.CensuraG.EventManager
+local ErrorHandler = _G.CensuraG.ErrorHandler
 
+-- State tracking
 WindowManager.Windows = {}
 WindowManager.ZIndexCounter = 10
 WindowManager.WindowCount = 0
@@ -16,15 +18,20 @@ WindowManager.MaximizedWindow = nil
 WindowManager.FocusedWindow = nil
 WindowManager.ModalWindow = nil
 
--- Private helper functions
+-- =============================================
+-- Private Helper Functions
+-- =============================================
+-- Update z-index for a window and its children
 local function updateZIndex(window, zIndex)
     if not window or not window.Instance then return end
     
     window.Instance.ZIndex = zIndex
-    -- Update all children
+    
+    -- Update all direct children
     for _, child in ipairs(window.Instance:GetChildren()) do
         if child:IsA("GuiObject") then 
             child.ZIndex = zIndex + 1
+            
             -- Update nested children
             for _, grandchild in ipairs(child:GetChildren()) do
                 if grandchild:IsA("GuiObject") then
@@ -35,11 +42,39 @@ local function updateZIndex(window, zIndex)
     end
 end
 
+-- Get screen size with error handling
 local function getScreenSize()
-    return Utilities.getScreenSize()
+    local size = Utilities.getScreenSize()
+    
+    -- Provide fallback if screen size is invalid
+    if size.X <= 0 or size.Y <= 0 then
+        logger:warn("Invalid screen size detected, using fallback")
+        return Vector2.new(1366, 768)
+    end
+    
+    return size
 end
 
--- Main methods
+-- Process a window with an action
+local function processWindow(windows, window, action)
+    if not window then return nil end
+    
+    -- Find the window in the collection
+    for i, w in ipairs(windows) do
+        if w == window then
+            if action then
+                return action(w, i)
+            end
+            return w, i
+        end
+    end
+    
+    return nil
+end
+
+-- =============================================
+-- Initialization
+-- =============================================
 function WindowManager:Init()
     logger:info("Initializing WindowManager with %d windows", self.WindowCount)
     
@@ -57,7 +92,10 @@ function WindowManager:Init()
     -- Add click handler to modal background
     self.ModalBackground.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 and self.ModalWindow then
-            Animation:ShakeEffect(self.ModalWindow.Instance, 3, 3)
+            -- Shake the modal window to indicate it can't be dismissed
+            ErrorHandler:TryCatch(function()
+                Animation:ShakeEffect(self.ModalWindow.Instance, 3, 3)
+            end, "Error applying shake effect to modal window")
         end
     end)
     
@@ -73,7 +111,11 @@ function WindowManager:Init()
     return self
 end
 
+-- =============================================
+-- Screen Size Management
+-- =============================================
 function WindowManager:HandleScreenSizeChanges()
+    -- Update windows based on current screen size
     local function updateWindows()
         local screenSize = getScreenSize()
         self.Grid.columns = screenSize.X > 1200 and 3 or 2
@@ -86,6 +128,7 @@ function WindowManager:HandleScreenSizeChanges()
                 if pos.X.Offset + size.X.Offset > screenSize.X or 
                    pos.Y.Offset + size.Y.Offset > screenSize.Y then
                     
+                    -- Reposition window to be fully visible
                     local newX = math.min(pos.X.Offset, screenSize.X - size.X.Offset - 10)
                     local newY = math.min(pos.Y.Offset, screenSize.Y - size.Y.Offset - 10)
                     
@@ -103,24 +146,32 @@ function WindowManager:HandleScreenSizeChanges()
     task.spawn(function()
         while true do
             wait(5)
-            pcall(updateWindows)
+            ErrorHandler:TryCatch(updateWindows, "Error updating window positions")
         end
     end)
 end
 
+-- =============================================
+-- Window Finding and Management
+-- =============================================
+-- Find a window based on a predicate or direct match
 function WindowManager:FindWindow(windowOrPredicate)
+    if not windowOrPredicate then return nil, nil end
+    
     local predicate = type(windowOrPredicate) == "function" 
         and windowOrPredicate 
         or function(w) return w == windowOrPredicate end
-        
+    
     for i, window in ipairs(self.Windows) do
         if predicate(window) then
             return window, i
         end
     end
+    
     return nil, nil
 end
 
+-- Add a window to the manager
 function WindowManager:AddWindow(window)
     if not window or not window.Instance then
         logger:warn("Invalid window instance in AddWindow")
@@ -153,6 +204,7 @@ function WindowManager:AddWindow(window)
     return window
 end
 
+-- Position a window in the grid layout
 function WindowManager:PositionWindowInGrid(window)
     if not window or not window.Instance then return end
     
@@ -180,41 +232,45 @@ function WindowManager:PositionWindowInGrid(window)
     logger:debug("Positioned window %s at (%d, %d)", window.Instance.Name, x, y)
 end
 
+-- Bring a window to the front
 function WindowManager:BringToFront(window)
-    if not window or not window.Instance then return end
+    if not window then return end
     
-    local _, index = self:FindWindow(window)
-    if not index then return end
+    local foundWindow, index = self:FindWindow(window)
+    if not foundWindow then return end
     
     -- Update Z-index
-    updateZIndex(window, self.ZIndexCounter)
+    updateZIndex(foundWindow, self.ZIndexCounter)
     self.ZIndexCounter = self.ZIndexCounter + 1
     
     -- Move to end of array (top of visual stack)
     table.remove(self.Windows, index)
-    table.insert(self.Windows, window)
+    table.insert(self.Windows, foundWindow)
     
     -- Set as focused window
-    self.FocusedWindow = window
+    self.FocusedWindow = foundWindow
     
-    logger:debug("Brought window to front: %s; new ZIndex: %d", window.Instance.Name, window.Instance.ZIndex)
-    EventManager:FireEvent("WindowFocused", window)
+    logger:debug("Brought window to front: %s; new ZIndex: %d", 
+        foundWindow.Instance.Name, foundWindow.Instance.ZIndex)
     
-    return window
+    EventManager:FireEvent("WindowFocused", foundWindow)
+    
+    return foundWindow
 end
 
+-- Remove a window from the manager
 function WindowManager:RemoveWindow(window)
     if not window then return false end
     
-    local _, index = self:FindWindow(window)
-    if not index then
+    local foundWindow, index = self:FindWindow(window)
+    if not foundWindow then
         logger:warn("Window not found for removal")
         return false
     end
     
     -- Clean up taskbar button if exists
-    if window.TaskbarButton then 
-        window.TaskbarButton:Destroy() 
+    if foundWindow.TaskbarButton then 
+        foundWindow.TaskbarButton:Destroy() 
     end
     
     -- Remove from collection
@@ -222,22 +278,26 @@ function WindowManager:RemoveWindow(window)
     self.WindowCount = self.WindowCount - 1
     
     -- Update focused window if needed
-    if self.FocusedWindow == window then
+    if self.FocusedWindow == foundWindow then
         self.FocusedWindow = self.Windows[#self.Windows]
     end
     
     -- Update modal window if needed
-    if self.ModalWindow == window then
+    if self.ModalWindow == foundWindow then
         self.ModalWindow = nil
         self.ModalBackground.Visible = false
     end
     
-    logger:info("Removed window: %s; count: %d", window.Instance.Name, self.WindowCount)
-    EventManager:FireEvent("WindowRemoved", window)
+    logger:info("Removed window: %s; count: %d", foundWindow.Instance.Name, self.WindowCount)
+    EventManager:FireEvent("WindowRemoved", foundWindow)
     
     return true
 end
 
+-- =============================================
+-- Window State Management
+-- =============================================
+-- Maximize a window
 function WindowManager:MaximizeWindow(window)
     if not window or not window.Instance then return false end
     
@@ -267,8 +327,10 @@ function WindowManager:MaximizeWindow(window)
     return true
 end
 
+-- Restore a window to its previous state
 function WindowManager:RestoreWindow(window)
-    if not window or not window.Instance or not window.IsMaximized then return false end
+    if not window or not window.Instance then return false end
+    if not window.IsMaximized then return false end
     if not window.PreviousPosition or not window.PreviousSize then return false end
     
     -- Animate back to original size/position
@@ -289,6 +351,7 @@ function WindowManager:RestoreWindow(window)
     return true
 end
 
+-- Toggle maximize/restore state
 function WindowManager:ToggleMaximize(window)
     if not window or not window.Instance then return false end
     
@@ -299,6 +362,10 @@ function WindowManager:ToggleMaximize(window)
     end
 end
 
+-- =============================================
+-- Modal Window Management
+-- =============================================
+-- Show a window as modal
 function WindowManager:ShowModal(window)
     if not window or not window.Instance then return false end
     
@@ -326,6 +393,7 @@ function WindowManager:ShowModal(window)
     return true
 end
 
+-- Hide a modal window
 function WindowManager:HideModal(window)
     if not window or not window.Instance or not window.IsModal then return false end
     
@@ -351,6 +419,10 @@ function WindowManager:HideModal(window)
     return true
 end
 
+-- =============================================
+-- Window Arrangement
+-- =============================================
+-- Arrange windows in a grid
 function WindowManager:ArrangeWindows()
     local screenSize = getScreenSize()
     local cols = self.Grid.columns
@@ -393,6 +465,7 @@ function WindowManager:ArrangeWindows()
     return true
 end
 
+-- Arrange windows in cascade
 function WindowManager:CascadeWindows()
     local screenSize = getScreenSize()
     local offset = 30
@@ -417,12 +490,18 @@ function WindowManager:CascadeWindows()
     return true
 end
 
+-- =============================================
+-- Batch Window Operations
+-- =============================================
+-- Minimize all windows
 function WindowManager:MinimizeAllWindows()
     local count = 0
     for _, window in ipairs(self.Windows) do
         if window.Minimize and not window.Minimized then
-            window:Minimize()
-            count = count + 1
+            ErrorHandler:TryCatch(function()
+                window:Minimize()
+                count = count + 1
+            end, "Error minimizing window")
         end
     end
     
@@ -430,12 +509,15 @@ function WindowManager:MinimizeAllWindows()
     return count
 end
 
+-- Restore all windows
 function WindowManager:RestoreAllWindows()
     local count = 0
     for _, window in ipairs(self.Windows) do
         if window.Restore and window.Minimized then
-            window:Restore()
-            count = count + 1
+            ErrorHandler:TryCatch(function()
+                window:Restore()
+                count = count + 1
+            end, "Error restoring window")
         end
     end
     
@@ -443,6 +525,7 @@ function WindowManager:RestoreAllWindows()
     return count
 end
 
+-- Close all windows
 function WindowManager:CloseAllWindows()
     local count = #self.Windows
     
@@ -454,9 +537,11 @@ function WindowManager:CloseAllWindows()
     
     -- Close all windows
     for _, window in ipairs(copy) do
-        if window.Destroy then 
-            window:Destroy() 
-        end
+        ErrorHandler:TryCatch(function()
+            if window.Destroy then 
+                window:Destroy() 
+            end
+        end, "Error closing window")
     end
     
     -- Clear state
@@ -472,36 +557,47 @@ function WindowManager:CloseAllWindows()
     return count
 end
 
+-- =============================================
+-- Information and Utility Methods
+-- =============================================
+-- Get the currently focused window
 function WindowManager:GetFocusedWindow()
     return self.FocusedWindow
 end
 
+-- Get a window by its ID
 function WindowManager:GetWindowById(id)
     return self:FindWindow(function(w) return w.Id == id end)
 end
 
+-- Get a window by its title
 function WindowManager:GetWindowByTitle(title)
     return self:FindWindow(function(w) 
         return w.TitleText and w.TitleText.Text == title 
     end)
 end
 
+-- Get the total number of windows
 function WindowManager:GetWindowCount()
     return self.WindowCount
 end
 
+-- Check if a window is maximized
 function WindowManager:IsWindowMaximized(window)
     return window and window.IsMaximized == true
 end
 
+-- Check if a window is minimized
 function WindowManager:IsWindowMinimized(window)
     return window and window.Minimized == true
 end
 
+-- Check if a window is modal
 function WindowManager:IsWindowModal(window)
     return window and window.IsModal == true
 end
 
+-- Configure the grid layout
 function WindowManager:SetGridLayout(columns, spacing, startX, startY)
     self.Grid.columns = columns or self.Grid.columns
     self.Grid.spacing = spacing or self.Grid.spacing
@@ -514,6 +610,9 @@ function WindowManager:SetGridLayout(columns, spacing, startX, startY)
     return self.Grid
 end
 
+-- =============================================
+-- Cleanup
+-- =============================================
 function WindowManager:Destroy()
     -- Close all windows
     self:CloseAllWindows()
