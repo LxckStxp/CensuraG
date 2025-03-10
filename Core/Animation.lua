@@ -102,9 +102,19 @@ function Animation:CancelTweens(element)
     end
 end
 
+-- Store hover connections by element
+local hoverConnections = {}
+
 -- Add hover effect to an element
 function Animation:HoverEffect(element, hoverProperties, leaveProperties)
     if not element then return end
+    
+    -- Clean up any existing hover connections for this element
+    if hoverConnections[element] then
+        for _, conn in ipairs(hoverConnections[element]) do
+            conn:Disconnect()
+        end
+    end
     
     hoverProperties = hoverProperties or {
         BackgroundTransparency = _G.CensuraG.Styling.Transparency.ElementBackground - 0.1
@@ -126,10 +136,21 @@ function Animation:HoverEffect(element, hoverProperties, leaveProperties)
         logger:debug("Hover effect off: %s", tostring(element))
     end))
     
-    -- Store connections for cleanup
-    element:SetAttribute("HoverEffectConnections", connections)
+    -- Store connections in our table instead of as an attribute
+    hoverConnections[element] = connections
     
     return connections
+end
+
+-- Cleanup function for hover effects (call when destroying elements)
+function Animation:CleanupHoverEffects(element)
+    if hoverConnections[element] then
+        for _, conn in ipairs(hoverConnections[element]) do
+            conn:Disconnect()
+        end
+        hoverConnections[element] = nil
+        logger:debug("Cleaned up hover effects for %s", tostring(element))
+    end
 end
 
 -- Fade in effect
