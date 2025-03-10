@@ -9,7 +9,7 @@ function Utilities.createInstance(className, properties)
     return instance
 end
 
--- Method to create a tapered shadow effect using an ImageLabel
+-- Method to create a subtle shadow effect using UIGradient
 function Utilities.createTaperedShadow(parent, offsetX, offsetY, transparency)
     local shadow = Utilities.createInstance("Frame", {
         Parent = parent.Parent,
