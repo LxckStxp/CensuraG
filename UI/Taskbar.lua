@@ -59,7 +59,7 @@ function Taskbar:Init()
         self.CheckingMouse = true
         local mousePos = UserInputService:GetMouseLocation()
         local screenHeight = Utilities.getScreenSize().Y
-        logger:debug("Mouse Y: %d, Screen Height: %d, Taskbar Y: %d", mousePos.Y, screenHeight, self.Instance.Position.Y.Offset)
+        --logger:debug("Mouse Y: %d, Screen Height: %d, Taskbar Y: %d", mousePos.Y, screenHeight, self.Instance.Position.Y.Offset)
         if mousePos.Y >= screenHeight - self.ShowThreshold and not self.Visible then
             self:ShowTaskbar()
         elseif mousePos.Y < screenHeight - self.Height - self.ShowThreshold and self.Visible then
