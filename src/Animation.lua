@@ -3,12 +3,14 @@ local Animation = {}
 local TweenService = game:GetService("TweenService")
 local logger = _G.CensuraG.Logger
 
-function Animation:SlideY(element, targetY, duration, callback)
-    local tweenInfo = TweenInfo.new(duration or 0.3, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
+function Animation:SlideY(element, targetY, duration, easingStyle, easingDirection, callback)
+    local easingStyle = easingStyle or Enum.EasingStyle.Linear
+    local easingDirection = easingDirection or Enum.EasingDirection.InOut
+    local tweenInfo = TweenInfo.new(duration or 0.3, easingStyle, easingDirection)
     local currentPosition = element.Position
     local targetPosition = UDim2.new(currentPosition.X.Scale, currentPosition.X.Offset, 0, targetY)
     local tween = TweenService:Create(element, tweenInfo, {Position = targetPosition})
-    logger:debug("Started Y-axis slide for element: %s, Target Y: %d", tostring(element), targetY)
+    logger:debug("Started Y-axis slide for element: %s, Target Y: %d, Easing: %s, Direction: %s", tostring(element), targetY, tostring(easingStyle), tostring(easingDirection))
     if callback then
         tween.Completed:Connect(callback)
     end
