@@ -90,7 +90,11 @@ function Window:Minimize()
     end)
     Animation:Tween(self.Shadow, {Position = UDim2.new(0, self.OriginalPosition.X.Offset - 10, 0, offscreenY - 10)}, 0.3)
 
-    _G.CensuraG.Taskbar:AddWindow(self)
+    if _G.CensuraG and _G.CensuraG.Taskbar and _G.CensuraG.Taskbar.AddWindow then
+        _G.CensuraG.Taskbar:AddWindow(self)
+    else
+        warn("Taskbar or AddWindow method is not available")
+    end
     _G.CensuraG.WindowManager:RemoveWindow(self)
 end
 
