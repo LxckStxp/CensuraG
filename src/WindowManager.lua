@@ -1,18 +1,30 @@
--- WindowManager.lua: Manages windows with dynamic ZIndex and positioning
+-- WindowManager.lua: Manages windows with modern miltech styling and grid layout
 local WindowManager = {}
 
+local Utilities = _G.CensuraG.Utilities
+local Styling = _G.CensuraG.Styling
 local logger = _G.CensuraG.Logger
+
 WindowManager.Windows = {}
-WindowManager.ZIndexCounter = 2
+WindowManager.ZIndexCounter = 2 -- Start with a base ZIndex
 WindowManager.WindowCount = 0
-WindowManager.MaxZIndex = 100 -- Cap for Z-index to prevent overflow
+WindowManager.Grid = {columns = 2, spacing = 20} -- Default 2-column grid with 20px spacing
 
 function WindowManager:Init()
-    -- Reset state on initialization
-    self.Windows = {}
-    self.ZIndexCounter = 2
-    self.WindowCount = 0
-    logger:info("WindowManager initialized with WindowCount: %d, ZIndexCounter: %d", self.WindowCount, self.ZIndexCounter)
+    logger:info("Initializing WindowManager with WindowCount: %d, ZIndexCounter: %d", self.WindowCount, self.ZIndexCounter)
+    self.Background = Utilities.createInstance("Frame", {
+        Parent = _G.CensuraG.ScreenGui,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 0.7,
+        ZIndex = 1
+    })
+    Styling:Apply(self.Background, "Frame")
+    if self.Background then
+        self.Background.Visible = true
+        logger:debug("Background frame created: Size: %s, ZIndex: %d", tostring(self.Background.Size), self.Background.ZIndex)
+    else
+        logger:warn("Background frame creation failed")
+    end
 end
 
 function WindowManager:AddWindow(window)
@@ -21,52 +33,49 @@ function WindowManager:AddWindow(window)
         return
     end
 
-    -- Check for duplicate windows
-    if table.find(self.Windows, window) then
-        logger:debug("Window already exists in WindowManager, updating state")
-        return
-    end
-
-    table.insert(self.Windows, window)
+    self.WindowCount = self.WindowCount + 1
     window.Instance.ZIndex = self.ZIndexCounter
     self.ZIndexCounter = self.ZIndexCounter + 1
-    if self.ZIndexCounter > self.MaxZIndex then
-        self.ZIndexCounter = 2
-        self:ReassignZIndices()
-    end
-    self.WindowCount = self.WindowCount + 1
-    logger:debug("Added window with ZIndex: %d, Total Windows: %d", window.Instance.ZIndex, self.WindowCount)
+    table.insert(self.Windows, window)
+    logger:info("Added window: %s, WindowCount: %d, ZIndex: %d", window.Instance.Name, self.WindowCount, window.Instance.ZIndex)
 
-    -- Set initial position only if not already dragged
-    if not window.CurrentPosition then
-        local baseX, baseY = 50, 50
-        local offsetX, offsetY = 20, 20
-        window.Instance.Position = UDim2.new(0, baseX + ((self.WindowCount - 1) % 3) * (300 + offsetX), 0, baseY + math.floor((self.WindowCount - 1) / 3) * (200 + offsetY))
-        window.OriginalPosition = window.Instance.Position
-        logger:info("Window registered with WindowManager at initial Position: %s, ZIndex: %d", tostring(window.Instance.Position), window.Instance.ZIndex)
-    else
-        logger:info("Window registered with WindowManager at dragged Position: %s, ZIndex: %d", tostring(window.CurrentPosition), window.Instance.ZIndex)
-    end
+    -- Automatic grid positioning
+    local screenWidth = _G.CensuraG.ScreenGui.AbsoluteSize.X or 800
+    local screenHeight = _G.CensuraG.ScreenGui.AbsoluteSize.Y or 600
+    local windowWidth = window.Instance.Size.X.Offset
+    local windowHeight = window.Instance.Size.Y.Offset
+    local cols = self.Grid.columns
+    local rows = math.ceil(self.WindowCount / cols)
+    local x = 50 + ((self.WindowCount - 1) % cols) * (windowWidth + self.Grid.spacing)
+    local y = 50 + math.floor((self.WindowCount - 1) / cols) * (windowHeight + self.Grid.spacing)
+
+    if x + windowWidth > screenWidth then x = 50 end -- Wrap to next row if out of bounds
+    if y + windowHeight > screenHeight then y = 50 end -- Reset if off-screen
+
+    window.Instance.Position = UDim2.new(0, x, 0, y)
+    logger:debug("Positioned window: %s at (%d, %d), Size: %s", window.Instance.Name, x, y, tostring(window.Instance.Size))
 end
 
-function WindowManager:ReassignZIndices()
-    -- Reassign Z-indices starting from 2, incrementing for each window
-    local zIndex = 2
-    for _, w in ipairs(self.Windows) do
-        if w.Instance then
-            w.Instance.ZIndex = zIndex
-            zIndex = zIndex + 1
-        end
+function WindowManager:BringToFront(window)
+    if not window or not window.Instance then return end
+    local currentIndex = table.find(self.Windows, window)
+    if currentIndex then
+        table.remove(self.Windows, currentIndex)
+        table.insert(self.Windows, window)
+        window.Instance.ZIndex = self.ZIndexCounter
+        self.ZIndexCounter = self.ZIndexCounter + 1
+        logger:info("Brought window to front: %s, New ZIndex: %d", window.Instance.Name, window.Instance.ZIndex)
     end
-    self.ZIndexCounter = zIndex
-    logger:debug("Reassigned Z-indices, new ZIndexCounter: %d", self.ZIndexCounter)
 end
 
 function WindowManager:Destroy()
-    for _, window in pairs(self.Windows) do
-        if window.Destroy then
+    for _, window in ipairs(self.Windows) do
+        if window and window.Destroy then
             window:Destroy()
         end
+    end
+    if self.Background then
+        self.Background:Destroy()
     end
     self.Windows = {}
     self.WindowCount = 0
