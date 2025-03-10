@@ -4,6 +4,7 @@
 local TweenService = game:GetService("TweenService") or { Create = function() return { Play = function() end, Completed = Instance.new("BindableEvent") } end }
 local Animation = {}
 local activeTweens = {}
+local hoverConnections = {} -- To store hover event connections for cleanup
 
 local function cleanupTweens()
     for i = #activeTweens, 1, -1 do
@@ -72,6 +73,44 @@ function Animation:SlideY(element, targetY, duration, easingStyle, easingDirecti
     end)
     tween:Play()
     return tween
+end
+
+function Animation:HoverEffect(element, hoverProps, leaveProps)
+    if not element or not element.Parent then
+        return
+    end
+    local id = tostring(element) .. "_hover"
+    if hoverConnections[id] then
+        for _, conn in ipairs(hoverConnections[id]) do
+            conn:Disconnect()
+        end
+        hoverConnections[id] = nil
+    end
+
+    hoverConnections[id] = {}
+    local originalSize = element.Size
+    local originalTransparency = element.BackgroundTransparency
+
+    local function onHover()
+        Animation:Elastic(element, hoverProps or { Size = UDim2.new(originalSize.X.Scale * 1.05, originalSize.X.Offset, originalSize.Y.Scale * 1.05, originalSize.Y.Offset) }, 0.3)
+    end
+
+    local function onLeave()
+        Animation:Elastic(element, leaveProps or { Size = originalSize, BackgroundTransparency = originalTransparency }, 0.3)
+    end
+
+    table.insert(hoverConnections[id], element.MouseEnter:Connect(onHover))
+    table.insert(hoverConnections[id], element.MouseLeave:Connect(onLeave))
+end
+
+function Animation:CleanupHoverEffects(element)
+    local id = tostring(element) .. "_hover"
+    if hoverConnections[id] then
+        for _, conn in ipairs(hoverConnections[id]) do
+            conn:Disconnect()
+        end
+        hoverConnections[id] = nil
+    end
 end
 
 -- You can add additional effects as wrappers around Tween.
