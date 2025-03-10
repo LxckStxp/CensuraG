@@ -37,9 +37,12 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         Size = UDim2.new(0, width, 0, 20),
         Text = labelText,
         BackgroundTransparency = 1,
-        ZIndex = frame.ZIndex + 1
+        ZIndex = frame.ZIndex + 2
     })
     Styling:Apply(label, "TextLabel")
+    -- Force text visibility
+    label.TextTransparency = 0
+    label.Visible = true
     logger:debug("Switch label created: Position: %s, Size: %s, Text: %s", tostring(label.Position), tostring(label.Size), label.Text)
 
     local track = Utilities.createInstance("Frame", {
@@ -70,10 +73,13 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         Size = UDim2.new(0, 40, 0, height),
         Text = defaultState and "On" or "Off",
         BackgroundTransparency = 1,
-        ZIndex = frame.ZIndex + 1
+        ZIndex = frame.ZIndex + 2
     }) or nil
     if labelValue then
         Styling:Apply(labelValue, "TextLabel")
+        -- Force text visibility
+        labelValue.TextTransparency = 0
+        labelValue.Visible = true
         logger:debug("Switch value label created: Position: %s, Size: %s, Text: %s", tostring(labelValue.Position), tostring(labelValue.Size), labelValue.Text)
     end
 
@@ -98,6 +104,8 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         Animation:Tween(track, {BackgroundTransparency = newTransparency})
         if self.LabelValue then
             self.LabelValue.Text = self.State and "On" or "Off"
+            self.LabelValue.TextTransparency = 0
+            self.LabelValue.Visible = true
         end
         if options.OnToggled then
             options.OnToggled(self.State)
