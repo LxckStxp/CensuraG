@@ -1,6 +1,4 @@
--- Elements/Window.lua
--- Enhanced window element
-
+-- Elements/Window.lua (partial update, ensuring ContentContainer)
 local Window = setmetatable({}, { __index = _G.CensuraG.UIElement })
 Window.__index = Window
 
@@ -20,7 +18,7 @@ function Window.new(title, x, y, width, height, options)
         Parent = _G.CensuraG.ScreenGui,
         Position = UDim2.new(0, x or 100, 0, y or 100),
         Size = UDim2.new(0, width, 0, height),
-        ZIndex = 10,
+        ZIndex = 100,
         Name = "Window_"..(options.Name or title or "Unnamed")
     })
     Styling:Apply(frame, "Window")
@@ -28,7 +26,7 @@ function Window.new(title, x, y, width, height, options)
     local shadow = _G.CensuraG.Config.EnableShadows and Utilities.createTaperedShadow(frame, 5, 5, 0.9)
     if shadow then shadow.ZIndex = frame.ZIndex - 1 end
     
-    local titleBarHeight = 30 -- Slightly taller for modern look
+    local titleBarHeight = 30
     local titleBar = Utilities.createInstance("Frame", {
         Parent = frame,
         Size = UDim2.new(1, 0, 0, titleBarHeight),
@@ -79,7 +77,8 @@ function Window.new(title, x, y, width, height, options)
         ZIndex = frame.ZIndex + 1,
         Name = "ContentContainer"
     })
-    
+    Styling:Apply(contentContainer, "Frame")
+
     local self = setmetatable({
         Instance = frame,
         Shadow = shadow,
