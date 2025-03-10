@@ -1,4 +1,4 @@
--- Taskbar.lua: Minimal taskbar for minimized windows with miltech styling
+-- Taskbar.lua: Minimal taskbar for minimized windows with miltech styling and cluster
 local Taskbar = {}
 Taskbar.Windows = {}
 
@@ -13,7 +13,7 @@ function Taskbar:Init()
         local taskbar = Utilities.createInstance("Frame", {
             Parent = _G.CensuraG.ScreenGui,
             Position = UDim2.new(0, 10, 1, 0),
-            Size = UDim2.new(1, -20, 0, 40),
+            Size = UDim2.new(1, -210, 0, 40), -- Adjusted to leave space for cluster (200px + 10px padding)
             BackgroundTransparency = 0.5,
             Visible = false,
             ZIndex = 1
@@ -31,6 +31,14 @@ function Taskbar:Init()
             Rotation = 90
         })
 
+        -- Initialize cluster on the right side
+        self.Cluster = _G.CensuraG.Cluster.new(self)
+        if self.Cluster then
+            logger:info("Cluster initialized on taskbar")
+        else
+            logger:error("Failed to initialize cluster on taskbar")
+        end
+
         local hoverDebounce = false
         local lastInputTime = 0
         UserInputService.InputChanged:Connect(function(input)
@@ -45,7 +53,10 @@ function Taskbar:Init()
                     task.wait(0.1)
                     if tick() - lastInputTime >= 0.1 then
                         taskbar.Visible = true
-                        Animation:Tween(taskbar, {Position = UDim2.new(0, 10, 1, -40)}, 0.25)
+                        Animation:SlideY(taskbar, -40, 0.25)
+                        if self.Cluster and self.Cluster.Instance then
+                            self.Cluster.Instance.Visible = true
+                        end
                     end
                     hoverDebounce = false
                 elseif mouseY < threshold and taskbar.Visible and not hoverDebounce then
@@ -53,8 +64,11 @@ function Taskbar:Init()
                     lastInputTime = tick()
                     task.wait(0.2)
                     if tick() - lastInputTime >= 0.2 then
-                        Animation:Tween(taskbar, {Position = UDim2.new(0, 10, 1, 0)}, 0.25, function()
+                        Animation:SlideY(taskbar, 0, 0.25, function()
                             taskbar.Visible = false
+                            if self.Cluster and self.Cluster.Instance then
+                                self.Cluster.Instance.Visible = false
+                            end
                         end)
                     end
                     hoverDebounce = false
@@ -81,7 +95,6 @@ function Taskbar:AddWindow(window)
     local spacing = 10
     local totalWidth = 0
 
-    -- Only consider TextButton children for totalWidth
     for _, btn in ipairs(self.Instance:GetChildren()) do
         if btn:IsA("TextButton") then
             totalWidth = totalWidth + btn.Size.X.Offset + spacing
@@ -136,6 +149,9 @@ end
 
 function Taskbar:Destroy()
     if self.Instance then
+        if self.Cluster and self.Cluster.Destroy then
+            self.Cluster:Destroy()
+        end
         self.Instance:Destroy()
         logger:info("Taskbar destroyed")
     end
