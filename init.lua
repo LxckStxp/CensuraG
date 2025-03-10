@@ -38,26 +38,42 @@ local oratioUrl = "https://raw.githubusercontent.com/LxckStxp/Oratio/main/init.l
 -- Load Oratio first to create our logger.
 local Oratio, oratioErr = loadModule(oratioUrl, "Oratio")
 if Oratio then
-    -- Create the logger using Oratio.new. (Oratio's dependencies are loaded in its init)
     CensuraG.Logger = Oratio.new({
         moduleName = "CensuraG",
-        minLevel = "DEBUG",
+        minLevel = "INFO", -- Default to INFO, updated by Config later
         storeHistory = true,
         outputEnabled = true
     })
 else
-    -- Fallback basic logger if Oratio fails.
     CensuraG.Logger = {
         debug = function(...) print("[DEBUG][CensuraG]", ...) end,
         info = function(...) print("[INFO][CensuraG]", ...) end,
         warn = function(...) warn("[WARN][CensuraG]", ...) end,
         error = function(...) warn("[ERROR][CensuraG]", ...) end,
-        critical = function(...) warn("[CRITICAL][CensuraG]", ...) end
+        critical = function(...) warn("[CRITICAL][CensuraG]", ...) end,
+        LOG_LEVELS = { DEBUG = 1, INFO = 2, WARN = 3, ERROR = 4, CRITICAL = 5 },
+        minLevel = 2,
+        setMinLevel = function(self, level) self.minLevel = self.LOG_LEVELS[level] or 2 end
     }
     CensuraG.Logger:warn("Failed to load Oratio: %s", oratioErr or "Unknown error")
 end
 
 CensuraG.Logger:info("Initializing CensuraG v%s", CensuraG._VERSION)
+
+-- Initialize Config as the single source of truth
+CensuraG.Config = {
+    EnableShadows = true,
+    AnimationQuality = 1.0,
+    AnimationSpeed = 1.0,
+    WindowSnapEnabled = true,
+    DebugMode = false,
+    AutoHide = true,
+    Theme = "Dark",
+    WindowTransparency = 0.2
+}
+
+-- Apply initial DebugMode to logger
+CensuraG.Logger:setMinLevel(CensuraG.Config.DebugMode and "DEBUG" or "INFO")
 
 -- List of modules to load in order
 local modules = {
@@ -103,7 +119,6 @@ if CensuraG.DependencyManager then
     end
 else
     CensuraG.Logger:warn("DependencyManager not available, skipping module registration")
-    -- Create a fallback DependencyManager with no-op functions
     CensuraG.DependencyManager = {
         Register = function() end,
         Get = function(_, name) return loadedModules[name] end,
@@ -213,18 +228,6 @@ function CensuraG.OpenSettings()
         CensuraG.Logger:warn("Settings module not loaded")
     end
 end
-
--- Global configuration settings
-CensuraG.Config = {
-    EnableShadows = true,
-    AnimationQuality = 1.0,
-    AnimationSpeed = 1.0,
-    WindowSnapEnabled = true,
-    DebugMode = false,
-    AutoHide = true,
-    Theme = "Dark",
-    WindowTransparency = 0.2
-}
 
 function CensuraG.Destroy()
     CensuraG.Logger:info("Destroying CensuraG framework...")
