@@ -10,11 +10,11 @@ local logger = _G.CensuraG.Logger
 
 function Settings:Init()
     if self.Instance then return self end
-    self.Instance = Window.new("Settings", 100, 100, 400, 400)
+    self.Instance = Window.new("Settings", 100, 100, 400, 400, { Name = "SettingsWindow" })
     
     -- Tabs
     local tabs = {"General", "Appearance", "Performance", "About"}
-    local currentTab = "Appearance"
+    self.currentTab = "Appearance"
     local tabButtons = {}
     local contentY = 80
     local spacing = Styling.Padding
@@ -22,19 +22,19 @@ function Settings:Init()
     -- Tab buttons
     for i, tab in ipairs(tabs) do
         tabButtons[tab] = _G.CensuraG.TextButton.new(self.Instance, tab, 10 + (i-1) * 90, 40, 80, 30, function()
-            currentTab = tab
+            self.currentTab = tab
             self:RefreshUI()
         end)
     end
 
-    -- Content area
-    local contentContainer = self.Instance.ContentContainer
+    -- Content area is the window's ContentContainer
+    local contentContainer = self.Instance.ContentContainer -- Access directly as Frame
 
     -- Appearance Tab Content
-    local appearanceElements = {}
+    self.appearanceElements = {}
     contentY = 80
 
-    appearanceElements.Theme = Dropdown.new(contentContainer, 10, contentY, {
+    self.appearanceElements.Theme = Dropdown.new(contentContainer, 10, contentY, {
         LabelText = "Theme",
         Width = Styling.ElementWidth,
         Items = {"Dark", "Light", "Military"},
@@ -45,7 +45,7 @@ function Settings:Init()
     })
     contentY = contentY + 30 + spacing
 
-    appearanceElements.Shadows = Switch.new(contentContainer, 10, contentY, {
+    self.appearanceElements.Shadows = Switch.new(contentContainer, 10, contentY, {
         LabelText = "Enable Shadows",
         Width = Styling.ElementWidth,
         Height = 20,
@@ -57,7 +57,7 @@ function Settings:Init()
     })
     contentY = contentY + 30 + spacing
 
-    appearanceElements.WindowTransparency = Slider.new(contentContainer, 10, contentY, {
+    self.appearanceElements.WindowTransparency = Slider.new(contentContainer, 10, contentY, {
         LabelText = "Window Transparency",
         Width = Styling.ElementWidth,
         Min = 0,
@@ -71,7 +71,7 @@ function Settings:Init()
     })
     contentY = contentY + 30 + spacing
 
-    appearanceElements.ElementTransparency = Slider.new(contentContainer, 10, contentY, {
+    self.appearanceElements.ElementTransparency = Slider.new(contentContainer, 10, contentY, {
         LabelText = "Element Transparency",
         Width = Styling.ElementWidth,
         Min = 0,
@@ -85,7 +85,7 @@ function Settings:Init()
     })
     contentY = contentY + 30 + spacing
 
-    appearanceElements.TextSize = Slider.new(contentContainer, 10, contentY, {
+    self.appearanceElements.TextSize = Slider.new(contentContainer, 10, contentY, {
         LabelText = "Text Size",
         Width = Styling.ElementWidth,
         Min = 10,
@@ -100,32 +100,40 @@ function Settings:Init()
         end
     })
 
-    function self:RefreshUI()
-        -- Hide all tab content and show only the current tab
-        for tab, elements in pairs({Appearance = appearanceElements}) do
-            for _, element in pairs(elements) do
-                if element and element.Instance then
-                    element.Instance.Visible = (tab == currentTab)
-                end
-            end
-        end
-    end
-
     self:RefreshUI()
     logger:info("Settings initialized")
     return self
 end
 
+function Settings:RefreshUI()
+    if not self.Instance or not self.Instance.ContentContainer then
+        logger:warn("Cannot refresh UI: Invalid window or content container")
+        return
+    end
+    local contentContainer = self.Instance.ContentContainer
+    -- Hide all elements and show only the current tab's elements
+    for tab, elements in pairs({Appearance = self.appearanceElements}) do
+        for _, element in pairs(elements) do
+            if element and element.Instance then
+                element.Instance.Visible = (tab == self.currentTab)
+            end
+        end
+    end
+    logger:debug("Refreshed UI for tab: %s", self.currentTab)
+end
+
 function Settings:Toggle()
-    if self.Instance.Minimized then
-        self.Instance:Restore()
-    else
-        self.Instance:Minimize()
+    if self.Instance then
+        if self.Instance.Minimized then
+            self.Instance:Restore()
+        else
+            self.Instance:Minimize()
+        end
     end
 end
 
 function Settings:Show()
-    if self.Instance.Minimized then
+    if self.Instance and self.Instance.Minimized then
         self.Instance:Restore()
     end
 end
@@ -134,6 +142,7 @@ function Settings:Destroy()
     if self.Instance then
         self.Instance:Destroy()
         self.Instance = nil
+        self.appearanceElements = nil
     end
     logger:info("Settings destroyed")
 end
