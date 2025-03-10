@@ -30,36 +30,34 @@ if espWindow then
     logger:info("ESP Controls window created")
 
     -- Add ESP Toggle Switch
-    local espSwitch = CensuraG.Switch.new(espWindow, 0, 0, 40, 20, false, {
+    local espSwitch = CensuraG.Switch.new(espWindow, 10, 30, 40, 20, false, {
         LabelText = "ESP Enabled",
         OnToggled = function(state)
             logger:info("ESP toggled to: " .. tostring(state))
-            -- Example ESP toggle logic
+            -- Replace with actual ESP toggle logic
             if state then
-                -- Enable ESP (placeholder)
                 print("ESP Enabled")
             else
-                -- Disable ESP (placeholder)
                 print("ESP Disabled")
             end
         end
     })
 
     -- Add ESP Distance Slider
-    local espDistance = CensuraG.Slider.new(espWindow, 0, 30, 200, 0, 1000, 200, {
+    local espDistance = CensuraG.Slider.new(espWindow, 10, 70, 200, 0, 1000, 200, {
         LabelText = "ESP Distance",
         ShowValue = true,
         OnChanged = function(value)
             logger:info("ESP Distance set to: " .. value)
-            -- Example ESP distance update
+            -- Replace with actual ESP distance update
             print("ESP Distance: " .. value)
         end
     })
 
     -- Add Refresh Button
-    local refreshButton = CensuraG.TextButton.new(espWindow, "Refresh ESP", 0, 60, 120, 30, function()
+    local refreshButton = CensuraG.TextButton.new(espWindow, "Refresh ESP", 10, 110, 120, 30, function()
         logger:info("Refresh ESP clicked")
-        -- Example refresh logic
+        -- Replace with actual refresh logic
         print("ESP Refreshed")
     end)
 end
@@ -70,19 +68,19 @@ if settingsWindow then
     logger:info("Settings window created")
 
     -- Add Dark Mode Switch
-    local darkModeSwitch = CensuraG.Switch.new(settingsWindow, 0, 0, 40, 20, true, {
+    local darkModeSwitch = CensuraG.Switch.new(settingsWindow, 10, 30, 40, 20, true, {
         LabelText = "Dark Mode",
         OnToggled = function(state)
             logger:info("Dark Mode toggled to: " .. tostring(state))
-            -- Example dark mode logic
+            -- Replace with actual dark mode logic
             print("Dark Mode: " .. tostring(state))
         end
     })
 
     -- Add Reset Button
-    local resetButton = CensuraG.TextButton.new(settingsWindow, "Reset Settings", 0, 30, 120, 30, function()
+    local resetButton = CensuraG.TextButton.new(settingsWindow, "Reset Settings", 10, 70, 120, 30, function()
         logger:info("Reset Settings clicked")
-        -- Example reset logic
+        -- Replace with actual reset logic
         print("Settings Reset")
     end)
 end
