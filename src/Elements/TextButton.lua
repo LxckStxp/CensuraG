@@ -15,22 +15,48 @@ function TextButton.new(parent, text, x, y, width, height, callback)
 
     logger:debug("Creating text button with parent: %s, Text: %s, Position: (%d, %d)", tostring(parent.Instance), text, x, y)
 
-    local button = Utilities.createInstance("TextButton", {
+    -- Create the main frame
+    local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
         Position = UDim2.new(0, x, 0, y),
         Size = UDim2.new(0, width, 0, height or 30),
+        BackgroundTransparency = 1,
+        ZIndex = parent.Instance.ZIndex + 1
+    })
+
+    -- Create the label (above the button)
+    local label = Utilities.createInstance("TextLabel", {
+        Parent = frame,
+        Position = UDim2.new(0, 0, 0, -20),
+        Size = UDim2.new(0, width, 0, 20),
         Text = text,
+        BackgroundTransparency = 1,
+        ZIndex = frame.ZIndex + 1
+    })
+    Styling:Apply(label, "TextLabel")
+
+    -- Create the button
+    local button = Utilities.createInstance("TextButton", {
+        Parent = frame,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(0, width, 0, height or 30),
+        Text = "",
         BackgroundTransparency = Styling.Transparency.Highlight,
-        ZIndex = 3
+        ZIndex = frame.ZIndex + 1
     })
     Styling:Apply(button, "TextButton")
     logger:debug("TextButton created: Position: %s, Size: %s, ZIndex: %d", tostring(button.Position), tostring(button.Size), button.ZIndex)
 
-    local self = setmetatable({Instance = button}, TextButton)
+    local self = setmetatable({Instance = frame, Button = button, Label = label}, TextButton)
     button.MouseButton1Click:Connect(function()
         logger:debug("TextButton clicked: Text: %s", text)
         if callback then callback() end
     end)
+
+    function self:Destroy()
+        self.Instance:Destroy()
+        logger:info("TextButton destroyed")
+    end
 
     return self
 end
