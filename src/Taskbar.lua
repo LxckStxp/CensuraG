@@ -1,4 +1,4 @@
--- Taskbar.lua: Minimal taskbar for minimized windows
+-- Taskbar.lua: Minimal taskbar for minimized windows with miltech styling
 local Taskbar = {}
 Taskbar.Windows = {}
 
@@ -6,18 +6,31 @@ local Utilities = _G.CensuraG.Utilities
 local Styling = _G.CensuraG.Styling
 local Animation = _G.CensuraG.Animation
 local UserInputService = game:GetService("UserInputService")
+local logger = _G.CensuraG.Logger
 
 function Taskbar:Init()
     if not self.Instance then
         local taskbar = Utilities.createInstance("Frame", {
             Parent = _G.CensuraG.ScreenGui,
-            Position = UDim2.new(0, 10, 1, 0), -- 10px padding
-            Size = UDim2.new(1, -20, 0, 40),   -- Reduced height
-            BackgroundTransparency = 0.2,      -- Solid with slight transparency
+            Position = UDim2.new(0, 10, 1, 0),
+            Size = UDim2.new(1, -20, 0, 40),
+            BackgroundTransparency = 0.5,
             Visible = false,
             ZIndex = 1
         })
         self.Instance = taskbar
+        logger:debug("Taskbar created: Position: %s, Size: %s, ZIndex: %d", tostring(taskbar.Position), tostring(taskbar.Size), taskbar.ZIndex)
+
+        -- Add a subtle gradient
+        local gradient = Utilities.createInstance("UIGradient", {
+            Parent = taskbar,
+            Color = ColorSequence.new(Styling.Colors.Base, Styling.Colors.Highlight),
+            Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 0.5),
+                NumberSequenceKeypoint.new(1, 0.7)
+            }),
+            Rotation = 90
+        })
 
         local hoverDebounce = false
         local lastInputTime = 0
@@ -54,18 +67,18 @@ end
 
 function Taskbar:AddWindow(window)
     if not window or not window.Instance or not self.Instance then
-        warn("Invalid window or taskbar instance in AddWindow")
+        logger:warn("Invalid window or taskbar instance in AddWindow")
         return
     end
 
     local titleLabel = window.Instance:FindFirstChildWhichIsA("TextLabel")
     if not titleLabel then
-        warn("No TextLabel found in window instance")
+        logger:warn("No TextLabel found in window instance")
         return
     end
 
     local title = titleLabel.Text
-    local buttonWidth = 150 -- Fixed width for consistency
+    local buttonWidth = 150
     local spacing = 10
     local totalWidth = 0
     for _, w in ipairs(self.Windows) do
@@ -81,12 +94,23 @@ function Taskbar:AddWindow(window)
         Size = UDim2.new(0, buttonWidth, 0, 30),
         Text = title,
         TextTruncate = Enum.TextTruncate.AtEnd,
-        BackgroundTransparency = 0,
+        BackgroundTransparency = 0.3,
+        BackgroundColor3 = Styling.Colors.Highlight,
+        Visible = true,
         ZIndex = 2
     })
     Styling:Apply(button, "TextButton")
+    logger:debug("Taskbar button created: Text: %s, Position: %s, Size: %s, ZIndex: %d, Visible: %s", title, tostring(button.Position), tostring(button.Size), button.ZIndex, tostring(button.Visible))
 
-    local shadow = Utilities.createTaperedShadow(button, 3, 3, 0.9) -- Smaller offset
+    -- Add a thin white border
+    local buttonStroke = Utilities.createInstance("UIStroke", {
+        Parent = button,
+        Thickness = 1,
+        Color = Color3.fromRGB(200, 200, 200),
+        Transparency = 0.5
+    })
+
+    local shadow = Utilities.createTaperedShadow(button, 3, 3, 0.95)
 
     button.MouseEnter:Connect(function()
         button.BorderSizePixel = 1
@@ -114,6 +138,7 @@ end
 function Taskbar:Destroy()
     if self.Instance then
         self.Instance:Destroy()
+        logger:info("Taskbar destroyed")
     end
 end
 
