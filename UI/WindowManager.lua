@@ -16,16 +16,22 @@ WindowManager.ModalWindow = nil -- Track the current modal window
 
 function WindowManager:Init()
     logger:info("Initializing WindowManager with %d windows", self.WindowCount)
+    if not _G.CensuraG.ScreenGui then
+        logger:critical("ScreenGui not available, WindowManager initialization failed")
+        return self
+    end
     self.ModalBackground = Utilities.createInstance("Frame", {
         Parent = _G.CensuraG.ScreenGui,
         Size = UDim2.new(1, 0, 1, 0),
         BackgroundColor3 = Color3.new(0, 0, 0),
         BackgroundTransparency = 0.7,
-        ZIndex = _G.CensuraG.ZIndexManager.BaseZIndex - 1, -- Below windows but above Roblox UI
+        ZIndex = (_G.CensuraG.ZIndexManager and _G.CensuraG.ZIndexManager.BaseZIndex - 1) or 99, -- Fallback ZIndex
         Visible = false,
         Name = "ModalBackground"
     })
-    _G.CensuraG.ZIndexManager:RegisterElement(self.ModalBackground)
+    if _G.CensuraG.ZIndexManager then
+        _G.CensuraG.ZIndexManager:RegisterElement(self.ModalBackground)
+    end
     self:HandleScreenSizeChanges()
     logger:debug("WindowManager initialized")
     return self
@@ -41,7 +47,11 @@ function WindowManager:HandleScreenSizeChanges()
                 if pos.X.Offset + size.X.Offset > screenSize.X or pos.Y.Offset + size.Y.Offset > screenSize.Y then
                     local newX = math.min(pos.X.Offset, screenSize.X - size.X.Offset - 10)
                     local newY = math.min(pos.Y.Offset, screenSize.Y - size.Y.Offset - 10)
-                    Animation:Tween(window.Instance, { Position = UDim2.new(0, newX, 0, newY) }, 0.2 / _G.CensuraG.Config.AnimationSpeed)
+                    if Animation then
+                        Animation:Tween(window.Instance, { Position = UDim2.new(0, newX, 0, newY) }, 0.2 / (_G.CensuraG.Config and _G.CensuraG.Config.AnimationSpeed or 1))
+                    else
+                        window.Instance.Position = UDim2.new(0, newX, 0, newY)
+                    end
                     logger:debug("Repositioned window %s to (%d, %d)", window.Instance.Name, newX, newY)
                 end
             end
@@ -57,7 +67,9 @@ function WindowManager:AddWindow(window)
         return nil
     end
     self.WindowCount = self.WindowCount + 1
-    _G.CensuraG.ZIndexManager:RegisterElement(window.Instance)
+    if _G.CensuraG.ZIndexManager then
+        _G.CensuraG.ZIndexManager:RegisterElement(window.Instance)
+    end
     table.insert(self.Windows, window)
     window.Id = window.Id or Utilities.generateId()
     if window.Instance.Position.X.Offset == 0 and window.Instance.Position.Y.Offset == 0 then
@@ -80,7 +92,7 @@ function WindowManager:PositionWindowInGrid(window)
     x = math.min(x, screenSize.X - windowWidth - 10)
     y = math.min(y, screenSize.Y - windowHeight - 10)
     window.Instance.Position = UDim2.new(0, x, 0, y)
-    logger:debug("Positioned window %s at (%d, %d)", problème window.Instance.Name, x, y)
+    logger:debug("Positioned window %s at (%d, %d)", window.Instance.Name, x, y) -- Fixed 'problème'
 end
 
 function WindowManager:BringToFront(window)
@@ -92,7 +104,9 @@ function WindowManager:BringToFront(window)
         if w == window then
             table.remove(self.Windows, i)
             table.insert(self.Windows, window) -- Move to end (top of stack)
-            _G.CensuraG.ZIndexManager:BringToFront(window.Instance)
+            if _G.CensuraG.ZIndexManager then
+                _G.CensuraG.ZIndexManager:BringToFront(window.Instance)
+            end
             logger:debug("Brought window to front: %s", window.Instance.Name)
             EventManager:FireEvent("WindowFocused", window)
             return
@@ -102,7 +116,7 @@ function WindowManager:BringToFront(window)
 end
 
 function WindowManager:SnapWindow(window)
-    if not _G.CensuraG.Config.WindowSnapEnabled or not window or not window.Instance then return end
+    if not (_G.CensuraG.Config and _G.CensuraG.Config.WindowSnapEnabled) or not window or not window.Instance then return end
     local screenSize = Utilities.getScreenSize()
     local pos = window.Instance.Position
     local size = window.Instance.Size
@@ -119,12 +133,16 @@ function WindowManager:SnapWindow(window)
     
     if newY < snapThreshold then
         newY = 0
-    elseif newY + size.Y.Offset > screenSize.Y - snapThreshold - Taskbar.Height then
-        newY = screenSize.Y - size.Y.Offset - Taskbar.Height
+    elseif newY + size.Y.Offset > screenSize.Y - snapThreshold - (_G.CensuraG.Taskbar and _G.CensuraG.Taskbar.Height or 0) then
+        newY = screenSize.Y - size.Y.Offset - (_G.CensuraG.Taskbar and _G.CensuraG.Taskbar.Height or 0)
     end
     
     if newX ~= pos.X.Offset or newY ~= pos.Y.Offset then
-        Animation:Tween(window.Instance, { Position = UDim2.new(0, newX, 0, newY) }, 0.1 / _G.CensuraG.Config.AnimationSpeed)
+        if Animation then
+            Animation:Tween(window.Instance, { Position = UDim2.new(0, newX, 0, newY) }, 0.1 / (_G.CensuraG.Config and _G.CensuraG.Config.AnimationSpeed or 1))
+        else
+            window.Instance.Position = UDim2.new(0, newX, 0, newY)
+        end
         logger:debug("Snapped window %s to (%d, %d)", window.Instance.Name, newX, newY)
     end
 end
@@ -153,10 +171,15 @@ function WindowManager:MaximizeWindow(window)
     window.PreviousPosition = window.Instance.Position
     window.PreviousSize = window.Instance.Size
     local screenSize = Utilities.getScreenSize()
-    Animation:Tween(window.Instance, {
-        Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(0, screenSize.X, 0, screenSize.Y - _G.CensuraG.Taskbar.Height)
-    }, 0.3 / _G.CensuraG.Config.AnimationSpeed)
+    if Animation then
+        Animation:Tween(window.Instance, {
+            Position = UDim2.new(0, 0, 0, 0),
+            Size = UDim2.new(0, screenSize.X, 0, screenSize.Y - (_G.CensuraG.Taskbar and _G.CensuraG.Taskbar.Height or 0))
+        }, 0.3 / (_G.CensuraG.Config and _G.CensuraG.Config.AnimationSpeed or 1))
+    else
+        window.Instance.Position = UDim2.new(0, 0, 0, 0)
+        window.Instance.Size = UDim2.new(0, screenSize.X, 0, screenSize.Y - (_G.CensuraG.Taskbar and _G.CensuraG.Taskbar.Height or 0))
+    end
     self.MaximizedWindow = window
     window.IsMaximized = true
     self:BringToFront(window)
@@ -171,10 +194,15 @@ function WindowManager:RestoreWindow(window)
         logger:warn("Cannot restore window %s: no previous state", window.Instance.Name)
         return false
     end
-    Animation:Tween(window.Instance, {
-        Position = window.PreviousPosition,
-        Size = window.PreviousSize
-    }, 0.3 / _G.CensuraG.Config.AnimationSpeed)
+    if Animation then
+        Animation:Tween(window.Instance, {
+            Position = window.PreviousPosition,
+            Size = window.PreviousSize
+        }, 0.3 / (_G.CensuraG.Config and _G.CensuraG.Config.AnimationSpeed or 1))
+    else
+        window.Instance.Position = window.PreviousPosition
+        window.Instance.Size = window.PreviousSize
+    end
     window.IsMaximized = false
     if self.MaximizedWindow == window then self.MaximizedWindow = nil end
     logger:debug("Restored window: %s", window.Instance.Name)
@@ -193,10 +221,15 @@ function WindowManager:ShowModal(window)
         logger:warn("Another modal window is already active: %s", self.ModalWindow.Instance.Name)
         return false
     end
-    window.PreviousZIndex = _G.CensuraG.ZIndexManager:GetZIndex(window.Instance)
-    self.ModalBackground.Visible = true
-    _G.CensuraG.ZIndexManager:BringToFront(self.ModalBackground)
-    _G.CensuraG.ZIndexManager:BringToFront(window.Instance)
+    if _G.CensuraG.ZIndexManager then
+        window.PreviousZIndex = _G.CensuraG.ZIndexManager:GetZIndex(window.Instance)
+        self.ModalBackground.Visible = true
+        _G.CensuraG.ZIndexManager:BringToFront(self.ModalBackground)
+        _G.CensuraG.ZIndexManager:BringToFront(window.Instance)
+    else
+        logger:warn("ZIndexManager not available, modal functionality may be impaired")
+        self.ModalBackground.Visible = true
+    end
     self.ModalWindow = window
     window.IsModal = true
     logger:debug("Window shown as modal: %s", window.Instance.Name)
@@ -207,7 +240,7 @@ end
 function WindowManager:HideModal(window)
     if not window or not window.Instance or not window.IsModal or self.ModalWindow ~= window then return false end
     self.ModalBackground.Visible = false
-    if window.PreviousZIndex then
+    if _G.CensuraG.ZIndexManager and window.PreviousZIndex then
         _G.CensuraG.ZIndexManager:SetZIndex(window.Instance, window.PreviousZIndex)
     end
     self.ModalWindow = nil
@@ -240,8 +273,12 @@ function WindowManager:ArrangeWindows()
         local x = self.Grid.startX + col * (avgWidth + spacing)
         local y = self.Grid.startY + row * (avgHeight + spacing)
         x = math.min(x, screenSize.X - avgWidth - 10)
-        y = math.min(y, screenSize.Y - avgHeight - _G.CensuraG.Taskbar.Height - 10)
-        Animation:Tween(window.Instance, { Position = UDim2.new(0, x, 0, y) }, 0.3 / _G.CensuraG.Config.AnimationSpeed)
+        y = math.min(y, screenSize.Y - avgHeight - (_G.CensuraG.Taskbar and _G.CensuraG.Taskbar.Height or 0) - 10)
+        if Animation then
+            Animation:Tween(window.Instance, { Position = UDim2.new(0, x, 0, y) }, 0.3 / (_G.CensuraG.Config and _G.CensuraG.Config.AnimationSpeed or 1))
+        else
+            window.Instance.Position = UDim2.new(0, x, 0, y)
+        end
     end
     logger:info("Arranged %d windows in grid", totalWindows)
     EventManager:FireEvent("WindowsArranged")
