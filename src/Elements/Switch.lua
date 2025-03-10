@@ -5,12 +5,15 @@ Switch.__index = Switch
 local Utilities = _G.CensuraG.Utilities
 local Styling = _G.CensuraG.Styling
 local Animation = _G.CensuraG.Animation
+local logger = _G.CensuraG.Logger
 
 function Switch.new(parent, x, y, width, height, defaultState, options)
     defaultState = defaultState or false
     options = options or {}
     width = width or 40
     height = height or 20
+
+    logger:debug("Creating switch with parent: %s, Position: (%d, %d)", tostring(parent.Instance), x, y)
 
     local frame = Utilities.createInstance("Frame", {
         Parent = parent.Instance,
@@ -19,6 +22,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         ClipsDescendants = true
     })
     Styling:Apply(frame, "Frame")
+    logger:debug("Switch frame created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Parent: %s", tostring(frame.Position), tostring(frame.Size), frame.ZIndex, tostring(frame.Visible), tostring(frame.Parent))
 
     local knob = Utilities.createInstance("Frame", {
         Parent = frame,
@@ -27,6 +31,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         BackgroundColor3 = Color3.fromRGB(150, 150, 150),
         BorderSizePixel = 0
     })
+    logger:debug("Switch knob created: Position: %s, Size: %s, ZIndex: %d, Visible: %s", tostring(knob.Position), tostring(knob.Size), knob.ZIndex, tostring(knob.Visible))
 
     local label = options.ShowLabel and Utilities.createInstance("TextLabel", {
         Parent = frame,
@@ -38,6 +43,9 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         Font = Enum.Font.Code,
         TextSize = 12
     }) or nil
+    if label then
+        logger:debug("Switch label created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Text: %s", tostring(label.Position), tostring(label.Size), label.ZIndex, tostring(label.Visible), label.Text)
+    end
 
     local self = setmetatable({
         Instance = frame,
@@ -63,6 +71,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         if options.OnToggled then
             options.OnToggled(self.State)
         end
+        logger:debug("Switch toggled: State: %s, Knob Position: %s", tostring(self.State), tostring(self.Knob.Position))
     end
 
     frame.InputBegan:Connect(function(input)
@@ -75,6 +84,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
 
     function self:Destroy()
         self.Instance:Destroy()
+        logger:info("Switch destroyed")
     end
 
     function self:SetState(state)
