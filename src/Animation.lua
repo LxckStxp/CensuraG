@@ -15,7 +15,7 @@ end
 function Animation:HoverEffect(button)
     local originalColor = button.BackgroundColor3
     button.MouseEnter:Connect(function()
-        self:Tween(button, {BackgroundColor3 = Styling.Colors.Accent})
+        self:Tween(button, {BackgroundColor3 = _G.CensuraG.Styling.Colors.Accent})
     end)
     button.MouseLeave:Connect(function()
         self:Tween(button, {BackgroundColor3 = originalColor})
