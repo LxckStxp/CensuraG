@@ -1,4 +1,4 @@
--- Utilities.lua: Helper functions for the CensuraG API
+-- Utilities.lua: Helper functions
 local Utilities = {}
 
 function Utilities.createInstance(className, properties)
@@ -9,7 +9,6 @@ function Utilities.createInstance(className, properties)
     return instance
 end
 
--- Method to create a subtle shadow effect using UIGradient
 function Utilities.createTaperedShadow(parent, offsetX, offsetY, transparency)
     local shadow = Utilities.createInstance("Frame", {
         Parent = parent.Parent,
@@ -26,7 +25,7 @@ function Utilities.createTaperedShadow(parent, offsetX, offsetY, transparency)
             NumberSequenceKeypoint.new(0, transparency or 0.9),
             NumberSequenceKeypoint.new(1, 1)
         }),
-        Rotation = 90 -- Vertical gradient
+        Rotation = 90
     })
 
     return shadow
