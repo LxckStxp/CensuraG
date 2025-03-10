@@ -1,4 +1,4 @@
--- Window.lua: Fixed minimize and uses Draggable
+-- Window.lua: Uses revised Draggable API
 local Window = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Window.__index = Window
 
@@ -32,8 +32,10 @@ function Window.new(title, x, y, width, height)
     
     local self = setmetatable({Instance = frame, Minimized = false}, Window)
     
-    -- Draggable from title bar
-    Draggable:MakeDraggable(frame, titleBar)
+    -- Draggable with title bar as region
+    self.DragHandler = Draggable.new(frame, {
+        DragRegion = titleBar
+    })
     
     -- Register with WindowManager
     _G.CensuraG.WindowManager:AddWindow(self)
