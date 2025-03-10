@@ -220,7 +220,10 @@ CensuraG.Config = {
     AnimationQuality = 1.0,
     AnimationSpeed = 1.0,
     WindowSnapEnabled = true,
-    DebugMode = false
+    DebugMode = false,
+    AutoHide = true,
+    Theme = "Dark",
+    WindowTransparency = 0.2
 }
 
 function CensuraG.Destroy()
