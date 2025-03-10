@@ -3,12 +3,12 @@ local Styling = {}
 
 -- Define a monochrome color palette with subtle accents
 Styling.Colors = {
-    Base = Color3.fromRGB(30, 30, 35), -- Dark gray for main backgrounds
+    Base = Color3.fromRGB(40, 40, 45), -- Slightly lighter dark gray for better text contrast
     Accent = Color3.fromRGB(255, 255, 255), -- White for primary accents
-    Secondary = Color3.fromRGB(50, 50, 55), -- Slightly lighter gray for secondary elements
+    Secondary = Color3.fromRGB(60, 60, 65), -- Slightly lighter gray for secondary elements
     Text = Color3.fromRGB(255, 255, 255), -- White text for contrast on dark backgrounds
     Glow = Color3.fromRGB(100, 100, 255), -- Subtle blue glow for effects
-    Highlight = Color3.fromRGB(70, 70, 75), -- Highlight color for interactive elements
+    Highlight = Color3.fromRGB(80, 80, 85), -- Highlight color for interactive elements
 }
 
 Styling.Transparency = {
@@ -19,9 +19,9 @@ Styling.Transparency = {
 }
 
 Styling.TextSizes = {
-    Title = 16,
-    Label = 14,
-    Button = 14
+    Title = 18, -- Increased for better readability
+    Label = 16, -- Increased for better readability
+    Button = 16 -- Increased for better readability
 }
 
 function Styling:Apply(element, elementType)
@@ -66,9 +66,12 @@ function Styling:Apply(element, elementType)
         element.BackgroundColor3 = self.Colors.Secondary
         element.BackgroundTransparency = self.Transparency.ElementBackground
         element.TextTransparency = self.Transparency.Text
-        -- Add text stroke for better visibility
+        -- Remove text stroke to prevent blending issues
         element.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        element.TextStrokeTransparency = 0.5
+        element.TextStrokeTransparency = 1 -- Disable stroke
+        -- Force text visibility
+        element.Visible = true
+        element.TextTransparency = 0
     end
 end
 
