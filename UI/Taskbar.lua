@@ -117,7 +117,7 @@ end
 
 function Taskbar:CreateCluster()
     self.Cluster = _G.CensuraG.Cluster.new({ 
-        parent = self.Instance.Instance or self.Instance,
+        parent = self.Instance,
         position = UDim2.new(1, -205, 0, 5),
         width = 195,
         height = 30
@@ -125,7 +125,6 @@ function Taskbar:CreateCluster()
     
     self:RefreshCluster()
 end
-
 
 -- =============================================
 -- Auto-Hide Functionality
