@@ -143,7 +143,7 @@ function Taskbar:SetAutoHide(enabled)
         self:Show(true)
     end
     
-    logger:info("Taskbar auto-hide %s", enabled and "enabled" : "disabled")
+    logger:info("Taskbar auto-hide %s", enabled and "enabled" or "disabled")
 end
 
 -- Add a window to the taskbar
