@@ -44,7 +44,7 @@ logger:info("CensuraG initialization started.")
 
 local scripts = {
     Utilities = loadScript(censuraBaseUrl, "Utilities.lua"),
-    UIElement = loadScript(censuraBaseUrl, "UIElement.lua"),
+    UIElement = loadScript(censuraUrl, "UIElement.lua"),
     Styling = loadScript(censuraBaseUrl, "Styling.lua"),
     Animation = loadScript(censuraBaseUrl, "Animation.lua"),
     Draggable = loadScript(censuraBaseUrl, "Draggable.lua"),
@@ -54,7 +54,7 @@ local scripts = {
     TextButton = loadScript(censuraBaseUrl, "Elements/TextButton.lua"),
     ImageLabel = loadScript(censuraBaseUrl, "Elements/ImageLabel.lua"),
     Slider = loadScript(censuraBaseUrl, "Elements/Slider.lua"),
-    Switch = loadScript(censuraBaseUrl, "Elements/Switch.lua"),
+    Switch = loadScript(censuraBaseUrl, "Elements/Switch.lua"), -- Ensure correct path
     Cluster = loadScript(censuraBaseUrl, "Elements/Cluster.lua")
 }
 
@@ -63,7 +63,7 @@ for moduleName, scriptFunc in pairs(scripts) do
         local success, result = pcall(scriptFunc)
         if success and result then
             CensuraG[moduleName] = result
-            logger:debug("Loaded module: %s", moduleName)
+            logger:debug("Loaded and executed module: %s, Result: %s", moduleName, tostring(result))
         else
             logger:error("Failed to execute module: %s, Error: %s", moduleName, tostring(result or "No error"))
         end
@@ -76,6 +76,8 @@ local requiredModules = {"Utilities", "UIElement", "Styling", "Animation", "Drag
 for _, moduleName in ipairs(requiredModules) do
     if not CensuraG[moduleName] then
         logger:error("Required module %s is missing after loading", moduleName)
+    elseif type(CensuraG[moduleName].new) ~= "function" and moduleName ~= "WindowManager" and moduleName ~= "Taskbar" then
+        logger:error("Module %s loaded but .new is not a function", moduleName)
     end
 end
 
@@ -103,7 +105,7 @@ end
 logger:info("ScreenGui initialized: %s", CensuraG.ScreenGui.Name)
 
 -- Wait for ScreenGui to have a valid size
-local maxWait = 5 -- Maximum wait time in seconds
+local maxWait = 5
 local waitTime = 0
 repeat
     task.wait(0.1)
