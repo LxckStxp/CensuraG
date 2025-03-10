@@ -1,4 +1,4 @@
--- Taskbar.lua: Enhanced taskbar with transparent frame, polished animations, and cluster
+-- Taskbar.lua: Enhanced taskbar with modern miltech styling
 local Taskbar = {}
 Taskbar.Windows = {}
 
@@ -12,55 +12,42 @@ function Taskbar:Init()
     if not self.Instance then
         local taskbar = Utilities.createInstance("Frame", {
             Parent = _G.CensuraG.ScreenGui,
-            Position = UDim2.new(0, 10, 1, 40), -- Start off-screen below the bottom
-            Size = UDim2.new(1, -210, 0, 40), -- Space for cluster (200px + 10px padding)
-            BackgroundTransparency = 0.7, -- Subtle visibility
-            ClipsDescendants = false, -- Ensure children aren’t clipped
+            Position = UDim2.new(0, 10, 1, 40),
+            Size = UDim2.new(1, -210, 0, 40),
+            BackgroundTransparency = Styling.Transparency.Background,
+            ClipsDescendants = false,
             Visible = false,
             ZIndex = 2
         })
         self.Instance = taskbar
+        Styling:Apply(taskbar, "Frame")
         logger:debug("Taskbar created: Position: %s, Size: %s, ZIndex: %d", tostring(taskbar.Position), tostring(taskbar.Size), taskbar.ZIndex)
 
         -- Subtle gradient for buttons and cluster
         local buttonContainer = Utilities.createInstance("Frame", {
             Parent = taskbar,
             Size = UDim2.new(1, 0, 1, 0),
-            BackgroundTransparency = 0.7,
-            BackgroundColor3 = Styling.Colors.Highlight,
+            BackgroundTransparency = Styling.Transparency.Background,
             ClipsDescendants = false,
             ZIndex = 3
         })
-        local gradient = Utilities.createInstance("UIGradient", {
-            Parent = buttonContainer,
-            Color = ColorSequence.new(Color3.fromRGB(40, 40, 40), Color3.fromRGB(60, 60, 60)),
-            Transparency = NumberSequence.new(0.3),
-            Rotation = 90
-        })
-        local containerStroke = Utilities.createInstance("UIStroke", {
-            Parent = buttonContainer,
-            Thickness = 1,
-            Color = Color3.fromRGB(200, 200, 200),
-            Transparency = 0.4
-        })
+        Styling:Apply(buttonContainer, "Frame")
 
         -- Subtle shadow for depth
         local shadow = Utilities.createTaperedShadow(taskbar, 5, 5, 0.9)
         shadow.ZIndex = 1
 
-        -- Ensure buttonContainer is fully instantiated before creating cluster
-        task.wait(0.1) -- Small delay to ensure instantiation
+        task.wait(0.1)
         logger:debug("Button container created: Parent: %s, Size: %s, ZIndex: %d", tostring(buttonContainer.Parent), tostring(buttonContainer.Size), buttonContainer.ZIndex)
 
-        -- Initialize cluster on the right side, parented to buttonContainer
         self.Cluster = _G.CensuraG.Cluster.new({Instance = buttonContainer})
         if not self.Cluster or not self.Cluster.Instance then
             logger:error("Failed to initialize cluster on taskbar, parent: %s", tostring(buttonContainer))
             return
         end
         self.Cluster.Instance.Visible = false
-        self.Cluster.Instance.BackgroundTransparency = 0.6
-        self.Cluster.Instance.ZIndex = 4 -- Ensure cluster is above buttonContainer
+        self.Cluster.Instance.BackgroundTransparency = Styling.Transparency.Background
+        self.Cluster.Instance.ZIndex = 4
         logger:info("Cluster initialized on taskbar, parent: %s, Position: %s, Visible: %s", tostring(buttonContainer), tostring(self.Cluster.Instance.Position), tostring(self.Cluster.Instance.Visible))
 
         local isAnimating = false
@@ -73,9 +60,9 @@ function Taskbar:Init()
 
             local screenHeight = _G.CensuraG.ScreenGui.AbsoluteSize.Y
             local mouseY = input.Position.Y
-            local threshold = screenHeight * 0.2 -- Bottom 20% of the screen
-            local padding = 5 -- Small padding from the bottom edge
-            local taskbarHeight = 40 -- Taskbar height
+            local threshold = screenHeight * 0.2
+            local padding = 5
+            local taskbarHeight = 40
 
             if mouseY >= screenHeight - threshold and not taskbar.Visible and not hoverDebounce then
                 hoverDebounce = true
@@ -84,11 +71,10 @@ function Taskbar:Init()
                 if tick() - lastInputTime < 0.1 then return end
                 isAnimating = true
                 taskbar.Visible = true
-                taskbar.BackgroundTransparency = 0.7 -- Ensure visibility
+                taskbar.BackgroundTransparency = Styling.Transparency.Background
                 if self.Cluster and self.Cluster.Instance then
                     self.Cluster.Instance.Visible = true
-                    self.Cluster.Instance.BackgroundTransparency = 0.6
-                    -- Ensure cluster children are visible
+                    self.Cluster.Instance.BackgroundTransparency = Styling.Transparency.Background
                     if self.Cluster.AvatarImage then
                         self.Cluster.AvatarImage.Instance.Visible = true
                         self.Cluster.AvatarImage.Instance.ImageTransparency = 0
@@ -101,7 +87,6 @@ function Taskbar:Init()
                     end
                     logger:debug("Cluster set to visible: %s, Position: %s", tostring(self.Cluster.Instance.Visible), tostring(self.Cluster.Instance.Position))
                 end
-                -- Slide to position the bottom edge near the screen bottom
                 Animation:SlideY(taskbar, -taskbarHeight - padding, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, function()
                     isAnimating = false
                     hoverDebounce = false
@@ -113,10 +98,9 @@ function Taskbar:Init()
                 task.wait(0.2)
                 if tick() - lastInputTime < 0.2 then return end
                 isAnimating = true
-                -- Slide back to off-screen position
                 Animation:SlideY(taskbar, taskbarHeight, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function()
                     taskbar.Visible = false
-                    taskbar.BackgroundTransparency = 0.7
+                    taskbar.BackgroundTransparency = Styling.Transparency.Background
                     if self.Cluster and self.Cluster.Instance then
                         self.Cluster.Instance.Visible = false
                         logger:debug("Cluster set to hidden: %s", tostring(self.Cluster.Instance.Visible))
@@ -130,7 +114,6 @@ function Taskbar:Init()
     end
 end
 
--- Rest of Taskbar.lua remains unchanged (AddWindow and Destroy functions as previously provided)
 function Taskbar:AddWindow(window)
     if not window or not window.Instance or not self.Instance then
         logger:warn("Invalid window or taskbar instance in AddWindow")
@@ -160,32 +143,28 @@ function Taskbar:AddWindow(window)
         Size = UDim2.new(0, buttonWidth, 0, 30),
         Text = title,
         TextTruncate = Enum.TextTruncate.AtEnd,
-        BackgroundTransparency = 0.4,
-        BackgroundColor3 = Styling.Colors.Highlight,
-        Visible = true,
+        BackgroundTransparency = Styling.Transparency.Highlight,
         ZIndex = 3
     })
     Styling:Apply(button, "TextButton")
-    logger:debug("Taskbar button created: Text: %s, Position: %s, Size: %s, ZIndex: %d, Visible: %s", title, tostring(button.Position), tostring(button.Size), button.ZIndex, tostring(button.Visible))
-
-    local buttonStroke = Utilities.createInstance("UIStroke", {
-        Parent = button,
-        Thickness = 1,
-        Color = Color3.fromRGB(200, 200, 200),
-        Transparency = 0.3
-    })
+    logger:debug("Taskbar button created: Text: %s, Position: %s, Size: %s, ZIndex: %d", title, tostring(button.Position), tostring(button.Size), button.ZIndex)
 
     local buttonShadow = Utilities.createTaperedShadow(button, 3, 3, 0.95)
     buttonShadow.ZIndex = 2
 
     button.MouseEnter:Connect(function()
-        button.BackgroundTransparency = 0.2
-        button.BorderSizePixel = 1
-        button.BorderColor3 = Styling.Colors.Accent
+        button.BackgroundTransparency = Styling.Transparency.Highlight - 0.1
+        local stroke = button:FindFirstChild("UIStroke")
+        if stroke then
+            stroke.Transparency = 0.5 -- Brighter glow on hover
+        end
     end)
     button.MouseLeave:Connect(function()
-        button.BackgroundTransparency = 0.4
-        button.BorderSizePixel = 0
+        button.BackgroundTransparency = Styling.Transparency.Highlight
+        local stroke = button:FindFirstChild("UIStroke")
+        if stroke then
+            stroke.Transparency = 0.8
+        end
     end)
 
     button.MouseButton1Click:Connect(function()
