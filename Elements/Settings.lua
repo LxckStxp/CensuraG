@@ -1,5 +1,5 @@
 -- Elements/Settings.lua
--- Simplified settings menu with improved layout and element organization
+-- Simplified settings menu with improved layout
 
 local Settings = {}
 local logger = _G.CensuraG.Logger
@@ -16,15 +16,16 @@ function Settings:Init()
         logger:warn("Settings menu already initialized")
         return self
     end
+    
     logger:info("Initializing Settings menu")
     local screenSize = Utilities.getScreenSize()
     local windowWidth, windowHeight = 450, 350
     local x = (screenSize.X - windowWidth) / 2
     local y = (screenSize.Y - windowHeight) / 2
+    
     local window = _G.CensuraG.Window.new("Settings", x, y, windowWidth, windowHeight, { CanClose = false })
     
     -- Override destroy to minimize instead
-    local origDestroy = window.Destroy
     window.Destroy = function(self)
         if not self.Minimized then self:Minimize() end
         logger:debug("Settings window minimized instead of destroyed")
@@ -214,7 +215,7 @@ function Settings:CreateSettingSection(parent, title, yPosition)
     })
     
     return section
-}
+end
 
 function Settings:PopulateTabContent(tabName, contentFrame)
     if tabName == "General" then
@@ -318,31 +319,6 @@ function Settings:PopulateTabContent(tabName, contentFrame)
             }
         )
         self.UIElements["TransparencySlider"] = transparencySlider
-        
-        -- Theme preview (optional)
-        local previewLabel = Utilities.createInstance("TextLabel", {
-            Parent = contentFrame,
-            Position = UDim2.new(0, 0, 0, 210),
-            Size = UDim2.new(1, 0, 0, 20),
-            Text = "Preview:",
-            TextSize = 14,
-            BackgroundTransparency = 1,
-            TextXAlignment = Enum.TextXAlignment.Left,
-            ZIndex = contentFrame.ZIndex + 1,
-            Name = "PreviewLabel"
-        })
-        Styling:Apply(previewLabel, "TextLabel")
-        
-        local previewFrame = Utilities.createInstance("Frame", {
-            Parent = contentFrame,
-            Position = UDim2.new(0, 10, 0, 235),
-            Size = UDim2.new(0, 250, 0, 80),
-            BackgroundColor3 = Styling.Colors.Base,
-            BackgroundTransparency = Styling.Transparency.WindowBackground,
-            ZIndex = contentFrame.ZIndex + 1,
-            Name = "ThemePreview"
-        })
-        Styling:Apply(previewFrame, "Frame")
         
     elseif tabName == "Performance" then
         -- Performance settings
@@ -458,14 +434,14 @@ function Settings:PopulateTabContent(tabName, contentFrame)
     end
     
     logger:debug("Populated tab content for: %s", tabName)
-}
+end
 
 function Settings:Show()
     if not self.Window then self:Init() end
     if self.Window.Minimized then self.Window:Restore() end
     self:SyncUIWithConfig()
     logger:info("Settings shown")
-}
+end
 
 function Settings:Toggle()
     if not self.Window then self:Init(); return end
@@ -476,6 +452,6 @@ function Settings:Toggle()
         self.Window:Minimize() 
     end
     logger:info("Settings toggled")
-}
+end
 
 return Settings
