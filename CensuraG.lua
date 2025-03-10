@@ -21,6 +21,7 @@ local function loadScript(url, path)
     return scriptFunc
 end
 
+-- Load Oratio logger
 local OratioFunc = loadScript(oratioBaseUrl, "init.lua")
 if not OratioFunc then
     warn("Critical: Oratio logging system failed to load. Aborting CensuraG initialization.")
@@ -42,9 +43,10 @@ local logger = Oratio.new({
 CensuraG.Logger = logger
 logger:info("CensuraG initialization started.")
 
+-- Load modules
 local scripts = {
     Utilities = loadScript(censuraBaseUrl, "Utilities.lua"),
-    UIElement = loadScript(censuraBaseUrl, "UIElement.lua"), -- Fixed typo: censuraUrl to censuraBaseUrl
+    UIElement = loadScript(censuraBaseUrl, "UIElement.lua"),
     Styling = loadScript(censuraBaseUrl, "Styling.lua"),
     Animation = loadScript(censuraBaseUrl, "Animation.lua"),
     Draggable = loadScript(censuraBaseUrl, "Draggable.lua"),
@@ -63,59 +65,42 @@ for moduleName, scriptFunc in pairs(scripts) do
         local success, result = pcall(scriptFunc)
         if success and result then
             CensuraG[moduleName] = result
-            logger:debug("Loaded and executed module: %s, Result: %s", moduleName, tostring(result))
+            logger:debug("Loaded module: %s", moduleName)
         else
-            logger:error("Failed to execute module: %s, Error: %s", moduleName, tostring(result or "No error"))
+            logger:error("Failed to execute module: %s, Error: %s", moduleName, tostring(result))
         end
     else
-        logger:warn("Failed to load module: %s (script not fetched)", moduleName)
+        logger:warn("Failed to load module: %s", moduleName)
     end
 end
 
-local requiredModules = {"Utilities", "UIElement", "Styling", "Animation", "Draggable", "WindowManager", "Taskbar", "Window", "TextButton", "Slider", "Switch", "Cluster", "ImageLabel"}
-for _, moduleName in ipairs(requiredModules) do
-    if not CensuraG[moduleName] then
-        logger:error("Required module %s is missing after loading", moduleName)
-    elseif type(CensuraG[moduleName].new) ~= "function" and moduleName ~= "WindowManager" and moduleName ~= "Taskbar" and moduleName ~= "Styling" and moduleName ~= "Animation" and moduleName ~= "Utilities" and moduleName ~= "Draggable" then
-        logger:error("Module %s loaded but .new is not a function", moduleName)
-    end
-end
-
-local success, playerGui = pcall(function()
-    local Players = game:GetService("Players")
-    repeat task.wait() until Players.LocalPlayer
-    local LocalPlayer = Players.LocalPlayer
-    return LocalPlayer:WaitForChild("PlayerGui")
-end)
-if not success or not playerGui then
-    logger:error("Failed to access PlayerGui: %s", tostring(playerGui))
+-- Initialize ScreenGui
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
+local playerGui = LocalPlayer:WaitForChild("PlayerGui", 5)
+if not playerGui then
+    logger:error("Failed to access PlayerGui")
     return CensuraG
 end
 
 CensuraG.ScreenGui = playerGui:FindFirstChild("CensuraGGui") or CensuraG.Utilities.createInstance("ScreenGui", {
     Parent = playerGui,
     Name = "CensuraGGui",
-    ResetOnSpawn = false
+    ResetOnSpawn = false,
+    ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 })
-
-if not CensuraG.ScreenGui or not CensuraG.ScreenGui:IsA("ScreenGui") then
-    logger:error("ScreenGui initialization failed: %s is not a valid ScreenGui", tostring(CensuraG.ScreenGui))
-    return CensuraG
-end
 logger:info("ScreenGui initialized: %s", CensuraG.ScreenGui.Name)
 
--- Wait for ScreenGui to have a valid size
+-- Wait for ScreenGui size
 local maxWait = 5
 local waitTime = 0
 repeat
     task.wait(0.1)
     waitTime = waitTime + 0.1
-    if waitTime > maxWait then
-        logger:warn("ScreenGui size not available after %d seconds, proceeding with default size (800x600)", maxWait)
-        break
-    end
-until CensuraG.ScreenGui.AbsoluteSize and CensuraG.ScreenGui.AbsoluteSize.X > 0 and CensuraG.ScreenGui.AbsoluteSize.Y > 0
-logger:info("ScreenGui size available: %s", tostring(CensuraG.ScreenGui.AbsoluteSize))
+until (CensuraG.ScreenGui.AbsoluteSize and CensuraG.ScreenGui.AbsoluteSize.X > 0) or waitTime > maxWait
+if waitTime > maxWait then
+    logger:warn("ScreenGui size not available after %d seconds", maxWait)
+end
 
 function CensuraG.AddCustomElement(name, class)
     if not name or not class then
@@ -127,18 +112,13 @@ function CensuraG.AddCustomElement(name, class)
 end
 
 local function initializeManagers()
-    if CensuraG.WindowManager and type(CensuraG.WindowManager.Init) == "function" then
+    if CensuraG.WindowManager then
         CensuraG.WindowManager:Init()
-        logger:info("WindowManager initialized with WindowCount: %d, ZIndexCounter: %d", #CensuraG.WindowManager.Windows, CensuraG.WindowManager.ZIndexCounter)
-    else
-        logger:error("WindowManager or its Init function is missing.")
+        logger:info("WindowManager initialized")
     end
-
-    if CensuraG.Taskbar and type(CensuraG.Taskbar.Init) == "function" then
+    if CensuraG.Taskbar then
         CensuraG.Taskbar:Init()
-        logger:info("Taskbar initialized.")
-    else
-        logger:error("Taskbar or its Init function is missing.")
+        logger:info("Taskbar initialized")
     end
 end
 
