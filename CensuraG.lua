@@ -44,7 +44,7 @@ logger:info("CensuraG initialization started.")
 
 local scripts = {
     Utilities = loadScript(censuraBaseUrl, "Utilities.lua"),
-    UIElement = loadScript(censuraUrl, "UIElement.lua"),
+    UIElement = loadScript(censuraBaseUrl, "UIElement.lua"), -- Fixed typo: censuraUrl to censuraBaseUrl
     Styling = loadScript(censuraBaseUrl, "Styling.lua"),
     Animation = loadScript(censuraBaseUrl, "Animation.lua"),
     Draggable = loadScript(censuraBaseUrl, "Draggable.lua"),
@@ -54,7 +54,7 @@ local scripts = {
     TextButton = loadScript(censuraBaseUrl, "Elements/TextButton.lua"),
     ImageLabel = loadScript(censuraBaseUrl, "Elements/ImageLabel.lua"),
     Slider = loadScript(censuraBaseUrl, "Elements/Slider.lua"),
-    Switch = loadScript(censuraBaseUrl, "Elements/Switch.lua"), -- Ensure correct path
+    Switch = loadScript(censuraBaseUrl, "Elements/Switch.lua"),
     Cluster = loadScript(censuraBaseUrl, "Elements/Cluster.lua")
 }
 
@@ -76,7 +76,7 @@ local requiredModules = {"Utilities", "UIElement", "Styling", "Animation", "Drag
 for _, moduleName in ipairs(requiredModules) do
     if not CensuraG[moduleName] then
         logger:error("Required module %s is missing after loading", moduleName)
-    elseif type(CensuraG[moduleName].new) ~= "function" and moduleName ~= "WindowManager" and moduleName ~= "Taskbar" then
+    elseif type(CensuraG[moduleName].new) ~= "function" and moduleName ~= "WindowManager" and moduleName ~= "Taskbar" and moduleName ~= "Styling" and moduleName ~= "Animation" and moduleName ~= "Utilities" and moduleName ~= "Draggable" then
         logger:error("Module %s loaded but .new is not a function", moduleName)
     end
 end
