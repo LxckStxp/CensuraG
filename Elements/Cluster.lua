@@ -1,64 +1,75 @@
 -- Elements/Cluster.lua
--- Taskbar user info cluster
+-- Simplified taskbar info cluster using enhanced UIElement base
 
-local Cluster = setmetatable({}, { __index = _G.CensuraG.UIElement })
+local Cluster = {}
 Cluster.__index = Cluster
+setmetatable(Cluster, { __index = _G.CensuraG.UIElement })
 
-local Utilities = _G.CensuraG.Utilities
-local Styling = _G.CensuraG.Styling
-local Animation = _G.CensuraG.Animation
-local EventManager = _G.CensuraG.EventManager
-local logger = _G.CensuraG.Logger
-local Players = game:GetService("Players")
-
-local function getAvatar(userId)
-    return Utilities.getPlayerAvatar(userId, Enum.ThumbnailSize.Size100x100)
-end
-
-function Cluster.new(parent, options)
-    if not parent or not parent.Instance then
-        logger:error("Invalid parent for Cluster")
-        return nil
-    end
+function Cluster.new(options)
     options = options or {}
+    
+    -- Set default properties for Cluster
+    options.position = options.position or UDim2.new(1, -210, 0, 5)
+    options.width = options.width or 200
+    options.height = options.height or 30
+    options.styleType = "Frame"
+    
+    -- Create the base element
+    local self = _G.CensuraG.UIElement.new(options.parent, options)
+    
+    -- Get player info
+    local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
     
-    local frame = Utilities.createInstance("Frame", {
-        Parent = parent.Instance,
-        Position = options.Position or UDim2.new(1, -210, 0, 5),
-        Size = UDim2.new(0, 200, 0, 30),
-        BackgroundTransparency = Styling.Transparency.ElementBackground,
-        ZIndex = parent.Instance.ZIndex + 1,
-        Name = "Cluster"
-    })
-    Styling:Apply(frame, "Frame")
-    
-    -- Avatar image (assuming a helper ImageLabel constructor exists)
-    local avatar = _G.CensuraG.ImageLabel.new({ Instance = frame }, getAvatar(LocalPlayer.UserId), 5, 1, 28, 28, {
-        ZIndex = frame.ZIndex + 1, ScaleType = Enum.ScaleType.Crop, CornerRadius = 14
+    -- Create avatar image
+    local avatar = _G.CensuraG.ImageLabel.new({
+        parent = self,
+        x = 5,
+        y = 1,
+        width = 28,
+        height = 28,
+        imageUrl = _G.CensuraG.Utilities.getPlayerAvatar(LocalPlayer.UserId),
+        zIndex = self.Instance.ZIndex + 1,
+        scaleType = Enum.ScaleType.Crop,
+        cornerRadius = 14
     })
     
-    local nameLabel = Utilities.createInstance("TextLabel", {
-        Parent = frame, Position = UDim2.new(0, 40, 0, 0), Size = UDim2.new(0, 110, 0, 30),
-        Text = LocalPlayer.DisplayName, ZIndex = frame.ZIndex + 2, Name = "DisplayName"
-    })
-    Styling:Apply(nameLabel, "TextLabel")
+    -- Create name label
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Name = "DisplayName"
+    nameLabel.Size = UDim2.new(0, 110, 0, 30)
+    nameLabel.Position = UDim2.new(0, 40, 0, 0)
+    nameLabel.Text = LocalPlayer.DisplayName
+    nameLabel.ZIndex = self.Instance.ZIndex + 2
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Parent = self.Instance
+    _G.CensuraG.Styling:Apply(nameLabel, "TextLabel")
     
-    local timeLabel = Utilities.createInstance("TextLabel", {
-        Parent = frame, Position = UDim2.new(0, 155, 0, 0), Size = UDim2.new(0, 40, 0, 30),
-        Text = os.date("%H:%M"), ZIndex = frame.ZIndex + 2, Name = "TimeLabel"
-    })
-    Styling:Apply(timeLabel, "TextLabel")
+    -- Create time label
+    local timeLabel = Instance.new("TextLabel")
+    timeLabel.Name = "TimeLabel"
+    timeLabel.Size = UDim2.new(0, 40, 0, 30)
+    timeLabel.Position = UDim2.new(0, 155, 0, 0)
+    timeLabel.Text = os.date("%H:%M")
+    timeLabel.ZIndex = self.Instance.ZIndex + 2
+    timeLabel.BackgroundTransparency = 1
+    timeLabel.Parent = self.Instance
+    _G.CensuraG.Styling:Apply(timeLabel, "TextLabel")
     
-    local self = setmetatable({
-        Instance = frame, AvatarImage = avatar, DisplayName = nameLabel, TimeLabel = timeLabel, Connections = {}
-    }, Cluster)
+    -- Set up properties
+    self.AvatarImage = avatar
+    self.DisplayName = nameLabel
+    self.TimeLabel = timeLabel
     
-    table.insert(self.Connections, EventManager:Connect(LocalPlayer:GetPropertyChangedSignal("DisplayName"), function()
-        nameLabel.Text = LocalPlayer.DisplayName
-        logger:debug("Updated display name")
-    end))
+    -- Listen for display name changes
+    self:AddConnection(_G.CensuraG.EventManager:Connect(
+        LocalPlayer:GetPropertyChangedSignal("DisplayName"), 
+        function()
+            nameLabel.Text = LocalPlayer.DisplayName
+        end
+    ))
     
+    -- Update time periodically
     task.spawn(function()
         while wait(10) do
             if self.TimeLabel and self.TimeLabel.Parent then
@@ -69,28 +80,20 @@ function Cluster.new(parent, options)
         end
     end)
     
+    -- Set up avatar click handler
     avatar:OnClick(function()
-        logger:debug("Avatar clicked")
-        EventManager:FireEvent("AvatarClicked", LocalPlayer)
+        _G.CensuraG.EventManager:FireEvent("AvatarClicked", LocalPlayer)
     end)
     
-    Animation:HoverEffect(frame, { BackgroundTransparency = Styling.Transparency.ElementBackground - 0.1 }, 
-                         { BackgroundTransparency = Styling.Transparency.ElementBackground })
-    logger:debug("Cluster created")
-    return self
-end
-
-function Cluster:Destroy()
-    for _, conn in ipairs(self.Connections) do
-        conn:Disconnect()
-    end
-    self.Connections = {}
-    if self.AvatarImage then self.AvatarImage:Destroy() end
-    if self.Instance then 
-        Animation:CleanupHoverEffects(self.Instance)
-        self.Instance:Destroy() 
-    end
-    logger:info("Cluster destroyed")
+    -- Add hover effect
+    _G.CensuraG.Animation:HoverEffect(
+        self.Instance, 
+        { BackgroundTransparency = _G.CensuraG.Styling.Transparency.ElementBackground - 0.1 }, 
+        { BackgroundTransparency = _G.CensuraG.Styling.Transparency.ElementBackground }
+    )
+    
+    -- Set metatable for this instance
+    return setmetatable(self, Cluster)
 end
 
 return Cluster
