@@ -26,7 +26,7 @@ function Slider.new(parent, x, y, width, min, max, default, options)
         Parent = parent.Instance,
         Position = UDim2.new(0, x, 0, y),
         Size = UDim2.new(0, width, 0, 15),
-        BackgroundTransparency = 1, -- Transparent to blend with window
+        BackgroundTransparency = 1,
         ClipsDescendants = true,
         Visible = true,
         ZIndex = 3
@@ -56,7 +56,6 @@ function Slider.new(parent, x, y, width, min, max, default, options)
     })
     logger:debug("Slider notch created: Position: %s, Size: %s, ZIndex: %d, Visible: %s", tostring(notch.Position), tostring(notch.Size), notch.ZIndex, tostring(notch.Visible))
 
-    -- Add a thin white border to the notch
     local notchStroke = Utilities.createInstance("UIStroke", {
         Parent = notch,
         Thickness = 1,
