@@ -18,6 +18,17 @@ _G.CensuraG = CensuraG
 local logger = CensuraG.Logger
 if not logger then error("CensuraG.Logger not initialized") end
 
+-- Wait for ScreenGui to be ready
+local maxWait = 5
+local waitTime = 0
+repeat
+    task.wait(0.1)
+    waitTime = waitTime + 0.1
+    if waitTime > maxWait then
+        logger:warn("ScreenGui not fully initialized after %d seconds, proceeding", maxWait)
+        break
+    end
+until CensuraG.ScreenGui and CensuraG.ScreenGui.AbsoluteSize and CensuraG.ScreenGui.AbsoluteSize.Y > 0
 logger:info("Starting ESP menu showcase with CensuraG")
 
 -- Initialize Taskbar
@@ -34,7 +45,6 @@ if espWindow then
         LabelText = "ESP Enabled",
         OnToggled = function(state)
             logger:info("ESP toggled to: " .. tostring(state))
-            -- Replace with actual ESP toggle logic
             if state then
                 print("ESP Enabled")
             else
@@ -49,7 +59,6 @@ if espWindow then
         ShowValue = true,
         OnChanged = function(value)
             logger:info("ESP Distance set to: " .. value)
-            -- Replace with actual ESP distance update
             print("ESP Distance: " .. value)
         end
     })
@@ -57,7 +66,6 @@ if espWindow then
     -- Add Refresh Button
     local refreshButton = CensuraG.TextButton.new(espWindow, "Refresh ESP", 10, 110, 120, 30, function()
         logger:info("Refresh ESP clicked")
-        -- Replace with actual refresh logic
         print("ESP Refreshed")
     end)
 end
@@ -72,7 +80,6 @@ if settingsWindow then
         LabelText = "Dark Mode",
         OnToggled = function(state)
             logger:info("Dark Mode toggled to: " .. tostring(state))
-            -- Replace with actual dark mode logic
             print("Dark Mode: " .. tostring(state))
         end
     })
@@ -80,7 +87,6 @@ if settingsWindow then
     -- Add Reset Button
     local resetButton = CensuraG.TextButton.new(settingsWindow, "Reset Settings", 10, 70, 120, 30, function()
         logger:info("Reset Settings clicked")
-        -- Replace with actual reset logic
         print("Settings Reset")
     end)
 end
