@@ -10,94 +10,88 @@ local logger = _G.CensuraG.Logger
 
 function Taskbar:Init()
     if not self.Instance then
+        -- Create the taskbar frame
         local taskbar = Utilities.createInstance("Frame", {
             Parent = _G.CensuraG.ScreenGui,
-            Position = UDim2.new(0, 10, 1, 40), -- Start off-screen below the bottom edge
-            Size = UDim2.new(1, -210, 0, 40), -- Space for cluster (200px + 10px padding)
-            BackgroundTransparency = 1, -- Fully transparent frame
-            Visible = false,
-            ZIndex = 1
+            Position = UDim2.new(0, 10, 1, 40), -- Start off-screen below the bottom
+            Size = UDim2.new(1, -210, 0, 40),   -- Width spans screen minus padding, height 40
+            BackgroundTransparency = 0.7,       -- Subtle visibility
+            Visible = false,                    -- Hidden initially
+            ZIndex = 2                          -- Ensure it’s above most UI elements
         })
         self.Instance = taskbar
-        logger:debug("Taskbar created: Position: %s, Size: %s, ZIndex: %d", tostring(taskbar.Position), tostring(taskbar.Size), taskbar.ZIndex)
+        logger:debug("Taskbar created: Position: %s, Size: %s", tostring(taskbar.Position), tostring(taskbar.Size))
 
-        -- Subtle gradient for buttons and cluster
+        -- Button container with gradient
         local buttonContainer = Utilities.createInstance("Frame", {
             Parent = taskbar,
             Size = UDim2.new(1, 0, 1, 0),
             BackgroundTransparency = 0.7,
             BackgroundColor3 = Styling.Colors.Highlight,
-            ZIndex = 2
+            ZIndex = 3
         })
-        local gradient = Utilities.createInstance("UIGradient", {
+        Utilities.createInstance("UIGradient", {
             Parent = buttonContainer,
             Color = ColorSequence.new(Color3.fromRGB(40, 40, 40), Color3.fromRGB(60, 60, 60)),
             Transparency = NumberSequence.new(0.3),
             Rotation = 90
         })
-        local containerStroke = Utilities.createInstance("UIStroke", {
+        Utilities.createInstance("UIStroke", {
             Parent = buttonContainer,
             Thickness = 1,
             Color = Color3.fromRGB(200, 200, 200),
             Transparency = 0.4
         })
 
-        -- Subtle shadow for depth
+        -- Add a shadow for depth
         local shadow = Utilities.createTaperedShadow(taskbar, 5, 5, 0.9)
         shadow.ZIndex = 1
 
-        -- Ensure buttonContainer is fully instantiated before creating cluster
-        task.wait() -- Small delay to ensure instantiation
-        logger:debug("Button container created: Parent: %s, Size: %s, ZIndex: %d", tostring(buttonContainer.Parent), tostring(buttonContainer.Size), buttonContainer.ZIndex)
-
-        -- Initialize cluster on the right side, parented to buttonContainer
+        -- Initialize the cluster
+        task.wait(0.1) -- Ensure container is ready
         self.Cluster = _G.CensuraG.Cluster.new({Instance = buttonContainer})
-        if self.Cluster and self.Cluster.Instance then
-            logger:info("Cluster initialized on taskbar, parent: %s", tostring(buttonContainer))
-        else
-            logger:error("Failed to initialize cluster on taskbar, parent: %s", tostring(buttonContainer))
+        if not self.Cluster or not self.Cluster.Instance then
+            logger:error("Cluster failed to initialize")
+            return
         end
+        self.Cluster.Instance.Visible = false -- Sync with taskbar initially
+        logger:info("Cluster initialized successfully")
 
+        -- Animation and input handling
+        local isAnimating = false
         local hoverDebounce = false
-        local lastInputTime = 0
         UserInputService.InputChanged:Connect(function(input)
-            if input.UserInputType == Enum.UserInputType.MouseMovement then
-                local screenHeight = _G.CensuraG.ScreenGui.AbsoluteSize.Y
-                local mouseY = input.Position.Y
-                local threshold = screenHeight * 0.2 -- Bottom 20% of the screen
-                local padding = 5 -- Small padding from the bottom edge
-                local taskbarHeight = 40 -- Taskbar height
+            if input.UserInputType ~= Enum.UserInputType.MouseMovement or isAnimating then
+                return
+            end
 
-                if mouseY >= screenHeight - threshold and not taskbar.Visible and not hoverDebounce then
-                    hoverDebounce = true
-                    lastInputTime = tick()
-                    task.wait(0.1)
-                    if tick() - lastInputTime >= 0.1 then
-                        taskbar.Visible = true
-                        -- Slide up to reveal the taskbar (top edge at padding)
-                        Animation:SlideY(taskbar, padding, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-                        if self.Cluster and self.Cluster.Instance then
-                            self.Cluster.Instance.Visible = true
-                        end
-                        logger:debug("Taskbar shown at position: %s", tostring(taskbar.Position))
-                    end
+            local screenHeight = _G.CensuraG.ScreenGui.AbsoluteSize.Y
+            local mouseY = input.Position.Y
+            local threshold = screenHeight * 0.2 -- Bottom 20%
+
+            if mouseY >= screenHeight - threshold and not taskbar.Visible then
+                if hoverDebounce then return end
+                hoverDebounce = true
+                taskbar.Visible = true
+                self.Cluster.Instance.Visible = true
+                taskbar.BackgroundTransparency = 0.7 -- Ensure visibility
+                isAnimating = true
+                Animation:SlideY(taskbar, -80, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, function()
+                    isAnimating = false
+                    logger:debug("Taskbar shown at: %s", tostring(taskbar.Position))
                     hoverDebounce = false
-                elseif mouseY < screenHeight - threshold and taskbar.Visible and not hoverDebounce then
-                    hoverDebounce = true
-                    lastInputTime = tick()
-                    task.wait(0.2)
-                    if tick() - lastInputTime >= 0.2 then
-                        -- Slide down to hide the taskbar (bottom edge off-screen)
-                        Animation:SlideY(taskbar, taskbarHeight, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function()
-                            taskbar.Visible = false
-                            if self.Cluster and self.Cluster.Instance then
-                                self.Cluster.Instance.Visible = false
-                            end
-                            logger:debug("Taskbar hidden at position: %s", tostring(taskbar.Position))
-                        end)
-                    end
+                end)
+            elseif mouseY < screenHeight - threshold and taskbar.Visible then
+                if hoverDebounce then return end
+                hoverDebounce = true
+                isAnimating = true
+                Animation:SlideY(taskbar, 40, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In, function()
+                    taskbar.Visible = false
+                    self.Cluster.Instance.Visible = false
+                    isAnimating = false
+                    logger:debug("Taskbar hidden at: %s", tostring(taskbar.Position))
                     hoverDebounce = false
-                end
+                end)
             end
         end)
     end
