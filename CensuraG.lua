@@ -22,6 +22,8 @@ _G.CensuraG = CensuraG
 -- Load dependencies
 CensuraG.Utilities = loadScript("Utilities.lua")
 CensuraG.UIElement = loadScript("UIElement.lua")
+CensuraG.Styling = loadScript("Styling.lua")
+CensuraG.Animation = loadScript("Animation.lua")
 CensuraG.Window = loadScript("Elements/Window.lua")
 CensuraG.TextButton = loadScript("Elements/TextButton.lua")
 CensuraG.Slider = loadScript("Elements/Slider.lua")
@@ -46,5 +48,4 @@ if CensuraG.Taskbar then
     CensuraG.Taskbar:Init()
 end
 
--- Return the API
 return CensuraG
