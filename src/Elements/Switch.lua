@@ -1,3 +1,12 @@
+-- Switch.lua: Toggle switch with miltech styling
+local Switch = setmetatable({}, {__index = _G.CensuraG.UIElement})
+Switch.__index = Switch
+
+local Utilities = _G.CensuraG.Utilities
+local Styling = _G.CensuraG.Styling
+local Animation = _G.CensuraG.Animation
+local logger = _G.CensuraG.Logger
+
 function Switch.new(parent, x, y, width, height, defaultState, options)
     defaultState = defaultState or false
     options = options or {}
@@ -15,6 +24,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         Parent = parent.Instance,
         Position = UDim2.new(0, x, 0, y),
         Size = UDim2.new(0, width, 0, height),
+        BackgroundTransparency = 0.5,
         ClipsDescendants = true,
         Visible = true,
         ZIndex = 3
@@ -22,11 +32,20 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
     Styling:Apply(frame, "Frame")
     logger:debug("Switch frame created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Parent: %s", tostring(frame.Position), tostring(frame.Size), frame.ZIndex, tostring(frame.Visible), tostring(frame.Parent))
 
+    -- Add a thin white border
+    local frameStroke = Utilities.createInstance("UIStroke", {
+        Parent = frame,
+        Thickness = 1,
+        Color = Color3.fromRGB(200, 200, 200),
+        Transparency = 0.5
+    })
+
     local knob = Utilities.createInstance("Frame", {
         Parent = frame,
         Size = UDim2.new(0, height - 4, 0, height - 4),
         Position = defaultState and UDim2.new(1, -(height - 2), 0, 2) or UDim2.new(0, 2, 0, 2),
         BackgroundColor3 = Color3.fromRGB(150, 150, 150),
+        BackgroundTransparency = 0.2,
         BorderSizePixel = 0,
         Visible = true,
         ZIndex = 4
@@ -49,7 +68,6 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         logger:debug("Switch label created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Text: %s", tostring(label.Position), tostring(label.Size), label.ZIndex, tostring(label.Visible), label.Text)
     end
 
-    -- Rest of the script remains unchanged
     local self = setmetatable({
         Instance = frame,
         Knob = knob,
@@ -63,11 +81,11 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         self.Debounce = true
         self.State = not self.State
         local newPos = self.State and UDim2.new(1, -(height - 2), 0, 2) or UDim2.new(0, 2, 0, 2)
-        local newColor = self.State and Styling.Colors.Highlight or Styling.Colors.Base
+        local newTransparency = self.State and 0.3 or 0.5
         Animation:Tween(self.Knob, {Position = newPos}, 0.2, function()
             self.Debounce = false
         end)
-        Animation:Tween(self.Instance, {BackgroundColor3 = newColor})
+        Animation:Tween(self.Instance, {BackgroundTransparency = newTransparency})
         if self.Label then
             self.Label.Text = self.State and "On" or "Off"
         end
@@ -83,7 +101,7 @@ function Switch.new(parent, x, y, width, height, defaultState, options)
         end
     end)
 
-    frame.BackgroundColor3 = self.State and Styling.Colors.Highlight or Styling.Colors.Base
+    frame.BackgroundTransparency = self.State and 0.3 or 0.5
 
     function self:Destroy()
         self.Instance:Destroy()
