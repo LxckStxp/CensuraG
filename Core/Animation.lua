@@ -1,4 +1,4 @@
--- Core/Animation.lua: Simplified animation system
+-- Core/Animation.lua: Simplified and reliable animation system
 local Animation = {}
 local TweenService = game:GetService("TweenService")
 
