@@ -8,60 +8,73 @@ local Animation = _G.CensuraG.Animation
 local UserInputService = game:GetService("UserInputService")
 
 function Taskbar:Init()
-    local taskbar = Utilities.createInstance("Frame", {
-        Parent = _G.CensuraG.ScreenGui,
-        Position = UDim2.new(0, 0, 1, 0), -- Start offscreen
-        Size = UDim2.new(1, 0, 0, 60), -- Increased height for better visuals
-        BackgroundTransparency = 0.8, -- More subtle transparency
-        Visible = false,
-        ZIndex = 1 -- Below windows but above base UI
-    })
-    self.Instance = taskbar
+    if not self.Instance then -- Ensure initialization only happens once
+        local taskbar = Utilities.createInstance("Frame", {
+            Parent = _G.CensuraG.ScreenGui,
+            Position = UDim2.new(0, 0, 1, 0), -- Start offscreen
+            Size = UDim2.new(1, 0, 0, 60), -- Increased height for better visuals
+            BackgroundTransparency = 0.8, -- More subtle transparency
+            Visible = false,
+            ZIndex = 1 -- Below windows but above base UI
+        })
+        self.Instance = taskbar
 
-    -- Add a subtle background glow
-    local stroke = Utilities.createInstance("UIStroke", {
-        Parent = taskbar,
-        Thickness = 1,
-        Color = Styling.Colors.Border,
-        Transparency = 0.7
-    })
+        -- Add a subtle background glow
+        local stroke = Utilities.createInstance("UIStroke", {
+            Parent = taskbar,
+            Thickness = 1,
+            Color = Styling.Colors.Border,
+            Transparency = 0.7
+        })
 
-    -- Reactive show/hide with hover intent
-    local hoverDebounce = false
-    local lastInputTime = 0
-    UserInputService.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            local screenHeight = _G.CensuraG.ScreenGui.AbsoluteSize.Y
-            local mouseY = input.Position.Y
-            local threshold = screenHeight - 20 -- Trigger when within 20px of bottom
+        -- Reactive show/hide with hover intent
+        local hoverDebounce = false
+        local lastInputTime = 0
+        UserInputService.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                local screenHeight = _G.CensuraG.ScreenGui.AbsoluteSize.Y
+                local mouseY = input.Position.Y
+                local threshold = screenHeight - 20 -- Trigger when within 20px of bottom
 
-            if mouseY >= threshold and not taskbar.Visible and not hoverDebounce then
-                hoverDebounce = true
-                lastInputTime = tick()
-                task.wait(0.1) -- Hover intent delay
-                if tick() - lastInputTime >= 0.1 then
-                    taskbar.Visible = true
-                    Animation:Tween(taskbar, {Position = UDim2.new(0, 0, 1, -60), BackgroundTransparency = 0.5}, 0.25)
+                if mouseY >= threshold and not taskbar.Visible and not hoverDebounce then
+                    hoverDebounce = true
+                    lastInputTime = tick()
+                    task.wait(0.1) -- Hover intent delay
+                    if tick() - lastInputTime >= 0.1 then
+                        taskbar.Visible = true
+                        Animation:Tween(taskbar, {Position = UDim2.new(0, 0, 1, -60), BackgroundTransparency = 0.5}, 0.25)
+                    end
+                    hoverDebounce = false
+                elseif mouseY < threshold and taskbar.Visible and not hoverDebounce then
+                    hoverDebounce = true
+                    lastInputTime = tick()
+                    task.wait(0.2) -- Slightly longer hide delay
+                    if tick() - lastInputTime >= 0.2 then
+                        Animation:Tween(taskbar, {Position = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 0.8}, 0.25, function()
+                            taskbar.Visible = false
+                        end)
+                    end
+                    hoverDebounce = false
                 end
-                hoverDebounce = false
-            elseif mouseY < threshold and taskbar.Visible and not hoverDebounce then
-                hoverDebounce = true
-                lastInputTime = tick()
-                task.wait(0.2) -- Slightly longer hide delay
-                if tick() - lastInputTime >= 0.2 then
-                    Animation:Tween(taskbar, {Position = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 0.8}, 0.25, function()
-                        taskbar.Visible = false
-                    end)
-                end
-                hoverDebounce = false
             end
-        end
-    end)
+        end)
+    end
 end
 
 function Taskbar:AddWindow(window)
-    local title = window.Instance:FindFirstChildWhichIsA("TextLabel").Text
-    local buttonWidth = math.clamp(#title * 8, 100, 200) -- Dynamic width based on title length (8px per char)
+    if not window or not window.Instance or not self.Instance then
+        warn("Invalid window or taskbar instance in AddWindow")
+        return
+    end
+
+    local titleLabel = window.Instance:FindFirstChildWhichIsA("TextLabel")
+    if not titleLabel then
+        warn("No TextLabel found in window instance")
+        return
+    end
+
+    local title = titleLabel.Text
+    local buttonWidth = math.clamp(#title * 8, 100, 200) -- Dynamic width based on title length
     local spacing = 20 -- Increased spacing
     local totalWidth = 0
     for _, w in ipairs(self.Windows) do
@@ -113,10 +126,15 @@ function Taskbar:AddWindow(window)
 
     button.MouseButton1Click:Connect(function()
         Animation:Tween(button, {Size = originalSize - UDim2.new(0, 5, 0, 5)}, 0.1, function()
-            window:Maximize()
+            if window and window.Maximize then
+                window:Maximize()
+            end
             button:Destroy()
             shadow:Destroy()
-            table.remove(self.Windows, table.find(self.Windows, window))
+            local index = table.find(self.Windows, window)
+            if index then
+                table.remove(self.Windows, index)
+            end
         end)
     end)
 
@@ -124,7 +142,9 @@ function Taskbar:AddWindow(window)
 end
 
 function Taskbar:Destroy()
-    self.Instance:Destroy()
+    if self.Instance then
+        self.Instance:Destroy()
+    end
 end
 
 return Taskbar
