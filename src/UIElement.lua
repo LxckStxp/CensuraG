@@ -12,8 +12,4 @@ function UIElement:SetPosition(x, y)
     self.Instance.Position = UDim2.new(0, x, 0, y)
 end
 
-function UIElement:SetSize(width, height)
-    self.Instance.Size = UDim2.new(0, width, 0, height)
-end
-
 return UIElement
