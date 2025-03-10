@@ -10,10 +10,12 @@ function TextButton.new(parent, text, x, y, width, height, callback)
     local button = Utilities.createInstance("TextButton", {
         Parent = parent.Instance,
         Position = UDim2.new(0, x, 0, y),
-        Size = UDim2.new(0, width, 0, height),
-        Text = text
+        Size = UDim2.new(0, width, 0, height or 30),
+        Text = text,
+        BackgroundTransparency = 0
     })
     Styling:Apply(button, "TextButton")
+
     Animation:HoverEffect(button)
 
     local self = setmetatable({Instance = button}, TextButton)
