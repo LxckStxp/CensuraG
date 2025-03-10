@@ -9,6 +9,11 @@ local Draggable = _G.CensuraG.Draggable
 local logger = _G.CensuraG.Logger
 
 function Window.new(title, x, y, width, height)
+    x = x or 0
+    y = y or 0
+    width = width or 300 -- Default width
+    height = height or 200 -- Default height
+
     local frame = Utilities.createInstance("Frame", {
         Parent = _G.CensuraG.ScreenGui,
         Position = UDim2.new(0, x, 0, y),
