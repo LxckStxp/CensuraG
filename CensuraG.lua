@@ -1,56 +1,21 @@
--- CensuraG.lua: Entry point for the CensuraG UI API
--- Loads all scripts dynamically into a global table
--- Date: March 10, 2025
-
-local baseUrl = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/"
-
-local function loadScript(path)
-    local success, result = pcall(function()
-        return loadstring(game:HttpGet(baseUrl .. path))()
-    end)
-    if not success then
-        warn("Failed to load " .. path .. ": " .. result)
-        return nil
-    end
-    return result
-end
-
--- Initialize global table
+-- CensuraG.lua: Main entry point for the UI API
 local CensuraG = {}
+
+-- Load services and modules
+CensuraG.ScreenGui = Instance.new("ScreenGui", game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui"))
+CensuraG.Utilities = require(script.Utilities) -- Assumed module
+CensuraG.Styling = require(script.Styling)    -- Assumed module
+CensuraG.Animation = require(script.Animation) -- Assumed module
+CensuraG.Draggable = require(script.Draggable)
+CensuraG.Window = require(script.Elements.Window)
+CensuraG.Slider = require(script.Elements.Slider)
+CensuraG.TextButton = require(script.Elements.TextButton)
+CensuraG.WindowManager = require(script.WindowManager) -- Assumed module
+CensuraG.Taskbar = require(script.Taskbar) -- Assumed module
+
+-- Base UIElement class
+CensuraG.UIElement = { Instance = nil }
+CensuraG.UIElement.__index = CensuraG.UIElement
+
 _G.CensuraG = CensuraG
-
--- Load dependencies into global table
-CensuraG.Utilities = loadScript("Utilities.lua")
-CensuraG.UIElement = loadScript("UIElement.lua")
-CensuraG.Styling = loadScript("Styling.lua")
-CensuraG.Animation = loadScript("Animation.lua")
-CensuraG.Draggable = loadScript("Draggable.lua")
-CensuraG.WindowManager = loadScript("WindowManager.lua")
-CensuraG.Window = loadScript("Elements/Window.lua")
-CensuraG.TextButton = loadScript("Elements/TextButton.lua")
-CensuraG.Slider = loadScript("Elements/Slider.lua")
-CensuraG.Taskbar = loadScript("Taskbar.lua")
-
--- Setup ScreenGui
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-CensuraG.ScreenGui = PlayerGui:FindFirstChild("CensuraGGui") or CensuraG.Utilities.createInstance("ScreenGui", {
-    Parent = PlayerGui,
-    Name = "CensuraGGui"
-})
-
--- API Expansion
-function CensuraG.AddCustomElement(name, class)
-    CensuraG[name] = class
-end
-
--- Initialize Taskbar and WindowManager
-if CensuraG.Taskbar then
-    CensuraG.Taskbar:Init()
-end
-if CensuraG.WindowManager then
-    CensuraG.WindowManager:Init()
-end
-
 return CensuraG
