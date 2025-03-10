@@ -37,6 +37,10 @@ function Window.new(title, x, y, width, height)
         ZIndex = frame.ZIndex + 1
     })
     Styling:Apply(titleBar, "TextLabel")
+    -- Force text visibility and Z-Index
+    titleBar.TextTransparency = 0
+    titleBar.Visible = true
+    titleBar.ZIndex = frame.ZIndex + 2
     logger:debug("Created title bar for window: %s, Position: %s, Size: %s, ZIndex: %d", title, tostring(titleBar.Position), tostring(titleBar.Size), titleBar.ZIndex)
 
     local minimizeButton = Utilities.createInstance("TextButton", {
@@ -48,6 +52,10 @@ function Window.new(title, x, y, width, height)
         ZIndex = frame.ZIndex + 1
     })
     Styling:Apply(minimizeButton, "TextButton")
+    -- Force text visibility and Z-Index
+    minimizeButton.TextTransparency = 0
+    minimizeButton.Visible = true
+    minimizeButton.ZIndex = frame.ZIndex + 2
     logger:debug("Created minimize button for window: %s, Position: %s, Size: %s, ZIndex: %d", title, tostring(minimizeButton.Position), tostring(minimizeButton.Size), minimizeButton.ZIndex)
 
     local self = setmetatable({
@@ -134,6 +142,12 @@ function Window:Maximize()
     for _, child in pairs(self.Instance:GetChildren()) do
         if child:IsA("GuiObject") then
             child.Visible = true
+            -- Force text visibility for children
+            if child:IsA("TextLabel") or child:IsA("TextButton") then
+                child.TextTransparency = 0
+                child.Visible = true
+                child.ZIndex = self.Instance.ZIndex + 2
+            end
             logger:debug("Set child %s of window to Visible: true during maximize", child.Name)
         end
     end
