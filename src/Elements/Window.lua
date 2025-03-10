@@ -133,7 +133,7 @@ function Window:Minimize()
     else
         logger:error("Taskbar or AddWindow method is not available during minimize.")
     end
-    _G.CensuraG.WindowManager:RemoveWindow(self)
+    -- Removed WindowManager:RemoveWindow(self) to keep the window in the manager
 end
 
 function Window:Maximize()
@@ -169,7 +169,7 @@ function Window:Maximize()
         end
     end
 
-    _G.CensuraG.WindowManager:AddWindow(self)
+    -- Removed WindowManager:AddWindow(self) since the window is already in the manager
 end
 
 function Window:Destroy()
