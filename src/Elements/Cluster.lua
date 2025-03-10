@@ -1,4 +1,4 @@
--- Elements/Cluster.lua: Enhanced taskbar cluster showing avatar, display name, and time
+-- Elements/Cluster.lua: Enhanced taskbar cluster with modern miltech styling
 local Cluster = setmetatable({}, {__index = _G.CensuraG.UIElement})
 Cluster.__index = Cluster
 
@@ -19,7 +19,7 @@ local function getAvatarThumbnail(userId)
             break
         else
             logger:warn("Attempt %d failed to fetch avatar thumbnail for user %d: %s", i, userId, tostring(result))
-            task.wait(0.5) -- Delay between retries
+            task.wait(0.5)
         end
     end
     if content then
@@ -27,7 +27,7 @@ local function getAvatarThumbnail(userId)
         return content
     else
         logger:warn("All attempts failed to fetch avatar thumbnail for user %d, using fallback", userId)
-        return "rbxassetid://0" -- Fallback to a blank image
+        return "rbxassetid://0"
     end
 end
 
@@ -49,78 +49,53 @@ function Cluster.new(parent)
         Parent = parent.Instance,
         Position = UDim2.new(1, -210, 0, 5),
         Size = UDim2.new(0, 200, 0, 30),
-        BackgroundTransparency = 0.6,
-        BackgroundColor3 = Styling.Colors.Highlight,
-        Visible = true,
-        ZIndex = 4 -- Match Taskbar’s setting
+        BackgroundTransparency = Styling.Transparency.Background,
+        ZIndex = 4
     })
     Styling:Apply(frame, "Frame")
-    logger:debug("Cluster frame created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Parent: %s", tostring(frame.Position), tostring(frame.Size), frame.ZIndex, tostring(frame.Visible), tostring(frame.Parent))
+    logger:debug("Cluster frame created: Position: %s, Size: %s, ZIndex: %d", tostring(frame.Position), tostring(frame.Size), frame.ZIndex)
 
-    local frameStroke = Utilities.createInstance("UIStroke", {
-        Parent = frame,
-        Thickness = 1,
-        Color = Color3.fromRGB(200, 200, 200),
-        Transparency = 0.4
-    })
-
-    -- Avatar image with retry logic and higher ZIndex
     local avatarImageUrl = getAvatarThumbnail(localPlayer.UserId)
-    local avatarImage = _G.CensuraG.ImageLabel.new({Instance = frame}, avatarImageUrl, 5, 1, 28, 28, {Shadow = true, ZIndex = 5})
+    local avatarImage = _G.CensuraG.ImageLabel.new({Instance = frame}, avatarImageUrl, 5, 1, 28, 28, {ZIndex = 5})
     if not avatarImage then
         logger:error("Failed to create avatar ImageLabel for cluster")
     else
-        logger:debug("Cluster avatar image created with URL: %s, Position: %s, Visible: %s, ZIndex: %d", avatarImageUrl, tostring(avatarImage.Instance.Position), tostring(avatarImage.Instance.Visible), avatarImage.Instance.ZIndex)
+        logger:debug("Cluster avatar image created with URL: %s, Position: %s, ZIndex: %d", avatarImageUrl, tostring(avatarImage.Instance.Position), avatarImage.Instance.ZIndex)
         avatarImage.Instance.Visible = true
-        task.wait(0.1) -- Small delay to allow image to load
+        task.wait(0.1)
         if avatarImage.Instance.ImageTransparency > 0 then
             avatarImage.Instance.ImageTransparency = 0
             logger:debug("Forced avatar image visibility")
         end
     end
 
-    -- Display name with better truncation
     local displayName = Utilities.createInstance("TextLabel", {
         Parent = frame,
         Position = UDim2.new(0, 40, 0, 0),
         Size = UDim2.new(0, 110, 0, 30),
         BackgroundTransparency = 1,
         Text = localPlayer.DisplayName,
-        TextColor3 = Styling.Colors.Text,
-        Font = Enum.Font.Code,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        TextTruncate = Enum.TextTruncate.AtEnd,
-        Visible = true,
         ZIndex = 5
     })
     Styling:Apply(displayName, "TextLabel")
-    logger:debug("Cluster display name created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Text: %s", tostring(displayName.Position), tostring(displayName.Size), displayName.ZIndex, tostring(displayName.Visible), displayName.Text)
+    logger:debug("Cluster display name created: Position: %s, Size: %s, ZIndex: %d, Text: %s", tostring(displayName.Position), tostring(displayName.Size), displayName.ZIndex, displayName.Text)
 
-    -- Update display name if it changes
     localPlayer:GetPropertyChangedSignal("DisplayName"):Connect(function()
         displayName.Text = localPlayer.DisplayName
         logger:debug("Updated cluster display name to: %s", displayName.Text)
     end)
 
-    -- Time with smoother updates
     local timeLabel = Utilities.createInstance("TextLabel", {
         Parent = frame,
         Position = UDim2.new(0, 155, 0, 0),
         Size = UDim2.new(0, 40, 0, 30),
         BackgroundTransparency = 1,
         Text = os.date("%H:%M"),
-        TextColor3 = Styling.Colors.Text,
-        Font = Enum.Font.Code,
-        TextSize = 14,
-        TextXAlignment = Enum.TextXAlignment.Right,
-        Visible = true,
         ZIndex = 5
     })
     Styling:Apply(timeLabel, "TextLabel")
-    logger:debug("Cluster time label created: Position: %s, Size: %s, ZIndex: %d, Visible: %s, Text: %s", tostring(timeLabel.Position), tostring(timeLabel.Size), timeLabel.ZIndex, tostring(timeLabel.Visible), timeLabel.Text)
+    logger:debug("Cluster time label created: Position: %s, Size: %s, ZIndex: %d, Text: %s", tostring(timeLabel.Position), tostring(timeLabel.Size), timeLabel.ZIndex, timeLabel.Text)
 
-    -- Update time every 10 seconds
     spawn(function()
         while wait(10) do
             timeLabel.Text = os.date("%H:%M")
