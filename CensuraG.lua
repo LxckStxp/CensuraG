@@ -70,19 +70,34 @@ for moduleName, scriptFunc in pairs(scripts) do
             CensuraG[moduleName] = result
             logger:debug("Loaded module: %s", moduleName)
         else
-            logger:warn("Failed to execute module: %s, Error: %s", moduleName, tostring(result))
+            logger:error("Failed to execute module: %s, Error: %s", moduleName, tostring(result))
         end
     else
-        logger:warn("Failed to load module: %s", moduleName)
+        logger:warn("Failed to load module: %s (script not fetched)", moduleName)
+    end
+end
+
+-- Verify all required modules are loaded
+local requiredModules = {"Utilities", "UIElement", "Styling", "Animation", "Draggable", "WindowManager", "Taskbar", "Window", "TextButton", "Slider", "Switch"}
+for _, moduleName in ipairs(requiredModules) do
+    if not CensuraG[moduleName] then
+        logger:error("Required module %s is missing after loading", moduleName)
     end
 end
 
 -- Initialize ScreenGui
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-CensuraG.ScreenGui = PlayerGui:FindFirstChild("CensuraGGui") or CensuraG.Utilities.createInstance("ScreenGui", {
-    Parent = PlayerGui,
+local success, playerGui = pcall(function()
+    local Players = game:GetService("Players")
+    local LocalPlayer = Players.LocalPlayer
+    return LocalPlayer:WaitForChild("PlayerGui")
+end)
+if not success or not playerGui then
+    logger:error("Failed to access PlayerGui: %s", tostring(playerGui))
+    return CensuraG
+end
+
+CensuraG.ScreenGui = playerGui:FindFirstChild("CensuraGGui") or CensuraG.Utilities.createInstance("ScreenGui", {
+    Parent = playerGui,
     Name = "CensuraGGui",
     ResetOnSpawn = false
 })
