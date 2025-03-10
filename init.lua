@@ -245,14 +245,14 @@ if false then -- Set to true to show examples when loading
         -- Add some elements
         CensuraG.TextButton.new(demoWindow, "Open Settings", 10, 10, 120, 30, function()
             CensuraG.OpenSettings()
-        })
+                end)
         
         CensuraG.TextButton.new(demoWindow, "Toggle Theme", 10, 50, 120, 30, function()
             local themes = {"Dark", "Light", "Military"}
             local currentIndex = table.find(themes, CensuraG.Styling.CurrentTheme) or 1
             local nextIndex = (currentIndex % #themes) + 1
             CensuraG.Styling:SetTheme(themes[nextIndex])
-        })
+                end)
         
         CensuraG.Logger:info("Demo window created")
     end)
