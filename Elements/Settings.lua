@@ -9,6 +9,7 @@ local Animation = _G.CensuraG.Animation
 local EventManager = _G.CensuraG.EventManager
 
 Settings.Window = nil
+Settings.UIElements = {} -- Store references to UI elements
 
 function Settings:Init()
     if self.Window then
@@ -40,28 +41,31 @@ function Settings:Init()
 end
 
 function Settings:SyncUIWithConfig()
-    if not self.ContentFrames then return end
-    local general = self.ContentFrames["General"]
-    if general then
-        local autoHideSwitch = general:FindFirstChild("Switch_Taskbar Auto-Hide")
-        if autoHideSwitch then autoHideSwitch:Toggle(_G.CensuraG.Config.AutoHide) end
-        local shadowsSwitch = general:FindFirstChild("Switch_Enable Shadows")
-        if shadowsSwitch then shadowsSwitch:Toggle(_G.CensuraG.Config.EnableShadows) end
-        local debugSwitch = general:FindFirstChild("Switch_Debug Mode")
-        if debugSwitch then debugSwitch:Toggle(_G.CensuraG.Config.DebugMode) end
+    -- Use stored references instead of FindFirstChild
+    if self.UIElements["AutoHideSwitch"] then
+        self.UIElements["AutoHideSwitch"]:Toggle(_G.CensuraG.Config.AutoHide)
     end
-    local theme = self.ContentFrames["Theme"]
-    if theme then
-        local themeDropdown = theme:FindFirstChild("Dropdown_Theme")
-        if themeDropdown then themeDropdown:SelectItem(_G.CensuraG.Config.Theme) end
-        local transparencySlider = theme:FindFirstChild("Slider_Window Transparency")
-        if transparencySlider then transparencySlider:UpdateValue(_G.CensuraG.Config.WindowTransparency, false) end
+    
+    if self.UIElements["ShadowsSwitch"] then
+        self.UIElements["ShadowsSwitch"]:Toggle(_G.CensuraG.Config.EnableShadows)
     end
-    local performance = self.ContentFrames["Performance"]
-    if performance then
-        local animSpeedSlider = performance:FindFirstChild("Slider_Animation Speed")
-        if animSpeedSlider then animSpeedSlider:UpdateValue(_G.CensuraG.Config.AnimationSpeed, false) end
+    
+    if self.UIElements["DebugSwitch"] then
+        self.UIElements["DebugSwitch"]:Toggle(_G.CensuraG.Config.DebugMode)
     end
+    
+    if self.UIElements["ThemeDropdown"] then
+        self.UIElements["ThemeDropdown"]:SelectItem(_G.CensuraG.Config.Theme)
+    end
+    
+    if self.UIElements["TransparencySlider"] then
+        self.UIElements["TransparencySlider"]:UpdateValue(_G.CensuraG.Config.WindowTransparency, false)
+    end
+    
+    if self.UIElements["AnimSpeedSlider"] then
+        self.UIElements["AnimSpeedSlider"]:UpdateValue(_G.CensuraG.Config.AnimationSpeed, false)
+    end
+    
     logger:debug("Synced Settings UI with Config")
 end
 
@@ -149,6 +153,8 @@ function Settings:PopulateTabContent(tabName, contentFrame)
                 _G.CensuraG.Taskbar:SetAutoHide(state)
             end }
         )
+        self.UIElements["AutoHideSwitch"] = autoHideSwitch
+        
         local shadowsSwitch = _G.CensuraG.Switch.new(
             { Instance = contentFrame }, 10, 90, 40, 20, _G.CensuraG.Config.EnableShadows,
             { LabelText = "Enable Shadows", OnToggled = function(state)
@@ -156,6 +162,8 @@ function Settings:PopulateTabContent(tabName, contentFrame)
                 EventManager:FireEvent("ShadowsToggled", state)
             end }
         )
+        self.UIElements["ShadowsSwitch"] = shadowsSwitch
+        
         local debugSwitch = _G.CensuraG.Switch.new(
             { Instance = contentFrame }, 10, 130, 40, 20, _G.CensuraG.Config.DebugMode,
             { LabelText = "Debug Mode", OnToggled = function(state)
@@ -164,6 +172,8 @@ function Settings:PopulateTabContent(tabName, contentFrame)
                 logger:info("Debug Mode set to %s", tostring(state))
             end }
         )
+        self.UIElements["DebugSwitch"] = debugSwitch
+        
     elseif tabName == "Theme" then
         local title = Utilities.createInstance("TextLabel", {
             Parent = contentFrame,
@@ -187,6 +197,8 @@ function Settings:PopulateTabContent(tabName, contentFrame)
                 Styling:UpdateAllElements()
             end
         )
+        self.UIElements["ThemeDropdown"] = themeDropdown
+        
         local transparencySlider = _G.CensuraG.Slider.new(
             { Instance = contentFrame }, 10, 90, 200, 0, 1, _G.CensuraG.Config.WindowTransparency,
             { LabelText = "Window Transparency", OnChanged = function(value)
@@ -195,6 +207,8 @@ function Settings:PopulateTabContent(tabName, contentFrame)
                 Styling:UpdateAllElements()
             end }
         )
+        self.UIElements["TransparencySlider"] = transparencySlider
+        
     elseif tabName == "Performance" then
         local title = Utilities.createInstance("TextLabel", {
             Parent = contentFrame,
@@ -215,6 +229,8 @@ function Settings:PopulateTabContent(tabName, contentFrame)
                 _G.CensuraG.Config.AnimationSpeed = value
             end }
         )
+        self.UIElements["AnimSpeedSlider"] = animSpeedSlider
+        
     elseif tabName == "About" then
         local title = Utilities.createInstance("TextLabel", {
             Parent = contentFrame,
@@ -228,6 +244,7 @@ function Settings:PopulateTabContent(tabName, contentFrame)
             Name = "Title"
         })
         Styling:Apply(title, "TextLabel")
+        
         local version = Utilities.createInstance("TextLabel", {
             Parent = contentFrame,
             Position = UDim2.new(0, 10, 0, 50),
