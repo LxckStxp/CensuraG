@@ -14,6 +14,9 @@ local function loadModule(url, moduleName)
         return ModuleCache[moduleName]
     end
     local response = game:HttpGet(url, true)
+    if not response then
+        error("Failed to fetch module [" .. moduleName .. "] from URL: " .. url)
+    end
     local moduleFunc, err = loadstring(response)
     if not moduleFunc then
         error("Failed to compile [" .. moduleName .. "]: " .. err)
@@ -43,11 +46,11 @@ if Oratio then
 else
     -- Fallback basic logger if Oratio fails.
     CensuraG.Logger = {
-        debug = print,
-        info = print,
-        warn = warn,
-        error = warn,
-        critical = warn
+        debug = function(...) print("[DEBUG][CensuraG]", ...) end,
+        info = function(...) print("[INFO][CensuraG]", ...) end,
+        warn = function(...) warn("[WARN][CensuraG]", ...) end,
+        error = function(...) warn("[ERROR][CensuraG]", ...) end,
+        critical = function(...) warn("[CRITICAL][CensuraG]", ...) end
     }
 end
 
@@ -75,43 +78,75 @@ local modules = {
     { name = "Settings", path = "Elements/Settings.lua" }
 }
 
--- Load each module into CensuraG
+-- Load each module into CensuraG using DependencyManager
 for _, mod in ipairs(modules) do
     local moduleUrl = baseUrl .. mod.path
-    CensuraG[mod.name] = loadModule(moduleUrl, mod.name)
-    CensuraG.Logger:debug("Loaded module: %s", mod.name)
+    local module = loadModule(moduleUrl, mod.name)
+    if module then
+        CensuraG[mod.name] = module
+        CensuraG.DependencyManager:Register(mod.name, module)
+        CensuraG.Logger:debug("Loaded and registered module: %s", mod.name)
+    else
+        CensuraG.Logger:error("Failed to load module: %s", mod.name)
+    end
 end
 
--- Initialize the ScreenGui.
+-- Initialize the ScreenGui with fallback for external contexts
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer or Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
-local playerGui = LocalPlayer:WaitForChild("PlayerGui", 5)
+local LocalPlayer = Players.LocalPlayer
+if not LocalPlayer then
+    CensuraG.Logger:warn("LocalPlayer not found, attempting to wait...")
+    LocalPlayer = Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
+end
+local playerGui = LocalPlayer and LocalPlayer:WaitForChild("PlayerGui", 5)
 if not playerGui then
-    CensuraG.Logger:error("Failed to access PlayerGui")
+    CensuraG.Logger:warn("PlayerGui not accessible, creating fallback ScreenGui")
+    CensuraG.ScreenGui = Instance.new("ScreenGui")
+    CensuraG.ScreenGui.Name = "CensuraGGui"
+    local coreGui = game:GetService("CoreGui")
+    if coreGui then
+        CensuraG.ScreenGui.Parent = coreGui
+    else
+        CensuraG.Logger:error("CoreGui not accessible, ScreenGui creation failed")
+        CensuraG.ScreenGui = nil
+    end
+    if CensuraG.ScreenGui then
+        CensuraG.ScreenGui.ResetOnSpawn = false
+        CensuraG.ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        CensuraG.ScreenGui.IgnoreGuiInset = true
+    end
+else
+    CensuraG.ScreenGui = playerGui:FindFirstChild("CensuraGGui")
+    if not CensuraG.ScreenGui then
+        CensuraG.ScreenGui = CensuraG.Utilities.createInstance("ScreenGui", {
+            Parent = playerGui,
+            Name = "CensuraGGui",
+            ResetOnSpawn = false,
+            ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+            IgnoreGuiInset = true
+        })
+    end
+end
+if CensuraG.ScreenGui then
+    CensuraG.Logger:info("ScreenGui initialized: %s", CensuraG.ScreenGui.Name)
+else
+    CensuraG.Logger:error("Failed to initialize ScreenGui")
     return CensuraG
 end
 
-CensuraG.ScreenGui = playerGui:FindFirstChild("CensuraGGui")
-if not CensuraG.ScreenGui then
-    CensuraG.ScreenGui = CensuraG.Utilities.createInstance("ScreenGui", {
-        Parent = playerGui,
-        Name = "CensuraGGui",
-        ResetOnSpawn = false,
-        ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-        IgnoreGuiInset = true
-    })
-end
-CensuraG.Logger:info("ScreenGui initialized: %s", CensuraG.ScreenGui.Name)
-
--- Initialize managers (WindowManager, Taskbar) if available
+-- Initialize managers after all dependencies are loaded
 if CensuraG.WindowManager then
     CensuraG.WindowManager:Init()
     CensuraG.Logger:info("WindowManager initialized")
+else
+    CensuraG.Logger:warn("WindowManager not initialized due to missing dependency")
 end
 
 if CensuraG.Taskbar then
     CensuraG.Taskbar:Init()
     CensuraG.Logger:info("Taskbar initialized")
+else
+    CensuraG.Logger:warn("Taskbar not initialized due to missing dependency")
 end
 
 if CensuraG.Settings then
@@ -120,6 +155,8 @@ if CensuraG.Settings then
         CensuraG.Settings:Init()
         CensuraG.Logger:info("Settings menu auto-initialized")
     end)
+else
+    CensuraG.Logger:warn("Settings module not loaded")
 end
 
 CensuraG.Logger:info("CensuraG initialization completed successfully")
@@ -131,6 +168,7 @@ function CensuraG.AddCustomElement(name, class)
         return
     end
     CensuraG[name] = class
+    CensuraG.DependencyManager:Register(name, class)
     CensuraG.Logger:debug("Added custom element: %s", name)
 end
 
