@@ -134,7 +134,6 @@ function CensuraG.AddCustomElement(name, class)
     CensuraG.Logger:debug("Added custom element: %s", name)
 end
 
--- API functions for toggling and opening settings
 function CensuraG.ToggleSettings()
     if CensuraG.Settings then
         CensuraG.Settings:Toggle()
@@ -160,7 +159,6 @@ CensuraG.Config = {
     DebugMode = false
 }
 
--- Clean up function for proper resource management
 function CensuraG.Destroy()
     CensuraG.Logger:info("Destroying CensuraG framework...")
     if CensuraG.EventManager then CensuraG.EventManager:DisconnectAll() end
