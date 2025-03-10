@@ -11,6 +11,12 @@ local logger = _G.CensuraG.Logger
 function Settings:Init()
     if self.Instance then return self end
     self.Instance = Window.new("Settings", 100, 100, 400, 400, { Name = "SettingsWindow" })
+    logger:debug("Settings window created: %s", self.Instance.TitleText.Text)
+
+    if not self.Instance or not self.Instance.ContentContainer then
+        logger:error("Failed to initialize Settings: Invalid window or ContentContainer")
+        return nil
+    end
     
     -- Tabs
     local tabs = {"General", "Appearance", "Performance", "About"}
@@ -25,10 +31,12 @@ function Settings:Init()
             self.currentTab = tab
             self:RefreshUI()
         end)
+        logger:debug("Added tab button: %s", tab)
     end
 
-    -- Content area is the window's ContentContainer
-    local contentContainer = self.Instance.ContentContainer -- Access directly as Frame
+    -- Content area
+    local contentContainer = self.Instance.ContentContainer
+    logger:debug("Using ContentContainer: %s", contentContainer.Name)
 
     -- Appearance Tab Content
     self.appearanceElements = {}
@@ -107,7 +115,7 @@ end
 
 function Settings:RefreshUI()
     if not self.Instance or not self.Instance.ContentContainer then
-        logger:warn("Cannot refresh UI: Invalid window or content container")
+        logger:warn("Cannot refresh UI: Invalid window or ContentContainer")
         return
     end
     local contentContainer = self.Instance.ContentContainer
