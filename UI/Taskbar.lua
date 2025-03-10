@@ -1,5 +1,5 @@
 -- UI/Taskbar.lua
--- Enhanced taskbar with auto-hide detection
+-- Enhanced taskbar with auto-hide detection and improved organization
 
 local Taskbar = {}
 local logger = _G.CensuraG.Logger
@@ -13,7 +13,7 @@ local RunService = game:GetService("RunService")
 Taskbar.Windows = {}
 Taskbar.Visible = false
 Taskbar.Height = 40
-Taskbar.ButtonWidth = 150
+Taskbar.ButtonWidth = 150 -- Default max width, will be adjusted dynamically
 Taskbar.AutoHideEnabled = true
 Taskbar.IsAnimating = false
 Taskbar.CheckingMouse = false
@@ -41,10 +41,29 @@ function Taskbar:Init()
     })
     Styling:Apply(taskbar, "Frame")
     self.Instance = taskbar
+
+    -- Start Button
+    local startButton = Utilities.createInstance("TextButton", {
+        Parent = self.Instance,
+        Position = UDim2.new(0, 5, 0, 5),
+        Size = UDim2.new(0, 40, 0, 30),
+        Text = "☰", -- Hamburger menu icon
+        ZIndex = self.Instance.ZIndex + 1,
+        Name = "StartButton"
+    })
+    Styling:Apply(startButton, "TextButton")
+    Animation:HoverEffect(startButton)
+    startButton.MouseButton1Click:Connect(function()
+        _G.CensuraG.Settings:Toggle()
+        logger:debug("Start button clicked - toggled settings")
+    end)
+    self.StartButton = startButton
+
+    -- Button Container
     local buttonContainer = Utilities.createInstance("ScrollingFrame", {
         Parent = taskbar,
-        Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(1, -210, 1, 0),
+        Position = UDim2.new(0, 50, 0, 0), -- Adjusted for start button
+        Size = UDim2.new(1, -260, 1, 0), -- Adjusted for start button and cluster
         CanvasSize = UDim2.new(0, 0, 0, 0),
         BackgroundTransparency = 1,
         ScrollBarThickness = 4,
@@ -52,8 +71,12 @@ function Taskbar:Init()
         Name = "ButtonContainer"
     })
     self.ButtonContainer = buttonContainer
+
+    -- Cluster
     self.Cluster = _G.CensuraG.Cluster.new({ Instance = taskbar })
     self:RefreshCluster()
+
+    -- Mouse Check for Auto-Hide
     self.MouseCheckConnection = RunService.RenderStepped:Connect(function()
         if self.CheckingMouse or self.IsAnimating then return end
         self.CheckingMouse = true
@@ -131,20 +154,39 @@ function Taskbar:AddWindow(window)
         Parent = self.ButtonContainer,
         Position = UDim2.new(0, #self.Windows * (self.ButtonWidth + 5), 0, 5),
         Size = UDim2.new(0, self.ButtonWidth, 0, self.Height-10),
-        Text = title,
+        Text = Utilities.truncateText(title, 20),
         ZIndex = self.Instance.ZIndex + 2,
         Name = "TaskbarButton_"..window.Id
     })
     Styling:Apply(button, "TextButton")
     button.MouseEnter:Connect(function() Animation:Tween(button, { BackgroundTransparency = Styling.Transparency.ElementBackground - 0.1 }, 0.1) end)
     button.MouseLeave:Connect(function() Animation:Tween(button, { BackgroundTransparency = Styling.Transparency.ElementBackground }, 0.1) end)
-    self.ButtonContainer.CanvasSize = UDim2.new(0, (#self.Windows+1)*(self.ButtonWidth+5), 0, 0)
+
+    -- Tooltip
+    local tooltip = Utilities.createInstance("TextLabel", {
+        Parent = _G.CensuraG.ScreenGui,
+        Size = UDim2.new(0, 200, 0, 20),
+        BackgroundTransparency = 0.2,
+        Text = title,
+        Visible = false,
+        ZIndex = self.Instance.ZIndex + 3
+    })
+    Styling:Apply(tooltip, "TextLabel")
+    button.MouseEnter:Connect(function()
+        local absPos = button.AbsolutePosition
+        tooltip.Position = UDim2.new(0, absPos.X, 0, absPos.Y - 25)
+        tooltip.Visible = true
+    end)
+    button.MouseLeave:Connect(function() tooltip.Visible = false end)
+    window.TaskbarButtonTooltip = tooltip
+
     button.MouseButton1Click:Connect(function()
         if window.Restore then window:Restore() end
         self:RemoveWindow(window)
     end)
     table.insert(self.Windows, window)
     window.TaskbarButton = button
+    self:UpdateButtonPositions()
     if #self.Windows == 1 and not self.Visible then self:ShowTaskbar() end
     logger:debug("Added window to taskbar: %s", title)
     return true
@@ -155,6 +197,7 @@ function Taskbar:RemoveWindow(window)
     for i, w in ipairs(self.Windows) do
         if w == window then
             if window.TaskbarButton then window.TaskbarButton:Destroy() end
+            if window.TaskbarButtonTooltip then window.TaskbarButtonTooltip:Destroy() end
             table.remove(self.Windows, i)
             self:UpdateButtonPositions()
             if #self.Windows == 0 and self.AutoHideEnabled then
@@ -169,16 +212,30 @@ function Taskbar:RemoveWindow(window)
 end
 
 function Taskbar:UpdateButtonPositions()
+    local totalWidth = self.ButtonContainer.AbsoluteSize.X
+    local buttonCount = #self.Windows
+    local maxButtonWidth = math.min(self.ButtonWidth, totalWidth / math.max(1, buttonCount) - 5)
     for i, window in ipairs(self.Windows) do
         if window.TaskbarButton then
-            Animation:Tween(window.TaskbarButton, { Position = UDim2.new(0, (i-1)*(self.ButtonWidth+5), 0, 5) }, 0.2)
+            Animation:Tween(window.TaskbarButton, {
+                Position = UDim2.new(0, (i-1)*(maxButtonWidth+5), 0, 5),
+                Size = UDim2.new(0, maxButtonWidth, 0, self.Height-10)
+            }, 0.2)
         end
     end
-    self.ButtonContainer.CanvasSize = UDim2.new(0, #self.Windows*(self.ButtonWidth+5), 0, 0)
+    self.ButtonContainer.CanvasSize = UDim2.new(0, buttonCount*(maxButtonWidth+5), 0, 0)
 end
 
 function Taskbar:RefreshCluster()
     if self.Cluster then
+        local clusterFrame = self.Cluster.Instance
+        clusterFrame.Position = UDim2.new(1, -205, 0, 5)
+        clusterFrame.Size = UDim2.new(0, 195, 0, 30)
+        clusterFrame.BackgroundTransparency = Styling.Transparency.ElementBackground - 0.1
+        Styling:Apply(clusterFrame, "Frame")
+        self.Cluster.AvatarImage.Image.Position = UDim2.new(0, 5, 0, 1)
+        self.Cluster.DisplayName.Position = UDim2.new(0, 40, 0, 0)
+        self.Cluster.TimeLabel.Position = UDim2.new(0, 150, 0, 0)
         self.Cluster.Instance.Visible = true
         if self.Cluster.AvatarImage then self.Cluster.AvatarImage.Image.Visible = true end
         if self.Cluster.DisplayName then self.Cluster.DisplayName.Visible = true end
@@ -239,6 +296,7 @@ function Taskbar:Destroy()
     if self.MouseCheckConnection then self.MouseCheckConnection:Disconnect() end
     for _, window in ipairs(self.Windows) do
         if window.TaskbarButton then window.TaskbarButton:Destroy() end
+        if window.TaskbarButtonTooltip then window.TaskbarButtonTooltip:Destroy() end
     end
     self.Windows = {}
     if self.Cluster then self.Cluster:Destroy() end
