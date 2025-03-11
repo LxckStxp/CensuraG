@@ -1,4 +1,4 @@
--- CensuraG/src/components/taskbar.lua (fixed for ButtonContainer)
+-- CensuraG/src/components/taskbar.lua (fixed Font tweening issue)
 local Config = _G.CensuraG.Config
 
 return function()
@@ -67,7 +67,7 @@ return function()
     Logo.TextSize = 16
     Logo.TextXAlignment = Enum.TextXAlignment.Left
     
-    -- Add button container for window buttons (IMPORTANT - this was missing)
+    -- Add button container for window buttons
     local ButtonContainer = Instance.new("Frame", Frame)
     ButtonContainer.Name = "ButtonContainer" -- Ensure it has the expected name
     ButtonContainer.Size = UDim2.new(1, -120, 1, -10)
@@ -92,10 +92,12 @@ return function()
         ButtonContainer = ButtonContainer,
         Logo = Logo,
         TopBorder = TopBorder,
+        TopGlow = TopGlow,  -- Make sure to include this for refresh
         Shadow = Shadow,
         Refresh = function(self)
             local theme = Config:GetTheme()
             
+            -- Tween properties that can be tweened
             _G.CensuraG.AnimationManager:Tween(self.Frame, {
                 BackgroundColor3 = theme.PrimaryColor,
                 BackgroundTransparency = 0.1
@@ -111,8 +113,11 @@ return function()
             
             _G.CensuraG.AnimationManager:Tween(self.Logo, {
                 TextColor3 = theme.TextColor,
-                Font = theme.Font
+                TextSize = 16  -- Use a direct value instead of theme.TextSize if needed
             }, animConfig.FadeDuration)
+            
+            -- Set Font property directly (don't tween)
+            self.Logo.Font = theme.Font
         end
     }
     
