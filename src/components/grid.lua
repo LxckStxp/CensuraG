@@ -1,4 +1,4 @@
--- CensuraG/src/components/grid.lua (updated for dynamic sizing)
+-- CensuraG/src/components/grid.lua (fixed)
 local Config = _G.CensuraG.Config
 
 return function(parent)
@@ -23,25 +23,12 @@ return function(parent)
     GridLayout.VerticalAlignment = Enum.VerticalAlignment.Top
     GridLayout.SortOrder = Enum.SortOrder.LayoutOrder
     
-    -- Add a UIListLayout to enable automatic sizing
-    local ListLayout = Instance.new("UIListLayout", GridFrame)
-    ListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    ListLayout.Padding = UDim.new(0, Config.Math.ElementSpacing)
-    ListLayout.FillDirection = Enum.FillDirection.Vertical
-    ListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    ListLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-    
-    -- Set the active layout to use
-    GridLayout.Parent = nil -- Disable grid layout initially
-    ListLayout.Parent = GridFrame -- Use list layout by default
-
     -- Animation
     _G.CensuraG.AnimationManager:Tween(GridFrame, {BackgroundTransparency = 0}, animConfig.FadeDuration)
 
     local Grid = {
         Instance = GridFrame,
-        Layout = ListLayout, -- Use the list layout for better automatic sizing
-        GridLayout = GridLayout, -- Keep reference to grid layout
+        Layout = GridLayout,
         ComponentCount = 0,
         AddComponent = function(self, component)
             if component and component.Instance then
@@ -50,11 +37,16 @@ return function(parent)
                 self.ComponentCount = self.ComponentCount + 1
                 _G.CensuraG.Logger:info("Added component to grid")
                 
-                -- Update the parent window size if possible
-                local window = self.Instance.Parent
-                if window and window:FindFirstChild("ContentGrid") then
-                    if window.Resize then
-                        window:Resize()
+                -- Try to find the window object in _G.CensuraG.Windows
+                for _, window in ipairs(_G.CensuraG.Windows) do
+                    if window.Frame == self.Instance.Parent then
+                        -- Found the window, trigger size update
+                        task.delay(0.1, function()
+                            if window.UpdateSize then
+                                window:UpdateSize()
+                            end
+                        end)
+                        break
                     end
                 end
             else
@@ -67,18 +59,6 @@ return function(parent)
             if self.Layout.ApplyLayout then
                 self.Layout:ApplyLayout()
             end
-        end,
-        SetLayoutMode = function(self, mode)
-            if mode == "grid" then
-                self.Layout.Parent = nil
-                self.GridLayout.Parent = self.Instance
-                self.Layout = self.GridLayout
-            elseif mode == "list" then
-                self.GridLayout.Parent = nil
-                self.ListLayout.Parent = self.Instance
-                self.Layout = self.ListLayout
-            end
-            self:Refresh()
         end
     }
 
