@@ -3,10 +3,13 @@ local Config = _G.CensuraG.Config
 
 return function(parent, options, callback)
     local theme = Config:GetTheme()
+    local animConfig = Config.Animations
+    
     local DropdownFrame = Instance.new("Frame", parent)
     DropdownFrame.Size = UDim2.new(0, 120, 0, 30)
     DropdownFrame.BackgroundColor3 = theme.SecondaryColor
     DropdownFrame.BorderSizePixel = 0
+    DropdownFrame.BackgroundTransparency = 1 -- Start hidden
     
     local SelectedText = Instance.new("TextLabel", DropdownFrame)
     SelectedText.Size = UDim2.new(1, -30, 1, 0)
@@ -28,8 +31,7 @@ return function(parent, options, callback)
     OptionList.Size = UDim2.new(1, 0, 0, #options * 25)
     OptionList.Position = UDim2.new(0, 0, 1, 0)
     OptionList.BackgroundColor3 = theme.PrimaryColor
-    OptionList.BackgroundTransparency = 1 -- Start transparent
-    OptionList.Visible = true -- Keep visible for animation
+    OptionList.Visible = false
     OptionList.BorderSizePixel = 0
     
     local function updateList()
@@ -43,43 +45,34 @@ return function(parent, options, callback)
             Button.Font = theme.Font
             Button.TextSize = theme.TextSize
             Button.BorderSizePixel = 0
-            Button.TextTransparency = 1
             
             Button.MouseButton1Click:Connect(function()
                 SelectedText.Text = option
-                _G.CensuraG.AnimationManager:Tween(OptionList, {
-                    BackgroundTransparency = 1,
-                    Size = UDim2.new(1, 0, 0, 0)
-                }, Config.Animations.SlideDuration)
-                for _, btn in ipairs(OptionList:GetChildren()) do
-                    _G.CensuraG.AnimationManager:Tween(btn, {TextTransparency = 1}, Config.Animations.FadeDuration)
-                end
+                OptionList.Visible = false
                 if callback then callback(option) end
             end)
         end
     end
     
     Arrow.MouseButton1Click:Connect(function()
-        if OptionList.Size.Y.Offset == 0 then
-            _G.CensuraG.AnimationManager:Tween(OptionList, {
-                Size = UDim2.new(1, 0, 0, #options * 25),
-                BackgroundTransparency = 0
-            }, Config.Animations.SlideDuration)
-            for _, btn in ipairs(OptionList:GetChildren()) do
-                _G.CensuraG.AnimationManager:Tween(btn, {TextTransparency = 0}, Config.Animations.FadeDuration)
-            end
-        else
-            _G.CensuraG.AnimationManager:Tween(OptionList, {
-                Size = UDim2.new(1, 0, 0, 0),
-                BackgroundTransparency = 1
-            }, Config.Animations.SlideDuration)
-            for _, btn in ipairs(OptionList:GetChildren()) do
-                _G.CensuraG.AnimationManager:Tween(btn, {TextTransparency = 1}, Config.Animations.FadeDuration)
-            end
-        end
+        OptionList.Visible = not OptionList.Visible
+        local targetPos = OptionList.Visible and UDim2.new(0, 0, 1, 0) or UDim2.new(0, 0, 1, -#options * 25)
+        _G.CensuraG.AnimationManager:Tween(OptionList, {Position = targetPos}, animConfig.SlideDuration)
     end)
     
     updateList()
+    _G.CensuraG.AnimationManager:Tween(DropdownFrame, {BackgroundTransparency = 0}, animConfig.FadeDuration)
+    
+    local Dropdown = {
+        Instance = DropdownFrame,
+        SelectedText = SelectedText,
+        Arrow = Arrow,
+        OptionList = OptionList,
+        Refresh = function(self)
+            _G.CensuraG.Methods:RefreshComponent("dropdown", self)
+        end
+    }
+    
     _G.CensuraG.Logger:info("Dropdown created with " .. #options .. " options")
-    return DropdownFrame
+    return Dropdown.Instance
 end
