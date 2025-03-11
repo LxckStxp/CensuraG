@@ -16,20 +16,19 @@ function TaskbarManager:UpdateTaskbar()
     self.Buttons = {}
     
     local theme = Config:GetTheme()
-    local offset = Config.Math.ElementSpacing -- Use config math values
+    local offset = Config.Math.ElementSpacing
     
     for i, window in ipairs(_G.CensuraG.Windows) do
         local button = Instance.new("TextButton", self.Frame)
         button.Size = UDim2.new(0, 100, 0, Config.Math.TaskbarHeight - 10)
         button.Position = UDim2.new(0, offset, 0, 5)
         button.BackgroundColor3 = window.IsMinimized and theme.AccentColor or theme.PrimaryColor
-        button.Text = window.Window.TitleText.Text -- Updated to use Window.TitleText instead of Frame.TitleText
+        button.Text = window:GetTitle() -- Use the title directly from the window
         button.TextColor3 = theme.TextColor
         button.Font = theme.Font
         button.TextSize = 12
-        button.BackgroundTransparency = 1 -- Start hidden for animation
+        button.BackgroundTransparency = 1
         
-        -- Animation for button appearance
         _G.CensuraG.AnimationManager:Tween(button, {BackgroundTransparency = 0}, Config.Animations.FadeDuration)
         
         button.MouseButton1Click:Connect(function()
