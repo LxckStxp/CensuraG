@@ -109,7 +109,7 @@ function RefreshManager:RefreshComponent(component, instance)
                 
                 -- Set Font directly
                 instance.TextShadow.Font = theme.Font
-            }
+            end
             
             if instance.Instance then
                 _G.CensuraG.AnimationManager:Tween(instance.Instance, {
