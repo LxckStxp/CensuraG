@@ -3,10 +3,13 @@ local Config = _G.CensuraG.Config
 
 return function(parent, min, max, default, callback)
     local theme = Config:GetTheme()
+    local animConfig = Config.Animations
+    
     local SliderFrame = Instance.new("Frame", parent)
     SliderFrame.Size = UDim2.new(0, 150, 0, 20)
     SliderFrame.BackgroundColor3 = theme.PrimaryColor
     SliderFrame.BorderSizePixel = 0
+    SliderFrame.BackgroundTransparency = 1 -- Start hidden
     
     local Bar = Instance.new("Frame", SliderFrame)
     Bar.Size = UDim2.new(1, 0, 0, 5)
@@ -43,13 +46,24 @@ return function(parent, min, max, default, callback)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
             local relativeX = math.clamp(input.Position.X - Bar.AbsolutePosition.X, 0, Bar.AbsoluteSize.X)
             value = min + (relativeX / Bar.AbsoluteSize.X) * (max - min)
-            _G.CensuraG.AnimationManager:Tween(Knob, {
-                Position = UDim2.new(relativeX / Bar.AbsoluteSize.X, -5, 0, -2.5)
-            }, Config.Animations.FadeDuration / 2)
+            Knob.Position = UDim2.new(relativeX / Bar.AbsoluteSize.X, -5, 0, -2.5)
             if callback then callback(value) end
         end
     end)
     
+    -- Animation
+    _G.CensuraG.AnimationManager:Tween(SliderFrame, {BackgroundTransparency = 0}, animConfig.FadeDuration)
+    
+    local Slider = {
+        Instance = SliderFrame,
+        Bar = Bar,
+        Knob = Knob,
+        Value = value,
+        Refresh = function(self)
+            _G.CensuraG.Methods:RefreshComponent("slider", self)
+        end
+    }
+    
     _G.CensuraG.Logger:info("Slider created with range " .. min .. " to " .. max)
-    return SliderFrame, value
+    return Slider.Instance, value
 end
