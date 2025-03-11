@@ -1,4 +1,4 @@
--- CensuraG/src/components/switch.lua (updated for CensuraDev styling)
+-- CensuraG/src/components/switch.lua (fixed version)
 local Config = _G.CensuraG.Config
 
 return function(parent, title, default, callback)
@@ -15,6 +15,7 @@ return function(parent, title, default, callback)
     
     -- Container
     local SwitchFrame = Instance.new("Frame", parent)
+    SwitchFrame.Name = "SwitchContainer"
     SwitchFrame.Size = UDim2.new(1, -12, 0, 32)
     SwitchFrame.BackgroundColor3 = theme.SecondaryColor
     SwitchFrame.BackgroundTransparency = 0.8
@@ -73,8 +74,8 @@ return function(parent, title, default, callback)
     
     -- Input handling
     local function handleClick()
-        -- Click feedback
-        _G.CensuraG.AnimationManager:Tween(Knob, {Size = KNOB_SIZE * 0.9}, 0.1)
+        -- Click feedback - create a new UDim2 for the smaller size instead of multiplying
+        _G.CensuraG.AnimationManager:Tween(Knob, {Size = UDim2.new(0, 10, 0, 10)}, 0.1)
         
         task.delay(0.1, function()
             state.enabled = not state.enabled
@@ -126,6 +127,7 @@ return function(parent, title, default, callback)
         Knob = Knob,
         TitleLabel = TitleLabel,
         State = state.enabled,
+        Stroke = Stroke,
         SetState = function(self, newState, skipCallback)
             state.enabled = newState
             
