@@ -15,7 +15,6 @@ end
 function Methods:GetConfigValue(keyPath)
     local keys = typeof(keyPath) == "string" and keyPath:split(".") or keyPath
     local value = _G.CensuraG.Config
-    
     for _, key in ipairs(keys) do
         value = value[key]
         if value == nil then
@@ -23,7 +22,6 @@ function Methods:GetConfigValue(keyPath)
             return nil
         end
     end
-    
     _G.CensuraG.Logger:info("Retrieved config value for " .. table.concat(keys, "."))
     return value
 end
@@ -32,7 +30,6 @@ function Methods:SetConfigValue(keyPath, value)
     local keys = typeof(keyPath) == "string" and keyPath:split(".") or keyPath
     local target = _G.CensuraG.Config
     local lastKey = keys[#keys]
-    
     for i, key in ipairs(keys) do
         if i == #keys then
             target[lastKey] = value
@@ -41,7 +38,6 @@ function Methods:SetConfigValue(keyPath, value)
         end
         target = target[key]
     end
-    
     _G.CensuraG.Logger:info("Set config value for " .. table.concat(keys, ".") .. " to " .. tostring(value))
 end
 
@@ -50,7 +46,7 @@ function Methods:RefreshComponent(component, instance)
     local animConfig = _G.CensuraG.Config.Animations
     
     if component == "window" then
-        instance.Frame.BackgroundColor3 = theme.PrimaryColor
+        instance.BackgroundColor3 = theme.PrimaryColor
         instance.TitleBar.BackgroundColor3 = theme.SecondaryColor
         instance.TitleText.TextColor3 = theme.TextColor
         instance.TitleText.Font = theme.Font
@@ -95,24 +91,21 @@ function Methods:RefreshComponent(component, instance)
     elseif component == "switch" then
         instance.BackgroundColor3 = theme.PrimaryColor
         instance.Knob.BackgroundColor3 = instance.State and theme.AccentColor or theme.SecondaryColor
+    elseif component == "grid" then
+        instance.BackgroundColor3 = theme.PrimaryColor
     end
     
     _G.CensuraG.Logger:info("Refreshed component: " .. component)
     _G.CensuraG.AnimationManager:Tween(instance, {Transparency = 0}, animConfig.FadeDuration)
 end
 
--- Refresh all UI elements
 function Methods:RefreshAll()
-    -- Refresh all windows
     for _, window in ipairs(_G.CensuraG.Windows) do
-        window.Frame:Refresh()
+        window:Refresh()
     end
-    
-    -- Refresh taskbar
-    if _G.CensuraG.Taskbar then
+    if _G.CensuraG.Taskbar and _G.CensuraG.Taskbar.Instance then
         _G.CensuraG.Taskbar.Instance:Refresh()
     end
-    
     _G.CensuraG.Logger:info("Refreshed all UI elements")
 end
 
