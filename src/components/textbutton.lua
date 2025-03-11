@@ -3,6 +3,8 @@ local Config = _G.CensuraG.Config
 
 return function(parent, text, callback)
     local theme = Config:GetTheme()
+    local animConfig = Config.Animations
+    
     local Button = Instance.new("TextButton", parent)
     Button.Size = UDim2.new(0, 100, 0, 30)
     Button.BackgroundColor3 = theme.SecondaryColor
@@ -11,33 +13,22 @@ return function(parent, text, callback)
     Button.TextColor3 = theme.TextColor
     Button.Font = theme.Font
     Button.TextSize = theme.TextSize
+    Button.BackgroundTransparency = 1 -- Start hidden
     
-    -- Hover animation
-    Button.MouseEnter:Connect(function()
-        _G.CensuraG.AnimationManager:Tween(Button, {
-            Size = UDim2.new(0, 105, 0, 32)
-        }, Config.Animations.FadeDuration)
-    end)
-    Button.MouseLeave:Connect(function()
-        _G.CensuraG.AnimationManager:Tween(Button, {
-            Size = UDim2.new(0, 100, 0, 30)
-        }, Config.Animations.FadeDuration)
-    end)
+    -- Animation
+    _G.CensuraG.AnimationManager:Tween(Button, {BackgroundTransparency = 0}, animConfig.FadeDuration)
     
-    -- Click animation
     if callback then
-        Button.MouseButton1Click:Connect(function()
-            _G.CensuraG.AnimationManager:Tween(Button, {
-                BackgroundColor3 = theme.AccentColor
-            }, Config.Animations.FadeDuration / 2)
-            wait(Config.Animations.FadeDuration / 2)
-            _G.CensuraG.AnimationManager:Tween(Button, {
-                BackgroundColor3 = theme.SecondaryColor
-            }, Config.Animations.FadeDuration / 2)
-            callback()
-        end)
+        Button.MouseButton1Click:Connect(callback)
     end
     
+    local TextButton = {
+        Instance = Button,
+        Refresh = function(self)
+            _G.CensuraG.Methods:RefreshComponent("textbutton", self.Instance)
+        end
+    }
+    
     _G.CensuraG.Logger:info("TextButton created with text: " .. text)
-    return Button
+    return TextButton.Instance
 end
