@@ -1,4 +1,4 @@
--- CensuraG/src/components/textlabel.lua (updated for CensuraDev styling)
+-- CensuraG/src/components/textlabel.lua (revised)
 local Config = _G.CensuraG.Config
 
 return function(parent, text)
@@ -58,9 +58,36 @@ return function(parent, text)
             self.TextShadow.Text = newText
         end,
         Refresh = function(self)
-            _G.CensuraG.Methods:RefreshComponent("textlabel", self)
+            local theme = Config:GetTheme()
+            
+            -- Frame
+            _G.CensuraG.AnimationManager:Tween(self.Instance, {
+                BackgroundColor3 = theme.SecondaryColor,
+                BackgroundTransparency = 0.9
+            }, animConfig.FadeDuration)
+            
+            -- Label
+            _G.CensuraG.AnimationManager:Tween(self.Label, {
+                TextColor3 = theme.TextColor,
+                TextSize = theme.TextSize
+            }, animConfig.FadeDuration)
+            
+            -- Set Font directly
+            self.Label.Font = theme.Font
+            
+            -- Shadow
+            _G.CensuraG.AnimationManager:Tween(self.TextShadow, {
+                TextColor3 = theme.PrimaryColor,
+                TextSize = theme.TextSize
+            }, animConfig.FadeDuration)
+            
+            -- Set Font directly
+            self.TextShadow.Font = theme.Font
         end
     }
+    
+    -- Add component type attribute for the RefreshAll system
+    LabelFrame:SetAttribute("ComponentType", "textlabel")
     
     _G.CensuraG.Logger:info("TextLabel created with text: " .. text)
     return TextLabel
