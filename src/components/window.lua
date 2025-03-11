@@ -63,9 +63,12 @@ return function(title)
                 frameStartPos.Y.Scale,
                 frameStartPos.Y.Offset + delta.Y
             )
-            _G.CensuraG.AnimationManager:Tween(Frame, {Position = newPos}, 0.1) -- Smooth dragging
+            _G.CensuraG.AnimationManager:Tween(Frame, {Position = newPos}, 0.1)
         end
     end)
+    
+    -- Add grid to window
+    local Grid = _G.CensuraG.Components.grid(Frame)
     
     _G.CensuraG.AnimationManager:Tween(Frame, {BackgroundTransparency = 0, Position = UDim2.fromOffset(100, 100)}, animConfig.SlideDuration)
     
@@ -74,8 +77,13 @@ return function(title)
         TitleBar = TitleBar,
         TitleText = TitleText,
         MinimizeButton = MinimizeButton,
+        Grid = Grid,
+        AddComponent = function(self, component)
+            self.Grid:AddComponent(component)
+        end,
         Refresh = function(self)
             _G.CensuraG.Methods:RefreshComponent("window", self)
+            self.Grid:Refresh()
         end
     }
     
