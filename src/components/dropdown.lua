@@ -1,17 +1,37 @@
--- CensuraG/src/components/dropdown.lua
+-- CensuraG/src/components/dropdown.lua (updated return and add title)
 local Config = _G.CensuraG.Config
 
-return function(parent, options, callback)
+return function(parent, title, options, callback)
     local theme = Config:GetTheme()
     local animConfig = Config.Animations
     
     local DropdownFrame = Instance.new("Frame", parent)
-    DropdownFrame.Size = UDim2.new(0, 120, 0, 30)
+    DropdownFrame.Size = UDim2.new(0, 120, 0, 50) -- Increased height for title
     DropdownFrame.BackgroundColor3 = theme.SecondaryColor
     DropdownFrame.BorderSizePixel = 0
-    DropdownFrame.BackgroundTransparency = 1 -- Start hidden
+    DropdownFrame.BackgroundTransparency = 1
     
-    local SelectedText = Instance.new("TextLabel", DropdownFrame)
+    -- Title
+    local TitleLabel = Instance.new("TextLabel", DropdownFrame)
+    TitleLabel.Size = UDim2.new(1, -2 * Config.Math.Padding, 0, 15)
+    TitleLabel.Position = UDim2.new(0, Config.Math.Padding, 0, 0)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Text = title or "Dropdown"
+    TitleLabel.TextColor3 = theme.TextColor
+    TitleLabel.Font = theme.Font
+    TitleLabel.TextSize = theme.TextSize
+    TitleLabel.TextWrapped = true
+    TitleLabel.TextTransparency = 1
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    
+    -- Dropdown
+    local DropdownInner = Instance.new("Frame", DropdownFrame)
+    DropdownInner.Size = UDim2.new(1, 0, 0, 30)
+    DropdownInner.Position = UDim2.new(0, 0, 0, 20 + Config.Math.ElementSpacing)
+    DropdownInner.BackgroundColor3 = theme.SecondaryColor
+    DropdownInner.BackgroundTransparency = 1
+    
+    local SelectedText = Instance.new("TextLabel", DropdownInner)
     SelectedText.Size = UDim2.new(1, -30, 1, 0)
     SelectedText.BackgroundTransparency = 1
     SelectedText.Text = options[1] or "Select"
@@ -19,7 +39,7 @@ return function(parent, options, callback)
     SelectedText.Font = theme.Font
     SelectedText.TextSize = theme.TextSize
     
-    local Arrow = Instance.new("TextButton", DropdownFrame)
+    local Arrow = Instance.new("TextButton", DropdownInner)
     Arrow.Size = UDim2.new(0, 30, 1, 0)
     Arrow.Position = UDim2.new(1, -30, 0, 0)
     Arrow.BackgroundColor3 = theme.AccentColor
@@ -27,7 +47,7 @@ return function(parent, options, callback)
     Arrow.TextColor3 = theme.TextColor
     Arrow.Font = theme.Font
     
-    local OptionList = Instance.new("Frame", DropdownFrame)
+    local OptionList = Instance.new("Frame", DropdownInner)
     OptionList.Size = UDim2.new(1, 0, 0, #options * 25)
     OptionList.Position = UDim2.new(0, 0, 1, 0)
     OptionList.BackgroundColor3 = theme.PrimaryColor
@@ -62,9 +82,13 @@ return function(parent, options, callback)
     
     updateList()
     _G.CensuraG.AnimationManager:Tween(DropdownFrame, {BackgroundTransparency = 0}, animConfig.FadeDuration)
+    _G.CensuraG.AnimationManager:Tween(DropdownInner, {BackgroundTransparency = 0}, animConfig.FadeDuration)
+    _G.CensuraG.AnimationManager:Tween(TitleLabel, {TextTransparency = 0}, animConfig.FadeDuration)
     
     local Dropdown = {
         Instance = DropdownFrame,
+        InnerFrame = DropdownInner,
+        TitleLabel = TitleLabel,
         SelectedText = SelectedText,
         Arrow = Arrow,
         OptionList = OptionList,
