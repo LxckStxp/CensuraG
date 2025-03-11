@@ -22,5 +22,5 @@ return function(parent, imageId)
     }
     
     _G.CensuraG.Logger:info("ImageLabel created with ID: " .. (imageId or "none"))
-    return ImageLabel.Instance
+    return ImageLabel
 end
