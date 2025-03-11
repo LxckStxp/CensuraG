@@ -1,4 +1,4 @@
--- CensuraG/src/Methods.lua (fixed syntax error)
+-- CensuraG/src/Methods.lua (revised to fix Font tweening)
 local Methods = {}
 
 function Methods:CreateWindow(title)
@@ -94,17 +94,21 @@ function Methods:RefreshComponent(component, instance)
             if instance.TitleText then
                 _G.CensuraG.AnimationManager:Tween(instance.TitleText, {
                     TextColor3 = theme.TextColor,
-                    Font = theme.Font,
                     TextSize = theme.TextSize
                 }, animConfig.FadeDuration)
+                
+                -- Set Font directly instead of tweening
+                instance.TitleText.Font = theme.Font
             end
             
             if instance.MinimizeButton then
                 _G.CensuraG.AnimationManager:Tween(instance.MinimizeButton, {
                     BackgroundColor3 = theme.AccentColor,
-                    TextColor3 = theme.TextColor,
-                    Font = theme.Font
+                    TextColor3 = theme.TextColor
                 }, animConfig.FadeDuration)
+                
+                -- Set Font directly instead of tweening
+                instance.MinimizeButton.Font = theme.Font
             end
             
             if instance.ContentFrame then
@@ -124,9 +128,11 @@ function Methods:RefreshComponent(component, instance)
             if instance.Label then
                 _G.CensuraG.AnimationManager:Tween(instance.Label, {
                     TextColor3 = theme.TextColor,
-                    Font = theme.Font,
                     TextSize = theme.TextSize
                 }, animConfig.FadeDuration)
+                
+                -- Set Font directly instead of tweening
+                instance.Label.Font = theme.Font
             end
             
             if instance.Instance then
@@ -138,9 +144,11 @@ function Methods:RefreshComponent(component, instance)
         else
             _G.CensuraG.AnimationManager:Tween(targetInstance, {
                 TextColor3 = theme.TextColor,
-                Font = theme.Font,
                 TextSize = theme.TextSize
             }, animConfig.FadeDuration)
+            
+            -- Set Font directly instead of tweening
+            targetInstance.Font = theme.Font
         end
     elseif component == "textbutton" then
         if typeof(instance) == "table" then
@@ -149,9 +157,11 @@ function Methods:RefreshComponent(component, instance)
                     BackgroundColor3 = theme.SecondaryColor,
                     BackgroundTransparency = 0.8,
                     TextColor3 = theme.TextColor,
-                    Font = theme.Font,
                     TextSize = theme.TextSize
                 }, animConfig.FadeDuration)
+                
+                -- Set Font directly instead of tweening
+                instance.Instance.Font = theme.Font
             end
             
             if instance.Stroke then
@@ -163,9 +173,11 @@ function Methods:RefreshComponent(component, instance)
             _G.CensuraG.AnimationManager:Tween(targetInstance, {
                 BackgroundColor3 = theme.SecondaryColor,
                 TextColor3 = theme.TextColor,
-                Font = theme.Font,
                 TextSize = theme.TextSize
             }, animConfig.FadeDuration)
+            
+            -- Set Font directly instead of tweening
+            targetInstance.Font = theme.Font
         end
     elseif component == "imagelabel" then
         -- No theme-specific updates for imagelabel yet
@@ -201,17 +213,21 @@ function Methods:RefreshComponent(component, instance)
             if instance.NameLabel then
                 _G.CensuraG.AnimationManager:Tween(instance.NameLabel, {
                     TextColor3 = theme.TextColor,
-                    Font = theme.Font,
                     TextSize = theme.TextSize
                 }, animConfig.FadeDuration)
+                
+                -- Set Font directly instead of tweening
+                instance.NameLabel.Font = theme.Font
             end
             
             if instance.ValueLabel then
                 _G.CensuraG.AnimationManager:Tween(instance.ValueLabel, {
                     TextColor3 = theme.TextColor,
-                    Font = theme.Font,
                     TextSize = theme.TextSize
                 }, animConfig.FadeDuration)
+                
+                -- Set Font directly instead of tweening
+                instance.ValueLabel.Font = theme.Font
             end
         end
     elseif component == "dropdown" then
@@ -233,17 +249,21 @@ function Methods:RefreshComponent(component, instance)
             if instance.SelectedText then
                 _G.CensuraG.AnimationManager:Tween(instance.SelectedText, {
                     TextColor3 = theme.TextColor,
-                    Font = theme.Font,
                     TextSize = theme.TextSize
                 }, animConfig.FadeDuration)
+                
+                -- Set Font directly instead of tweening
+                instance.SelectedText.Font = theme.Font
             end
             
             if instance.ArrowButton then
                 _G.CensuraG.AnimationManager:Tween(instance.ArrowButton, {
                     BackgroundColor3 = theme.AccentColor,
-                    TextColor3 = theme.TextColor,
-                    Font = theme.Font
+                    TextColor3 = theme.TextColor
                 }, animConfig.FadeDuration)
+                
+                -- Set Font directly instead of tweening
+                instance.ArrowButton.Font = theme.Font
             end
             
             if instance.OptionList then
@@ -259,9 +279,11 @@ function Methods:RefreshComponent(component, instance)
                             BackgroundColor3 = theme.SecondaryColor,
                             BackgroundTransparency = 0.8,
                             TextColor3 = theme.TextColor,
-                            Font = theme.Font,
                             TextSize = theme.TextSize
                         }, animConfig.FadeDuration)
+                        
+                        -- Set Font directly instead of tweening
+                        child.Font = theme.Font
                     end
                 end
             end
@@ -292,9 +314,11 @@ function Methods:RefreshComponent(component, instance)
             if instance.TitleLabel then
                 _G.CensuraG.AnimationManager:Tween(instance.TitleLabel, {
                     TextColor3 = theme.TextColor,
-                    Font = theme.Font,
                     TextSize = theme.TextSize
                 }, animConfig.FadeDuration)
+                
+                -- Set Font directly instead of tweening
+                instance.TitleLabel.Font = theme.Font
             end
         end
     end
