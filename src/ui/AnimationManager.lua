@@ -1,4 +1,4 @@
--- CensuraG/src/ui/AnimationManager.lua
+-- CensuraG/src/ui/AnimationManager.lua (updated for smoother animations)
 local AnimationManager = {}
 AnimationManager.__index = AnimationManager
 
@@ -19,7 +19,7 @@ function AnimationManager:Tween(object, properties, duration, easingStyle, easin
     
     easingStyle = easingStyle or Enum.EasingStyle.Quad
     easingDirection = easingDirection or Enum.EasingDirection.Out
-    duration = duration or 0.3
+    duration = duration or 0.2 -- Match CensuraDev timing
     
     -- Safety check for valid properties
     local validProperties = {}
@@ -38,12 +38,39 @@ function AnimationManager:Tween(object, properties, duration, easingStyle, easin
         local tween = TweenService:Create(object, tweenInfo, validProperties)
         tween:Play()
         
-        _G.CensuraG.Logger:info("Tween started on " .. object.Name)
-        tween.Completed:Connect(function()
-            _G.CensuraG.Logger:info("Tween completed on " .. object.Name)
-        end)
+        return tween
     else
         _G.CensuraG.Logger:warn("No valid properties to tween for " .. object.Name)
+    end
+end
+
+-- Add button feedback animations
+function AnimationManager:ButtonPress(button, stroke)
+    self:Tween(button, {BackgroundTransparency = 0.6}, 0.1)
+    if stroke then
+        self:Tween(stroke, {Transparency = 0.4}, 0.1)
+    end
+end
+
+function AnimationManager:ButtonRelease(button, stroke)
+    self:Tween(button, {BackgroundTransparency = 0.8}, 0.2)
+    if stroke then
+        self:Tween(stroke, {Transparency = 0.6}, 0.2)
+    end
+end
+
+-- Add hover effects
+function AnimationManager:ApplyHoverState(object, stroke)
+    self:Tween(object, {BackgroundTransparency = object.BackgroundTransparency - 0.1}, 0.2)
+    if stroke then
+        self:Tween(stroke, {Transparency = 0.4}, 0.2)
+    end
+end
+
+function AnimationManager:RemoveHoverState(object, stroke)
+    self:Tween(object, {BackgroundTransparency = object.BackgroundTransparency + 0.1}, 0.2)
+    if stroke then
+        self:Tween(stroke, {Transparency = 0.6}, 0.2)
     end
 end
 
