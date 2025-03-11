@@ -1,4 +1,4 @@
--- CensuraG/CensuraG.lua
+-- CensuraG/CensuraG.lua (fully revised)
 local function safeLoadstring(url, errorMsg)
     local success, result = pcall(function()
         return game:HttpGet(url, true)
@@ -138,7 +138,7 @@ if allComponentsLoaded then
         CensuraG.Logger:warn("Some managers failed to load, functionality may be limited")
     end
     
-    -- Global State
+    -- Initialize global state
     CensuraG.Windows = CensuraG.Windows or {}
     CensuraG.Taskbar = CensuraG.Taskbar or nil
     
@@ -146,12 +146,41 @@ if allComponentsLoaded then
     if CensuraG.TaskbarManager and not CensuraG.Taskbar then
         pcall(function()
             CensuraG.Taskbar = { Instance = CensuraG.TaskbarManager }
-            CensuraG.Taskbar.Instance:Initialize()
-            CensuraG.Logger:info("Taskbar initialized")
+            
+            -- Safely initialize the taskbar
+            if CensuraG.Taskbar.Instance and typeof(CensuraG.Taskbar.Instance) == "table" and CensuraG.Taskbar.Instance.Initialize then
+                CensuraG.Taskbar.Instance:Initialize()
+                CensuraG.Logger:info("Taskbar initialized")
+            else
+                CensuraG.Logger:error("TaskbarManager invalid or Initialize method missing")
+            end
         end)
     end
 else
     CensuraG.Logger:error("Not initializing managers due to missing components")
+end
+
+-- Add utility methods to CensuraG
+CensuraG.CreateWindow = function(title)
+    if CensuraG.Methods and CensuraG.Methods.CreateWindow then
+        return CensuraG.Methods:CreateWindow(title)
+    else
+        CensuraG.Logger:error("Methods module not loaded, cannot create window")
+        return nil
+    end
+end
+
+CensuraG.SetTheme = function(themeName)
+    if CensuraG.Config then
+        CensuraG.Config.CurrentTheme = themeName
+        -- Refresh all UI elements if Methods module is loaded
+        if CensuraG.Methods and CensuraG.Methods.RefreshAll then
+            CensuraG.Methods:RefreshAll()
+        end
+        CensuraG.Logger:info("Theme changed to: " .. themeName)
+    else
+        CensuraG.Logger:error("Config module not loaded, cannot change theme")
+    end
 end
 
 CensuraG.Logger:info("CensuraG initialization complete")
