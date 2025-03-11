@@ -115,7 +115,7 @@ function Methods:RefreshComponent(component, instance)
                     ScrollBarImageColor3 = theme.AccentColor
                 }, animConfig.FadeDuration)
             end
-        }
+        end
     elseif component == "taskbar" then
         _G.CensuraG.AnimationManager:Tween(targetInstance, {
             BackgroundColor3 = theme.SecondaryColor
