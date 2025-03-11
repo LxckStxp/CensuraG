@@ -1,4 +1,4 @@
--- CensuraG/src/ui/WindowManager.lua
+-- CensuraG/src/ui/WindowManager.lua (updated for new window structure)
 local WindowManager = {}
 WindowManager.__index = WindowManager
 
@@ -19,7 +19,7 @@ function WindowManager.new(title)
     self.TitleBar = windowComponent.TitleBar
     self.TitleText = windowComponent.TitleText
     self.MinimizeButton = windowComponent.MinimizeButton
-    self.Grid = windowComponent.Grid
+    self.ContentFrame = windowComponent.ContentFrame -- Use ContentFrame instead of Grid
     
     self.IsMinimized = false
     self.Title = title
@@ -27,37 +27,6 @@ function WindowManager.new(title)
     -- Connect minimize button to toggle method
     self.MinimizeButton.MouseButton1Click:Connect(function()
         self:ToggleMinimize()
-    end)
-    
-    -- Dragging functionality
-    local dragging = false
-    local dragStartPos, frameStartPos
-    
-    self.TitleBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStartPos = input.Position
-            frameStartPos = self.Frame.Position
-        end
-    end)
-    
-    self.TitleBar.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-        end
-    end)
-    
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStartPos
-            local newPos = UDim2.new(
-                frameStartPos.X.Scale,
-                frameStartPos.X.Offset + delta.X,
-                frameStartPos.Y.Scale,
-                frameStartPos.Y.Offset + delta.Y
-            )
-            _G.CensuraG.AnimationManager:Tween(self.Frame, {Position = newPos}, 0.1)
-        end
     end)
     
     _G.CensuraG.Logger:info("Created window: " .. title)
@@ -69,12 +38,12 @@ function WindowManager:ToggleMinimize()
     if self.IsMinimized then
         _G.CensuraG.AnimationManager:Tween(self.Frame, {
             Position = UDim2.new(0, 0, 1, Config.Math.TaskbarHeight), -- Slide down to taskbar
-            Transparency = 0.8
+            BackgroundTransparency = 0.8
         }, Config.Animations.FadeDuration)
     else
         _G.CensuraG.AnimationManager:Tween(self.Frame, {
             Position = UDim2.fromOffset(100, 100), -- Restore to original position
-            Transparency = 0
+            BackgroundTransparency = 0.15
         }, Config.Animations.SlideDuration)
     end
     self.Frame.Visible = true -- Keep visible, animate transparency instead
@@ -84,18 +53,17 @@ function WindowManager:ToggleMinimize()
 end
 
 function WindowManager:AddComponent(component)
-    if self.Grid then
-        self.Grid:AddComponent(component)
+    if component and component.Instance then
+        component.Instance.Parent = self.ContentFrame
+        component.Instance.LayoutOrder = #self.ContentFrame:GetChildren() - 3 -- Adjust for layout and padding
+        _G.CensuraG.Logger:info("Added component to window")
     else
-        _G.CensuraG.Logger:warn("Grid not found in window")
+        _G.CensuraG.Logger:warn("Invalid component provided to window")
     end
 end
 
 function WindowManager:Refresh()
     _G.CensuraG.Methods:RefreshComponent("window", self)
-    if self.Grid then
-        self.Grid:Refresh()
-    end
 end
 
 function WindowManager:GetTitle()
