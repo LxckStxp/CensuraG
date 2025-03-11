@@ -44,6 +44,7 @@ function WindowManager.new(title)
     return self
 end
 
+-- CensuraG/src/ui/WindowManager.lua (fixed minimize animation)
 function WindowManager:ToggleMinimize()
     self.IsMinimized = not self.IsMinimized
     
@@ -51,9 +52,16 @@ function WindowManager:ToggleMinimize()
         -- Store the current position before minimizing
         self.OriginalPosition = self.Frame.Position
         
-        -- Minimize animation - move off screen
+        -- Get taskbar position for better animation
+        local taskbarPosition = UDim2.new(0, 0, 1, -Config.Math.TaskbarHeight)
+        if _G.CensuraG.Taskbar and _G.CensuraG.Taskbar.Instance and _G.CensuraG.Taskbar.Instance.Frame then
+            taskbarPosition = _G.CensuraG.Taskbar.Instance.Frame.Position
+        end
+        
+        -- Minimize animation - move down to taskbar
         _G.CensuraG.AnimationManager:Tween(self.Frame, {
-            Position = UDim2.new(-1, 0, -1, 0), -- Move off-screen
+            Position = UDim2.new(0.5, 0, 1, 10), -- Move to bottom of screen
+            Size = UDim2.new(0, self.Frame.AbsoluteSize.X * 0.8, 0, self.Frame.AbsoluteSize.Y * 0.8),
             BackgroundTransparency = 0.8
         }, Config.Animations.FadeDuration)
         
@@ -70,6 +78,7 @@ function WindowManager:ToggleMinimize()
         -- Restore animation
         _G.CensuraG.AnimationManager:Tween(self.Frame, {
             Position = self.OriginalPosition or UDim2.fromOffset(100, 100),
+            Size = UDim2.fromOffset(Config.Math.DefaultWindowSize.X, Config.Math.DefaultWindowSize.Y),
             BackgroundTransparency = 0.15
         }, Config.Animations.SlideDuration)
     end
