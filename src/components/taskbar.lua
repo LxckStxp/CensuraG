@@ -1,4 +1,4 @@
--- CensuraG/src/components/taskbar.lua (updated for CensuraDev styling)
+-- CensuraG/src/components/taskbar.lua (fixed for ButtonContainer)
 local Config = _G.CensuraG.Config
 
 return function()
@@ -13,7 +13,8 @@ return function()
     Frame.BackgroundColor3 = theme.PrimaryColor
     Frame.BackgroundTransparency = 0.1 -- More solid than windows
     Frame.BorderSizePixel = 0
-    Frame.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ScreenGui")
+    Frame.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ScreenGui") or
+                   game.Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("CensuraGScreenGui")
     
     -- Add corner radius (top corners only)
     local Corner = Instance.new("UICorner", Frame)
@@ -21,6 +22,7 @@ return function()
     
     -- Add a top border highlight
     local TopBorder = Instance.new("Frame", Frame)
+    TopBorder.Name = "TopBorder"
     TopBorder.Size = UDim2.new(1, 0, 0, 1)
     TopBorder.Position = UDim2.new(0, 0, 0, 0)
     TopBorder.BackgroundColor3 = theme.AccentColor
@@ -30,6 +32,7 @@ return function()
     
     -- Add glow effect to top border
     local TopGlow = Instance.new("ImageLabel", Frame)
+    TopGlow.Name = "TopGlow"
     TopGlow.Size = UDim2.new(1, 0, 0, 8)
     TopGlow.Position = UDim2.new(0, 0, 0, -4)
     TopGlow.BackgroundTransparency = 1
@@ -41,6 +44,7 @@ return function()
     
     -- Add inner shadow
     local Shadow = Instance.new("ImageLabel", Frame)
+    Shadow.Name = "Shadow"
     Shadow.Size = UDim2.new(1, 10, 1, 10)
     Shadow.Position = UDim2.new(0, -5, 0, -5)
     Shadow.BackgroundTransparency = 1
@@ -53,6 +57,7 @@ return function()
     
     -- Add a logo/title
     local Logo = Instance.new("TextLabel", Frame)
+    Logo.Name = "Logo"
     Logo.Size = UDim2.new(0, 100, 1, 0)
     Logo.Position = UDim2.new(0, 10, 0, 0)
     Logo.BackgroundTransparency = 1
@@ -62,8 +67,9 @@ return function()
     Logo.TextSize = 16
     Logo.TextXAlignment = Enum.TextXAlignment.Left
     
-    -- Add button container for window buttons
+    -- Add button container for window buttons (IMPORTANT - this was missing)
     local ButtonContainer = Instance.new("Frame", Frame)
+    ButtonContainer.Name = "ButtonContainer" -- Ensure it has the expected name
     ButtonContainer.Size = UDim2.new(1, -120, 1, -10)
     ButtonContainer.Position = UDim2.new(0, 110, 0, 5)
     ButtonContainer.BackgroundTransparency = 1
@@ -80,6 +86,7 @@ return function()
         Position = UDim2.new(0, 0, 1, -Config.Math.TaskbarHeight)
     }, animConfig.SlideDuration)
     
+    -- Create a proper object with methods
     local Taskbar = {
         Frame = Frame,
         ButtonContainer = ButtonContainer,
@@ -110,5 +117,7 @@ return function()
     }
     
     _G.CensuraG.Logger:info("Taskbar created")
-    return Taskbar.Frame -- Maintain compatibility with TaskbarManager
+    
+    -- Return both the Frame and the Taskbar object
+    return Frame, Taskbar
 end
