@@ -51,6 +51,7 @@ function WindowManager:ToggleMinimize()
     if self.IsMinimized then
         -- Store the current position before minimizing
         self.OriginalPosition = self.Frame.Position
+        self.OriginalSize = self.Frame.Size
         
         -- Get taskbar position for better animation
         local taskbarPosition = UDim2.new(0, 0, 1, -Config.Math.TaskbarHeight)
@@ -60,7 +61,7 @@ function WindowManager:ToggleMinimize()
         
         -- Minimize animation - move down to taskbar
         _G.CensuraG.AnimationManager:Tween(self.Frame, {
-            Position = UDim2.new(0.5, 0, 1, 10), -- Move to bottom of screen
+            Position = UDim2.new(0.5, -self.Frame.AbsoluteSize.X/2, 1, -Config.Math.TaskbarHeight - 10),
             Size = UDim2.new(0, self.Frame.AbsoluteSize.X * 0.8, 0, self.Frame.AbsoluteSize.Y * 0.8),
             BackgroundTransparency = 0.8
         }, Config.Animations.FadeDuration)
@@ -78,7 +79,7 @@ function WindowManager:ToggleMinimize()
         -- Restore animation
         _G.CensuraG.AnimationManager:Tween(self.Frame, {
             Position = self.OriginalPosition or UDim2.fromOffset(100, 100),
-            Size = UDim2.fromOffset(Config.Math.DefaultWindowSize.X, Config.Math.DefaultWindowSize.Y),
+            Size = self.OriginalSize or UDim2.fromOffset(Config.Math.DefaultWindowSize.X, Config.Math.DefaultWindowSize.Y),
             BackgroundTransparency = 0.15
         }, Config.Animations.SlideDuration)
     end
