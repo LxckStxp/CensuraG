@@ -23,7 +23,7 @@ function TaskbarManager:UpdateTaskbar()
         button.Size = UDim2.new(0, 100, 0, Config.Math.TaskbarHeight - 10)
         button.Position = UDim2.new(0, offset, 0, 5)
         button.BackgroundColor3 = window.IsMinimized and theme.AccentColor or theme.PrimaryColor
-        button.Text = window.Frame.TitleText.Text
+        button.Text = window.Window.TitleText.Text -- Updated to use Window.TitleText instead of Frame.TitleText
         button.TextColor3 = theme.TextColor
         button.Font = theme.Font
         button.TextSize = 12
