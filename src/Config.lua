@@ -1,4 +1,4 @@
--- CensuraG/src/Config.lua (updated for CensuraDev styling)
+-- CensuraG/src/Config.lua (small update to ensure backward compatibility)
 local Config = {
     -- UI Math Values
     Math = {
@@ -32,7 +32,33 @@ local Config = {
             SecondaryTextColor = Color3.fromRGB(130, 135, 140), -- Muted text
             Font = Enum.Font.GothamBold,
             TextSize = 14,
+            
+            -- For backwards compatibility
+            Background = Color3.fromRGB(15, 17, 19), -- Alias for PrimaryColor
+            Accent = Color3.fromRGB(200, 200, 200),  -- Alias for AccentColor
+            Enabled = Color3.fromRGB(50, 200, 100),  -- Alias for EnabledColor
+            Disabled = Color3.fromRGB(180, 70, 70),  -- Alias for DisabledColor
         },
+        
+        -- Add Cyberpunk theme
+        Cyberpunk = {
+            PrimaryColor = Color3.fromRGB(15, 15, 30),       -- Dark blue-purple
+            SecondaryColor = Color3.fromRGB(30, 30, 45),     -- Lighter blue-purple
+            AccentColor = Color3.fromRGB(255, 20, 147),      -- Neon pink
+            BorderColor = Color3.fromRGB(255, 20, 147),      -- Neon pink
+            TextColor = Color3.fromRGB(0, 255, 255),         -- Cyan
+            EnabledColor = Color3.fromRGB(0, 255, 128),      -- Neon green
+            DisabledColor = Color3.fromRGB(128, 0, 128),     -- Purple
+            SecondaryTextColor = Color3.fromRGB(180, 180, 255), -- Muted cyan
+            Font = Enum.Font.Arcade,
+            TextSize = 14,
+            
+            -- For backwards compatibility
+            Background = Color3.fromRGB(15, 15, 30),       -- Alias for PrimaryColor
+            Accent = Color3.fromRGB(255, 20, 147),         -- Alias for AccentColor
+            Enabled = Color3.fromRGB(0, 255, 128),         -- Alias for EnabledColor
+            Disabled = Color3.fromRGB(128, 0, 128),        -- Alias for DisabledColor
+        }
     },
 
     -- Current Theme (default to Military)
