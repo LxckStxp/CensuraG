@@ -1,4 +1,4 @@
--- CensuraG/src/ui/TaskbarManager.lua
+-- CensuraG/src/ui/TaskbarManager.lua (updated for new window style)
 local TaskbarManager = {}
 TaskbarManager.__index = TaskbarManager
 
@@ -22,14 +22,26 @@ function TaskbarManager:UpdateTaskbar()
         local button = Instance.new("TextButton", self.Frame)
         button.Size = UDim2.new(0, 100, 0, Config.Math.TaskbarHeight - 10)
         button.Position = UDim2.new(0, offset, 0, 5)
-        button.BackgroundColor3 = window.IsMinimized and theme.AccentColor or theme.PrimaryColor
-        button.Text = window:GetTitle() -- Use the title directly from the window
+        button.BackgroundColor3 = window.IsMinimized and theme.AccentColor or theme.SecondaryColor
+        button.BackgroundTransparency = 0.7
+        button.Text = window:GetTitle() or "Window"
         button.TextColor3 = theme.TextColor
         button.Font = theme.Font
         button.TextSize = 12
-        button.BackgroundTransparency = 1
+        button.BorderSizePixel = 0
         
-        _G.CensuraG.AnimationManager:Tween(button, {BackgroundTransparency = 0}, Config.Animations.FadeDuration)
+        -- Add corner radius
+        local corner = Instance.new("UICorner", button)
+        corner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+        
+        -- Add hover effects
+        button.MouseEnter:Connect(function()
+            _G.CensuraG.AnimationManager:Tween(button, {BackgroundTransparency = 0.5}, 0.2)
+        end)
+        
+        button.MouseLeave:Connect(function()
+            _G.CensuraG.AnimationManager:Tween(button, {BackgroundTransparency = 0.7}, 0.2)
+        end)
         
         button.MouseButton1Click:Connect(function()
             window:ToggleMinimize()
