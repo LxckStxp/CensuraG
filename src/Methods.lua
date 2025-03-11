@@ -45,7 +45,6 @@ function Methods:SetConfigValue(keyPath, value)
     _G.CensuraG.Logger:info("Set config value for " .. table.concat(keys, ".") .. " to " .. tostring(value))
 end
 
--- Centralized refresh logic for components
 function Methods:RefreshComponent(component, instance)
     local theme = _G.CensuraG.Config:GetTheme()
     local animConfig = _G.CensuraG.Config.Animations
@@ -99,7 +98,22 @@ function Methods:RefreshComponent(component, instance)
     end
     
     _G.CensuraG.Logger:info("Refreshed component: " .. component)
-    _G.CensuraG.AnimationManager:Tween(instance, {Transparency = 0}, animConfig.FadeDuration) -- Brief fade to indicate refresh
+    _G.CensuraG.AnimationManager:Tween(instance, {Transparency = 0}, animConfig.FadeDuration)
+end
+
+-- Refresh all UI elements
+function Methods:RefreshAll()
+    -- Refresh all windows
+    for _, window in ipairs(_G.CensuraG.Windows) do
+        window.Frame:Refresh()
+    end
+    
+    -- Refresh taskbar
+    if _G.CensuraG.Taskbar then
+        _G.CensuraG.Taskbar.Instance:Refresh()
+    end
+    
+    _G.CensuraG.Logger:info("Refreshed all UI elements")
 end
 
 return Methods
