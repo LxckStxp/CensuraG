@@ -97,27 +97,31 @@ return function()
         Refresh = function(self)
             local theme = Config:GetTheme()
             
-            -- Tween properties that can be tweened
+            -- Main frame tween
             _G.CensuraG.AnimationManager:Tween(self.Frame, {
                 BackgroundColor3 = theme.PrimaryColor,
                 BackgroundTransparency = 0.1
             }, animConfig.FadeDuration)
             
+            -- Top border tween
             _G.CensuraG.AnimationManager:Tween(self.TopBorder, {
                 BackgroundColor3 = theme.AccentColor
             }, animConfig.FadeDuration)
             
+            -- Top glow tween
             _G.CensuraG.AnimationManager:Tween(self.TopGlow, {
                 ImageColor3 = theme.AccentColor
             }, animConfig.FadeDuration)
             
+            -- Logo text tween
             _G.CensuraG.AnimationManager:Tween(self.Logo, {
-                TextColor3 = theme.TextColor,
-                TextSize = 16  -- Use a direct value instead of theme.TextSize if needed
+                TextColor3 = theme.TextColor
             }, animConfig.FadeDuration)
             
-            -- Set Font property directly (don't tween)
+            -- Set Font directly
             self.Logo.Font = theme.Font
+            
+            -- ButtonContainer children will be handled by RefreshAll
         end
     }
     
