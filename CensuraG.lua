@@ -29,7 +29,7 @@ CensuraG.AnimationManager = loadstring(game:HttpGet("https://raw.githubuserconte
 -- Load Components
 CensuraG.Components = {}
 local componentList = {
-    "window", "taskbar", "textlabel", "textbutton", "imagelabel", "slider", "dropdown", "switch"
+    "window", "taskbar", "textlabel", "textbutton", "imagelabel", "slider", "dropdown", "switch", "grid"
 }
 
 for _, component in ipairs(componentList) do
