@@ -1,9 +1,8 @@
--- CensuraG/src/ui/WindowManager.lua (fixed for nil value error)
+-- CensuraG/src/ui/WindowManager.lua (fixed minimization)
 local WindowManager = {}
 WindowManager.__index = WindowManager
 
 local Config = _G.CensuraG.Config
-local ScreenGui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
 
 function WindowManager.new(title)
     local self = setmetatable({}, WindowManager)
@@ -28,15 +27,18 @@ function WindowManager.new(title)
     self.TitleBar = windowComponent.TitleBar
     self.TitleText = windowComponent.TitleText
     self.MinimizeButton = windowComponent.MinimizeButton
-    self.ContentFrame = windowComponent.ContentFrame -- Use ContentFrame instead of Grid
+    self.ContentFrame = windowComponent.ContentFrame
     
     self.IsMinimized = false
     self.Title = title
+    self.OriginalPosition = self.Frame.Position
     
     -- Connect minimize button to toggle method
-    self.MinimizeButton.MouseButton1Click:Connect(function()
-        self:ToggleMinimize()
-    end)
+    if self.MinimizeButton then
+        self.MinimizeButton.MouseButton1Click:Connect(function()
+            self:ToggleMinimize()
+        end)
+    end
     
     _G.CensuraG.Logger:info("Created window: " .. title)
     return self
@@ -44,21 +46,40 @@ end
 
 function WindowManager:ToggleMinimize()
     self.IsMinimized = not self.IsMinimized
+    
     if self.IsMinimized then
+        -- Store the current position before minimizing
+        self.OriginalPosition = self.Frame.Position
+        
+        -- Minimize animation - move off screen
         _G.CensuraG.AnimationManager:Tween(self.Frame, {
-            Position = UDim2.new(0, 0, 1, Config.Math.TaskbarHeight), -- Slide down to taskbar
+            Position = UDim2.new(-1, 0, -1, 0), -- Move off-screen
             BackgroundTransparency = 0.8
         }, Config.Animations.FadeDuration)
+        
+        -- Delay making invisible to allow animation to complete
+        task.delay(Config.Animations.FadeDuration, function()
+            if self.IsMinimized then -- Check if still minimized
+                self.Frame.Visible = false
+            end
+        end)
     else
+        -- Make visible first before animating
+        self.Frame.Visible = true
+        
+        -- Restore animation
         _G.CensuraG.AnimationManager:Tween(self.Frame, {
-            Position = UDim2.fromOffset(100, 100), -- Restore to original position
+            Position = self.OriginalPosition or UDim2.fromOffset(100, 100),
             BackgroundTransparency = 0.15
         }, Config.Animations.SlideDuration)
     end
-    self.Frame.Visible = true -- Keep visible, animate transparency instead
-    self:Refresh() -- Refresh the window state
-    _G.CensuraG.TaskbarManager:UpdateTaskbar()
-    _G.CensuraG.Logger:info("Window " .. (self.IsMinimized and "minimized" or "restored"))
+    
+    -- Update taskbar
+    if _G.CensuraG.TaskbarManager and _G.CensuraG.TaskbarManager.UpdateTaskbar then
+        _G.CensuraG.TaskbarManager:UpdateTaskbar()
+    end
+    
+    _G.CensuraG.Logger:info("Window " .. (self.IsMinimized and "minimized" or "restored") .. ": " .. self.Title)
 end
 
 function WindowManager:AddComponent(component)
@@ -73,6 +94,11 @@ end
 
 function WindowManager:Refresh()
     _G.CensuraG.Methods:RefreshComponent("window", self)
+    
+    -- Also update the taskbar button for this window
+    if _G.CensuraG.TaskbarManager and _G.CensuraG.TaskbarManager.UpdateTaskbar then
+        _G.CensuraG.TaskbarManager:UpdateTaskbar()
+    end
 end
 
 function WindowManager:GetTitle()
