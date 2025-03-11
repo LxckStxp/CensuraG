@@ -12,7 +12,6 @@ function Methods:CreateWindow(title)
     return window
 end
 
--- Get a value from the Config table
 function Methods:GetConfigValue(keyPath)
     local keys = typeof(keyPath) == "string" and keyPath:split(".") or keyPath
     local value = _G.CensuraG.Config
@@ -29,7 +28,6 @@ function Methods:GetConfigValue(keyPath)
     return value
 end
 
--- Set a value in the Config table
 function Methods:SetConfigValue(keyPath, value)
     local keys = typeof(keyPath) == "string" and keyPath:split(".") or keyPath
     local target = _G.CensuraG.Config
@@ -45,6 +43,63 @@ function Methods:SetConfigValue(keyPath, value)
     end
     
     _G.CensuraG.Logger:info("Set config value for " .. table.concat(keys, ".") .. " to " .. tostring(value))
+end
+
+-- Centralized refresh logic for components
+function Methods:RefreshComponent(component, instance)
+    local theme = _G.CensuraG.Config:GetTheme()
+    local animConfig = _G.CensuraG.Config.Animations
+    
+    if component == "window" then
+        instance.Frame.BackgroundColor3 = theme.PrimaryColor
+        instance.TitleBar.BackgroundColor3 = theme.SecondaryColor
+        instance.TitleText.TextColor3 = theme.TextColor
+        instance.TitleText.Font = theme.Font
+        instance.TitleText.TextSize = theme.TextSize
+        instance.MinimizeButton.BackgroundColor3 = theme.AccentColor
+        instance.MinimizeButton.TextColor3 = theme.TextColor
+        instance.MinimizeButton.Font = theme.Font
+    elseif component == "taskbar" then
+        instance.BackgroundColor3 = theme.SecondaryColor
+    elseif component == "textlabel" then
+        instance.TextColor3 = theme.TextColor
+        instance.Font = theme.Font
+        instance.TextSize = theme.TextSize
+    elseif component == "textbutton" then
+        instance.BackgroundColor3 = theme.SecondaryColor
+        instance.TextColor3 = theme.TextColor
+        instance.Font = theme.Font
+        instance.TextSize = theme.TextSize
+    elseif component == "imagelabel" then
+        -- No theme-specific updates for imagelabel yet
+    elseif component == "slider" then
+        instance.BackgroundColor3 = theme.PrimaryColor
+        instance.Bar.BackgroundColor3 = theme.SecondaryColor
+        instance.Knob.BackgroundColor3 = theme.AccentColor
+    elseif component == "dropdown" then
+        instance.BackgroundColor3 = theme.SecondaryColor
+        instance.SelectedText.TextColor3 = theme.TextColor
+        instance.SelectedText.Font = theme.Font
+        instance.SelectedText.TextSize = theme.TextSize
+        instance.Arrow.BackgroundColor3 = theme.AccentColor
+        instance.Arrow.TextColor3 = theme.TextColor
+        instance.Arrow.Font = theme.Font
+        instance.OptionList.BackgroundColor3 = theme.PrimaryColor
+        for _, button in ipairs(instance.OptionList:GetChildren()) do
+            if button:IsA("TextButton") then
+                button.BackgroundColor3 = theme.PrimaryColor
+                button.TextColor3 = theme.TextColor
+                button.Font = theme.Font
+                button.TextSize = theme.TextSize
+            end
+        end
+    elseif component == "switch" then
+        instance.BackgroundColor3 = theme.PrimaryColor
+        instance.Knob.BackgroundColor3 = instance.State and theme.AccentColor or theme.SecondaryColor
+    end
+    
+    _G.CensuraG.Logger:info("Refreshed component: " .. component)
+    _G.CensuraG.AnimationManager:Tween(instance, {Transparency = 0}, animConfig.FadeDuration) -- Brief fade to indicate refresh
 end
 
 return Methods
