@@ -155,10 +155,13 @@ function TaskbarManager:Refresh()
                         ImageColor3 = theme.AccentColor
                     }, Config.Animations.FadeDuration)
                 elseif child.Name == "Logo" then
+                    -- Tween the color but set Font directly
                     _G.CensuraG.AnimationManager:Tween(child, {
-                        TextColor3 = theme.TextColor,
-                        Font = theme.Font
+                        TextColor3 = theme.TextColor
                     }, Config.Animations.FadeDuration)
+                    
+                    -- Set Font directly
+                    child.Font = theme.Font
                 end
             end
         elseif self.TaskbarObject and self.TaskbarObject.Refresh then
@@ -175,9 +178,11 @@ function TaskbarManager:Refresh()
                     local isMinimized = _G.CensuraG.Windows[windowIndex].IsMinimized
                     _G.CensuraG.AnimationManager:Tween(button, {
                         BackgroundColor3 = isMinimized and theme.AccentColor or theme.SecondaryColor,
-                        TextColor3 = theme.TextColor,
-                        Font = theme.Font
+                        TextColor3 = theme.TextColor
                     }, Config.Animations.FadeDuration)
+                    
+                    -- Set Font directly
+                    button.Font = theme.Font
                 end
             end
         end
