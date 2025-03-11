@@ -1,4 +1,4 @@
--- CensuraG/CensuraG.lua (fully revised)
+-- CensuraG/CensuraG.lua (revised with RefreshManager)
 local function safeLoadstring(url, errorMsg)
     local success, result = pcall(function()
         return game:HttpGet(url, true)
@@ -72,7 +72,8 @@ CensuraG.Utilities = Utilities
 local coreModules = {
     Config = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/Config.lua",
     Methods = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/Methods.lua",
-    AnimationManager = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/AnimationManager.lua"
+    AnimationManager = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/AnimationManager.lua",
+    RefreshManager = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/RefreshManager.lua" -- Added RefreshManager
 }
 
 local allCoreModulesLoaded = true
@@ -89,6 +90,12 @@ end
 
 if not allCoreModulesLoaded then
     CensuraG.Logger:warn("Some core modules failed to load, functionality may be limited")
+end
+
+-- Initialize RefreshManager early if it's loaded
+if CensuraG.RefreshManager then
+    CensuraG.RefreshManager:Initialize()
+    CensuraG.Logger:info("RefreshManager initialized")
 end
 
 -- Load Components with better error handling
@@ -172,14 +179,46 @@ end
 
 CensuraG.SetTheme = function(themeName)
     if CensuraG.Config then
+        -- Store the original theme name for logging
+        local oldTheme = CensuraG.Config.CurrentTheme
+        
+        -- Update the theme
         CensuraG.Config.CurrentTheme = themeName
-        -- Refresh all UI elements if Methods module is loaded
-        if CensuraG.Methods and CensuraG.Methods.RefreshAll then
+        
+        -- Refresh all UI elements using RefreshManager if available
+        if CensuraG.RefreshManager then
+            CensuraG.RefreshManager:RefreshAll()
+            CensuraG.Logger:info("Theme changed from " .. oldTheme .. " to " .. themeName .. " (using RefreshManager)")
+        -- Fall back to Methods if RefreshManager isn't available
+        elseif CensuraG.Methods and CensuraG.Methods.RefreshAll then
             CensuraG.Methods:RefreshAll()
+            CensuraG.Logger:info("Theme changed from " .. oldTheme .. " to " .. themeName .. " (using Methods)")
+        else
+            CensuraG.Logger:warn("Theme changed to " .. themeName .. " but no refresh mechanism available")
         end
-        CensuraG.Logger:info("Theme changed to: " .. themeName)
     else
         CensuraG.Logger:error("Config module not loaded, cannot change theme")
+    end
+end
+
+-- Add refresh utility methods that use RefreshManager
+CensuraG.RefreshComponent = function(component, instance)
+    if CensuraG.RefreshManager then
+        CensuraG.RefreshManager:RefreshComponent(component, instance)
+    elseif CensuraG.Methods and CensuraG.Methods.RefreshComponent then
+        CensuraG.Methods:RefreshComponent(component, instance)
+    else
+        CensuraG.Logger:error("No refresh mechanism available, cannot refresh component")
+    end
+end
+
+CensuraG.RefreshAll = function()
+    if CensuraG.RefreshManager then
+        CensuraG.RefreshManager:RefreshAll()
+    elseif CensuraG.Methods and CensuraG.Methods.RefreshAll then
+        CensuraG.Methods:RefreshAll()
+    else
+        CensuraG.Logger:error("No refresh mechanism available, cannot refresh all components")
     end
 end
 
