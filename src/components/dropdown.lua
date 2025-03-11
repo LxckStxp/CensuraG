@@ -1,4 +1,4 @@
--- CensuraG/src/components/dropdown.lua (updated return and add title)
+-- CensuraG/src/components/dropdown.lua (with improved z-index)
 local Config = _G.CensuraG.Config
 
 return function(parent, title, options, callback)
@@ -10,6 +10,7 @@ return function(parent, title, options, callback)
     DropdownFrame.BackgroundColor3 = theme.SecondaryColor
     DropdownFrame.BorderSizePixel = 0
     DropdownFrame.BackgroundTransparency = 1
+    DropdownFrame.ZIndex = 1 -- Base z-index
     
     -- Title
     local TitleLabel = Instance.new("TextLabel", DropdownFrame)
@@ -23,6 +24,7 @@ return function(parent, title, options, callback)
     TitleLabel.TextWrapped = true
     TitleLabel.TextTransparency = 1
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.ZIndex = 1
     
     -- Dropdown
     local DropdownInner = Instance.new("Frame", DropdownFrame)
@@ -30,6 +32,7 @@ return function(parent, title, options, callback)
     DropdownInner.Position = UDim2.new(0, 0, 0, 20 + Config.Math.ElementSpacing)
     DropdownInner.BackgroundColor3 = theme.SecondaryColor
     DropdownInner.BackgroundTransparency = 1
+    DropdownInner.ZIndex = 1
     
     local SelectedText = Instance.new("TextLabel", DropdownInner)
     SelectedText.Size = UDim2.new(1, -30, 1, 0)
@@ -38,6 +41,7 @@ return function(parent, title, options, callback)
     SelectedText.TextColor3 = theme.TextColor
     SelectedText.Font = theme.Font
     SelectedText.TextSize = theme.TextSize
+    SelectedText.ZIndex = 1
     
     local Arrow = Instance.new("TextButton", DropdownInner)
     Arrow.Size = UDim2.new(0, 30, 1, 0)
@@ -46,15 +50,36 @@ return function(parent, title, options, callback)
     Arrow.Text = "▼"
     Arrow.TextColor3 = theme.TextColor
     Arrow.Font = theme.Font
+    Arrow.ZIndex = 1
     
-    local OptionList = Instance.new("Frame", DropdownInner)
-    OptionList.Size = UDim2.new(1, 0, 0, #options * 25)
-    OptionList.Position = UDim2.new(0, 0, 1, 0)
+    -- Create a separate parent for the option list to ensure it's on top
+    local OptionListContainer = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
+    OptionListContainer.Name = "DropdownOptions_" .. game:GetService("HttpService"):GenerateGUID(false)
+    OptionListContainer.ResetOnSpawn = false
+    OptionListContainer.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    
+    local OptionList = Instance.new("Frame", OptionListContainer)
+    OptionList.Size = UDim2.new(0, DropdownInner.AbsoluteSize.X, 0, #options * 25)
     OptionList.BackgroundColor3 = theme.PrimaryColor
-    OptionList.Visible = false
     OptionList.BorderSizePixel = 0
+    OptionList.Visible = false
+    OptionList.ZIndex = 100 -- Very high z-index to be above everything
+    
+    -- Function to update option list position to match dropdown
+    local function updateOptionListPosition()
+        local dropdownPos = DropdownInner.AbsolutePosition
+        local dropdownSize = DropdownInner.AbsoluteSize
+        
+        OptionList.Position = UDim2.new(0, dropdownPos.X, 0, dropdownPos.Y + dropdownSize.Y)
+        OptionList.Size = UDim2.new(0, dropdownSize.X, 0, #options * 25)
+    end
     
     local function updateList()
+        -- Clear existing options
+        for _, child in pairs(OptionList:GetChildren()) do
+            child:Destroy()
+        end
+        
         for i, option in ipairs(options) do
             local Button = Instance.new("TextButton", OptionList)
             Button.Size = UDim2.new(1, 0, 0, 25)
@@ -65,6 +90,7 @@ return function(parent, title, options, callback)
             Button.Font = theme.Font
             Button.TextSize = theme.TextSize
             Button.BorderSizePixel = 0
+            Button.ZIndex = 100 -- Match parent z-index
             
             Button.MouseButton1Click:Connect(function()
                 SelectedText.Text = option
@@ -75,10 +101,37 @@ return function(parent, title, options, callback)
     end
     
     Arrow.MouseButton1Click:Connect(function()
+        updateOptionListPosition() -- Update position before showing
         OptionList.Visible = not OptionList.Visible
-        local targetPos = OptionList.Visible and UDim2.new(0, 0, 1, 0) or UDim2.new(0, 0, 1, -#options * 25)
-        _G.CensuraG.AnimationManager:Tween(OptionList, {Position = targetPos}, animConfig.SlideDuration)
     end)
+    
+    -- Close dropdown when clicking elsewhere
+    game:GetService("UserInputService").InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local mousePos = game:GetService("UserInputService"):GetMouseLocation()
+            local listPos = OptionList.AbsolutePosition
+            local listSize = OptionList.AbsoluteSize
+            
+            -- Check if click is outside the dropdown options
+            if OptionList.Visible and (
+                mousePos.X < listPos.X or 
+                mousePos.Y < listPos.Y or 
+                mousePos.X > listPos.X + listSize.X or 
+                mousePos.Y > listPos.Y + listSize.Y
+            ) and not (
+                mousePos.X >= Arrow.AbsolutePosition.X and
+                mousePos.Y >= Arrow.AbsolutePosition.Y and
+                mousePos.X <= Arrow.AbsolutePosition.X + Arrow.AbsoluteSize.X and
+                mousePos.Y <= Arrow.AbsolutePosition.Y + Arrow.AbsoluteSize.Y
+            ) then
+                OptionList.Visible = false
+            end
+        end
+    end)
+    
+    -- Update position when parent changes
+    parent:GetPropertyChangedSignal("AbsolutePosition"):Connect(updateOptionListPosition)
+    parent:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateOptionListPosition)
     
     updateList()
     _G.CensuraG.AnimationManager:Tween(DropdownFrame, {BackgroundTransparency = 0}, animConfig.FadeDuration)
@@ -92,8 +145,16 @@ return function(parent, title, options, callback)
         SelectedText = SelectedText,
         Arrow = Arrow,
         OptionList = OptionList,
+        OptionListContainer = OptionListContainer,
         Refresh = function(self)
             _G.CensuraG.Methods:RefreshComponent("dropdown", self)
+            updateOptionListPosition() -- Refresh position
+        end,
+        Cleanup = function(self)
+            -- Remove the option list container when no longer needed
+            if self.OptionListContainer then
+                self.OptionListContainer:Destroy()
+            end
         end
     }
     
