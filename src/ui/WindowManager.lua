@@ -11,6 +11,7 @@ function WindowManager.new(title)
     -- Create the window using the component and store the full table
     self.Window = _G.CensuraG.Components.window(title)
     self.Frame = self.Window.Frame -- Extract the Frame instance for compatibility
+    self.TitleText = self.Window.TitleText -- Store a reference to TitleText directly
     self.IsMinimized = false
     
     -- Connect minimize button to toggle method
