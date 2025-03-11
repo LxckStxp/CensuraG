@@ -1,4 +1,4 @@
--- CensuraG/src/components/textlabel.lua
+-- CensuraG/src/components/textlabel.lua (updated return)
 local Config = _G.CensuraG.Config
 
 return function(parent, text)
@@ -12,9 +12,9 @@ return function(parent, text)
     Label.TextColor3 = theme.TextColor
     Label.Font = theme.Font
     Label.TextSize = theme.TextSize
-    Label.TextTransparency = 1 -- Start hidden
+    Label.TextTransparency = 1
+    Label.TextWrapped = true -- Enable text wrapping
     
-    -- Animation
     _G.CensuraG.AnimationManager:Tween(Label, {TextTransparency = 0}, animConfig.FadeDuration)
     
     local TextLabel = {
@@ -25,5 +25,5 @@ return function(parent, text)
     }
     
     _G.CensuraG.Logger:info("TextLabel created with text: " .. text)
-    return TextLabel.Instance -- Return instance for compatibility
+    return TextLabel -- Return the full table, not TextLabel.Instance
 end
