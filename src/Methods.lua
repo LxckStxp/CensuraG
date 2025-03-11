@@ -42,61 +42,109 @@ function Methods:SetConfigValue(keyPath, value)
 end
 
 function Methods:RefreshComponent(component, instance)
+    -- Check if instance is a table with an Instance property or a direct Instance
+    local targetInstance
+    if typeof(instance) == "table" and instance.Instance then
+        targetInstance = instance.Instance
+    elseif typeof(instance) == "Instance" then
+        targetInstance = instance
+    else
+        _G.CensuraG.Logger:error("Cannot refresh invalid component: " .. tostring(instance))
+        return
+    end
+    
     local theme = _G.CensuraG.Config:GetTheme()
     local animConfig = _G.CensuraG.Config.Animations
     
     if component == "window" then
-        instance.BackgroundColor3 = theme.PrimaryColor
-        instance.TitleBar.BackgroundColor3 = theme.SecondaryColor
-        instance.TitleText.TextColor3 = theme.TextColor
-        instance.TitleText.Font = theme.Font
-        instance.TitleText.TextSize = theme.TextSize
-        instance.MinimizeButton.BackgroundColor3 = theme.AccentColor
-        instance.MinimizeButton.TextColor3 = theme.TextColor
-        instance.MinimizeButton.Font = theme.Font
+        -- Handle window component which could be a WindowManager object
+        if typeof(instance) == "table" then
+            if instance.Frame then targetInstance = instance.Frame end
+            if instance.TitleBar then
+                _G.CensuraG.AnimationManager:Tween(instance.TitleBar, {BackgroundColor3 = theme.SecondaryColor}, animConfig.FadeDuration)
+            end
+            if instance.TitleText then
+                _G.CensuraG.AnimationManager:Tween(instance.TitleText, {
+                    TextColor3 = theme.TextColor,
+                    Font = theme.Font,
+                    TextSize = theme.TextSize
+                }, animConfig.FadeDuration)
+            end
+            if instance.MinimizeButton then
+                _G.CensuraG.AnimationManager:Tween(instance.MinimizeButton, {
+                    BackgroundColor3 = theme.AccentColor,
+                    TextColor3 = theme.TextColor,
+                    Font = theme.Font
+                }, animConfig.FadeDuration)
+            end
+            
+            _G.CensuraG.AnimationManager:Tween(targetInstance, {BackgroundColor3 = theme.PrimaryColor}, animConfig.FadeDuration)
+        end
     elseif component == "taskbar" then
-        instance.BackgroundColor3 = theme.SecondaryColor
+        _G.CensuraG.AnimationManager:Tween(targetInstance, {BackgroundColor3 = theme.SecondaryColor}, animConfig.FadeDuration)
     elseif component == "textlabel" then
-        instance.TextColor3 = theme.TextColor
-        instance.Font = theme.Font
-        instance.TextSize = theme.TextSize
+        _G.CensuraG.AnimationManager:Tween(targetInstance, {
+            TextColor3 = theme.TextColor,
+            Font = theme.Font,
+            TextSize = theme.TextSize
+        }, animConfig.FadeDuration)
     elseif component == "textbutton" then
-        instance.BackgroundColor3 = theme.SecondaryColor
-        instance.TextColor3 = theme.TextColor
-        instance.Font = theme.Font
-        instance.TextSize = theme.TextSize
+        _G.CensuraG.AnimationManager:Tween(targetInstance, {
+            BackgroundColor3 = theme.SecondaryColor,
+            TextColor3 = theme.TextColor,
+            Font = theme.Font,
+            TextSize = theme.TextSize
+        }, animConfig.FadeDuration)
     elseif component == "imagelabel" then
         -- No theme-specific updates for imagelabel yet
     elseif component == "slider" then
-        instance.BackgroundColor3 = theme.PrimaryColor
-        instance.Bar.BackgroundColor3 = theme.SecondaryColor
-        instance.Knob.BackgroundColor3 = theme.AccentColor
+        _G.CensuraG.AnimationManager:Tween(targetInstance, {BackgroundColor3 = theme.PrimaryColor}, animConfig.FadeDuration)
+        if instance.Bar then
+            _G.CensuraG.AnimationManager:Tween(instance.Bar, {BackgroundColor3 = theme.SecondaryColor}, animConfig.FadeDuration)
+        end
+        if instance.Knob then
+            _G.CensuraG.AnimationManager:Tween(instance.Knob, {BackgroundColor3 = theme.AccentColor}, animConfig.FadeDuration)
+        end
     elseif component == "dropdown" then
-        instance.BackgroundColor3 = theme.SecondaryColor
-        instance.SelectedText.TextColor3 = theme.TextColor
-        instance.SelectedText.Font = theme.Font
-        instance.SelectedText.TextSize = theme.TextSize
-        instance.Arrow.BackgroundColor3 = theme.AccentColor
-        instance.Arrow.TextColor3 = theme.TextColor
-        instance.Arrow.Font = theme.Font
-        instance.OptionList.BackgroundColor3 = theme.PrimaryColor
-        for _, button in ipairs(instance.OptionList:GetChildren()) do
-            if button:IsA("TextButton") then
-                button.BackgroundColor3 = theme.PrimaryColor
-                button.TextColor3 = theme.TextColor
-                button.Font = theme.Font
-                button.TextSize = theme.TextSize
+        _G.CensuraG.AnimationManager:Tween(targetInstance, {BackgroundColor3 = theme.SecondaryColor}, animConfig.FadeDuration)
+        if instance.SelectedText then
+            _G.CensuraG.AnimationManager:Tween(instance.SelectedText, {
+                TextColor3 = theme.TextColor,
+                Font = theme.Font,
+                TextSize = theme.TextSize
+            }, animConfig.FadeDuration)
+        end
+        if instance.Arrow then
+            _G.CensuraG.AnimationManager:Tween(instance.Arrow, {
+                BackgroundColor3 = theme.AccentColor,
+                TextColor3 = theme.TextColor,
+                Font = theme.Font
+            }, animConfig.FadeDuration)
+        end
+        if instance.OptionList then
+            _G.CensuraG.AnimationManager:Tween(instance.OptionList, {BackgroundColor3 = theme.PrimaryColor}, animConfig.FadeDuration)
+            for _, button in ipairs(instance.OptionList:GetChildren()) do
+                if button:IsA("TextButton") then
+                    _G.CensuraG.AnimationManager:Tween(button, {
+                        BackgroundColor3 = theme.PrimaryColor,
+                        TextColor3 = theme.TextColor,
+                        Font = theme.Font,
+                        TextSize = theme.TextSize
+                    }, animConfig.FadeDuration)
+                end
             end
         end
     elseif component == "switch" then
-        instance.BackgroundColor3 = theme.PrimaryColor
-        instance.Knob.BackgroundColor3 = instance.State and theme.AccentColor or theme.SecondaryColor
+        _G.CensuraG.AnimationManager:Tween(targetInstance, {BackgroundColor3 = theme.PrimaryColor}, animConfig.FadeDuration)
+        if instance.Knob then
+            local knobColor = instance.State and theme.AccentColor or theme.SecondaryColor
+            _G.CensuraG.AnimationManager:Tween(instance.Knob, {BackgroundColor3 = knobColor}, animConfig.FadeDuration)
+        end
     elseif component == "grid" then
-        instance.BackgroundColor3 = theme.PrimaryColor
+        _G.CensuraG.AnimationManager:Tween(targetInstance, {BackgroundColor3 = theme.PrimaryColor}, animConfig.FadeDuration)
     end
     
     _G.CensuraG.Logger:info("Refreshed component: " .. component)
-    _G.CensuraG.AnimationManager:Tween(instance, {Transparency = 0}, animConfig.FadeDuration)
 end
 
 function Methods:RefreshAll()
