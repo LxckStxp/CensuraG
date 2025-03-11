@@ -15,11 +15,11 @@ return function(parent)
 
     local GridLayout = Instance.new("UIGridLayout", GridFrame)
     GridLayout.CellSize = UDim2.new(0, 150, 0, 50) -- Consistent size for components
-    GridLayout.CellPadding = UDim2.new(0, Config.Math.ElementSpacing, 0, Config.Math.ElementSpacing)
+    GridLayout.CellPadding = UDim2.new(0, Config.Math.ElementSpacing, 0, Config.Math.ElementSpacing) -- Correct property
     GridLayout.StartCorner = Enum.StartCorner.TopLeft
     GridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     GridLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-    GridLayout.Padding = UDim.new(0, Config.Math.Padding)
+    -- Removed incorrect Padding property
 
     -- Animation
     _G.CensuraG.AnimationManager:Tween(GridFrame, {BackgroundTransparency = 0}, animConfig.FadeDuration)
@@ -37,8 +37,7 @@ return function(parent)
         end,
         Refresh = function(self)
             _G.CensuraG.Methods:RefreshComponent("grid", self.Instance)
-            -- No theme-specific updates for grid yet, but layout can be refreshed
-            self.Layout:ApplyLayout()
+            self.Layout:ApplyLayout() -- Ensure layout is reapplied
         end
     }
 
