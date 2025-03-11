@@ -1,4 +1,4 @@
--- CensuraG/src/components/window.lua (with improved dynamic sizing)
+-- CensuraG/src/components/window.lua (fixed)
 local Config = _G.CensuraG.Config
 
 return function(title)
@@ -59,28 +59,34 @@ return function(title)
     -- Add grid to window
     local Grid = _G.CensuraG.Components.grid(ContentFrame)
     
-    -- Add padding to the grid
-    local GridPadding = Instance.new("UIPadding", Grid.Instance)
-    GridPadding.PaddingTop = UDim.new(0, Config.Math.Padding)
-    GridPadding.PaddingBottom = UDim.new(0, Config.Math.Padding)
-    GridPadding.PaddingLeft = UDim.new(0, Config.Math.Padding)
-    GridPadding.PaddingRight = UDim.new(0, Config.Math.Padding)
+    -- Track if we're currently resizing to prevent infinite loops
+    local isResizing = false
     
-    -- Listen for changes in the grid's size
-    Grid.Instance:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-        -- Update window size based on grid size
-        local gridSize = Grid.Instance.AbsoluteSize
-        local newHeight = gridSize.Y + 30 + (2 * Config.Math.Padding) -- Add title bar height and padding
-        local newWidth = math.max(gridSize.X + (2 * Config.Math.Padding), Config.Math.DefaultWindowSize.X)
+    -- Function to update window size based on content
+    local function updateWindowSize()
+        if isResizing then return end
+        isResizing = true
         
-        -- Avoid unnecessarily small windows
-        newHeight = math.max(newHeight, Config.Math.DefaultWindowSize.Y)
+        -- Get the content height from the grid
+        local contentHeight = Grid:GetContentHeight() or 0
+        
+        -- Calculate the new window size with padding
+        local minHeight = Config.Math.DefaultWindowSize.Y
+        local newHeight = math.max(minHeight, contentHeight + 30 + (2 * Config.Math.Padding))
+        local newWidth = Config.Math.DefaultWindowSize.X
         
         -- Update window size
         _G.CensuraG.AnimationManager:Tween(Frame, {
             Size = UDim2.new(0, newWidth, 0, newHeight)
         }, animConfig.FadeDuration)
-    end)
+        
+        task.delay(animConfig.FadeDuration, function()
+            isResizing = false
+        end)
+    end
+    
+    -- Watch for content height changes
+    ContentFrame:GetAttributeChangedSignal("ContentHeight"):Connect(updateWindowSize)
     
     -- Dragging functionality
     local dragging = false
@@ -112,19 +118,6 @@ return function(title)
             _G.CensuraG.AnimationManager:Tween(Frame, {Position = newPos}, 0.1)
         end
     end)
-    
-    -- Function to manually update window size
-    local function updateWindowSize()
-        local gridSize = Grid.Instance.AbsoluteSize
-        local newHeight = gridSize.Y + 30 + (2 * Config.Math.Padding)
-        local newWidth = math.max(gridSize.X + (2 * Config.Math.Padding), Config.Math.DefaultWindowSize.X)
-        
-        newHeight = math.max(newHeight, Config.Math.DefaultWindowSize.Y)
-        
-        _G.CensuraG.AnimationManager:Tween(Frame, {
-            Size = UDim2.new(0, newWidth, 0, newHeight)
-        }, animConfig.FadeDuration)
-    end
     
     -- Initialize animation
     _G.CensuraG.AnimationManager:Tween(Frame, {BackgroundTransparency = 0}, animConfig.FadeDuration)
