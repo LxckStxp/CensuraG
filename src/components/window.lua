@@ -1,4 +1,4 @@
--- CensuraG/src/components/window.lua
+-- CensuraG/src/components/window.lua (updated with dynamic sizing)
 local Config = _G.CensuraG.Config
 
 return function(title)
@@ -8,6 +8,7 @@ return function(title)
     local screenGui = playerGui:FindFirstChild("ScreenGui") or Instance.new("ScreenGui", playerGui)
     screenGui.Name = "ScreenGui"
 
+    -- Start with a minimum size for the window
     local Frame = Instance.new("Frame")
     Frame.Size = UDim2.fromOffset(Config.Math.DefaultWindowSize.X, Config.Math.DefaultWindowSize.Y)
     Frame.Position = UDim2.fromOffset(100, 100)
@@ -38,6 +39,16 @@ return function(title)
     MinimizeButton.Text = "-"
     MinimizeButton.TextColor3 = theme.TextColor
     MinimizeButton.Font = theme.Font
+    
+    -- Add grid to window
+    local Grid = _G.CensuraG.Components.grid(Frame)
+    
+    -- Create a UIListLayout to track the content size
+    local GridPadding = Instance.new("UIPadding", Grid.Instance)
+    GridPadding.PaddingTop = UDim.new(0, Config.Math.Padding)
+    GridPadding.PaddingBottom = UDim.new(0, Config.Math.Padding)
+    GridPadding.PaddingLeft = UDim.new(0, Config.Math.Padding)
+    GridPadding.PaddingRight = UDim.new(0, Config.Math.Padding)
     
     -- Dragging functionality
     local dragging = false
@@ -70,10 +81,53 @@ return function(title)
         end
     end)
     
-    -- Add grid to window
-    local Grid = _G.CensuraG.Components.grid(Frame)
+    -- Function to resize window based on content
+    local function updateWindowSize()
+        -- Get the content size from the grid layout
+        local contentHeight = 0
+        local contentWidth = 0
+        
+        -- Calculate based on children
+        for _, child in ipairs(Grid.Instance:GetChildren()) do
+            if child:IsA("GuiObject") and not child:IsA("UIGridLayout") and not child:IsA("UIPadding") then
+                local childPos = child.Position
+                local childSize = child.Size
+                
+                -- Convert to absolute size if using scale
+                local absChildWidth = childSize.X.Scale * Grid.Instance.AbsoluteSize.X + childSize.X.Offset
+                local absChildHeight = childSize.Y.Scale * Grid.Instance.AbsoluteSize.Y + childSize.Y.Offset
+                
+                -- Calculate position
+                local absChildX = childPos.X.Scale * Grid.Instance.AbsoluteSize.X + childPos.X.Offset
+                local absChildY = childPos.Y.Scale * Grid.Instance.AbsoluteSize.Y + childPos.Y.Offset
+                
+                -- Update max dimensions
+                contentWidth = math.max(contentWidth, absChildX + absChildWidth)
+                contentHeight = math.max(contentHeight, absChildY + absChildHeight)
+            end
+        end
+        
+        -- Use GridLayout's ContentSize if available
+        if Grid.Layout.AbsoluteContentSize then
+            contentWidth = math.max(contentWidth, Grid.Layout.AbsoluteContentSize.X)
+            contentHeight = math.max(contentHeight, Grid.Layout.AbsoluteContentSize.Y)
+        end
+        
+        -- Add padding
+        contentWidth = contentWidth + 2 * Config.Math.Padding
+        contentHeight = contentHeight + 2 * Config.Math.Padding
+        
+        -- Set minimum dimensions
+        contentWidth = math.max(contentWidth, Config.Math.DefaultWindowSize.X)
+        contentHeight = math.max(contentHeight, Config.Math.DefaultWindowSize.Y - 30) -- Subtract title bar height
+        
+        -- Update window size with animation
+        local newSize = UDim2.new(0, contentWidth, 0, contentHeight + 30) -- Add title bar height
+        _G.CensuraG.AnimationManager:Tween(Frame, {Size = newSize}, animConfig.FadeDuration)
+    end
     
-    _G.CensuraG.AnimationManager:Tween(Frame, {BackgroundTransparency = 0, Position = UDim2.fromOffset(100, 100)}, animConfig.SlideDuration)
+    -- Initialize animation
+    _G.CensuraG.AnimationManager:Tween(Frame, {BackgroundTransparency = 0}, animConfig.FadeDuration)
     
     local Window = {
         Frame = Frame,
@@ -83,11 +137,15 @@ return function(title)
         Grid = Grid,
         AddComponent = function(self, component)
             self.Grid:AddComponent(component)
+            -- Update size after a short delay to allow component to render
+            task.delay(0.1, updateWindowSize)
         end,
         Refresh = function(self)
             _G.CensuraG.Methods:RefreshComponent("window", self)
             self.Grid:Refresh()
-        end
+            updateWindowSize()
+        end,
+        UpdateSize = updateWindowSize -- Expose the update function
     }
     
     _G.CensuraG.Logger:info("Window created: " .. title)
