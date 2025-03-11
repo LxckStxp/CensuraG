@@ -4,13 +4,16 @@ local Config = _G.CensuraG.Config
 return function(title)
     local theme = Config:GetTheme()
     local animConfig = Config.Animations
-    
+    local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+    local screenGui = playerGui:FindFirstChild("ScreenGui") or Instance.new("ScreenGui", playerGui)
+    screenGui.Name = "ScreenGui"
+
     local Frame = Instance.new("Frame")
     Frame.Size = UDim2.fromOffset(Config.Math.DefaultWindowSize.X, Config.Math.DefaultWindowSize.Y)
     Frame.Position = UDim2.fromOffset(100, 100)
     Frame.BackgroundColor3 = theme.PrimaryColor
     Frame.BorderSizePixel = 0
-    Frame.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ScreenGui")
+    Frame.Parent = screenGui
     Frame.BackgroundTransparency = 1
     
     local TitleBar = Instance.new("Frame", Frame)
