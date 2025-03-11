@@ -11,7 +11,7 @@ return function(title)
     Frame.BackgroundColor3 = theme.PrimaryColor
     Frame.BorderSizePixel = 0
     Frame.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ScreenGui")
-    Frame.BackgroundTransparency = 1 -- Start hidden for animation
+    Frame.BackgroundTransparency = 1
     
     local TitleBar = Instance.new("Frame", Frame)
     TitleBar.Size = UDim2.new(1, 0, 0, 30)
@@ -26,6 +26,7 @@ return function(title)
     TitleText.TextColor3 = theme.TextColor
     TitleText.Font = theme.Font
     TitleText.TextSize = theme.TextSize
+    TitleText.TextWrapped = true
     
     local MinimizeButton = Instance.new("TextButton", TitleBar)
     MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
@@ -35,7 +36,37 @@ return function(title)
     MinimizeButton.TextColor3 = theme.TextColor
     MinimizeButton.Font = theme.Font
     
-    -- Animation
+    -- Dragging functionality
+    local dragging = false
+    local dragStartPos, frameStartPos
+    
+    TitleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStartPos = input.Position
+            frameStartPos = Frame.Position
+        end
+    end)
+    
+    TitleBar.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStartPos
+            local newPos = UDim2.new(
+                frameStartPos.X.Scale,
+                frameStartPos.X.Offset + delta.X,
+                frameStartPos.Y.Scale,
+                frameStartPos.Y.Offset + delta.Y
+            )
+            _G.CensuraG.AnimationManager:Tween(Frame, {Position = newPos}, 0.1) -- Smooth dragging
+        end
+    end)
+    
     _G.CensuraG.AnimationManager:Tween(Frame, {BackgroundTransparency = 0, Position = UDim2.fromOffset(100, 100)}, animConfig.SlideDuration)
     
     local Window = {
