@@ -8,21 +8,32 @@ local ScreenGui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChil
 function WindowManager.new(title)
     local self = setmetatable({}, WindowManager)
     
-    -- Create the window using the component and store the full table
-    self.Window = _G.CensuraG.Components.window(title)
-    self.Frame = self.Window.Frame -- Extract the Frame instance for compatibility
-    self.TitleText = self.Window.TitleText -- Store a reference to TitleText directly
+    -- Create the window using the component
+    local windowComponent = _G.CensuraG.Components.window(title)
+    
+    -- Store the entire window component
+    self.Window = windowComponent
+    
+    -- For compatibility, store direct references to commonly used properties
+    self.Frame = windowComponent.Frame
+    self.TitleBar = windowComponent.TitleBar
+    self.TitleText = windowComponent.TitleText
+    self.MinimizeButton = windowComponent.MinimizeButton
+    self.Grid = windowComponent.Grid
+    
     self.IsMinimized = false
+    self.Title = title
     
     -- Connect minimize button to toggle method
-    self.Window.MinimizeButton.MouseButton1Click:Connect(function()
+    self.MinimizeButton.MouseButton1Click:Connect(function()
         self:ToggleMinimize()
     end)
     
-    -- Dragging functionality (delegate to Window's dragging logic)
+    -- Dragging functionality
     local dragging = false
     local dragStartPos, frameStartPos
-    self.Window.TitleBar.InputBegan:Connect(function(input)
+    
+    self.TitleBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true
             dragStartPos = input.Position
@@ -30,7 +41,7 @@ function WindowManager.new(title)
         end
     end)
     
-    self.Window.TitleBar.InputEnded:Connect(function(input)
+    self.TitleBar.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
         end
@@ -67,17 +78,28 @@ function WindowManager:ToggleMinimize()
         }, Config.Animations.SlideDuration)
     end
     self.Frame.Visible = true -- Keep visible, animate transparency instead
-    self.Window:Refresh() -- Refresh the window state
+    self:Refresh() -- Refresh the window state
     _G.CensuraG.TaskbarManager:UpdateTaskbar()
     _G.CensuraG.Logger:info("Window " .. (self.IsMinimized and "minimized" or "restored"))
 end
 
 function WindowManager:AddComponent(component)
-    self.Window:AddComponent(component)
+    if self.Grid then
+        self.Grid:AddComponent(component)
+    else
+        _G.CensuraG.Logger:warn("Grid not found in window")
+    end
 end
 
 function WindowManager:Refresh()
-    self.Window:Refresh()
+    _G.CensuraG.Methods:RefreshComponent("window", self)
+    if self.Grid then
+        self.Grid:Refresh()
+    end
+end
+
+function WindowManager:GetTitle()
+    return self.Title
 end
 
 return WindowManager
