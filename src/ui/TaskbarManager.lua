@@ -1,16 +1,35 @@
--- CensuraG/src/ui/TaskbarManager.lua (updated for proper window management)
+-- CensuraG/src/ui/TaskbarManager.lua (fixed nil table error)
 local TaskbarManager = {}
 TaskbarManager.__index = TaskbarManager
 
 local Config = _G.CensuraG.Config
 
 function TaskbarManager:Initialize()
-    self.Frame = _G.CensuraG.Components.taskbar()
+    local frame, taskbarObject = _G.CensuraG.Components.taskbar()
+    self.Frame = frame
+    self.TaskbarObject = taskbarObject
+    
+    -- Find ButtonContainer
     self.ButtonContainer = self.Frame:FindFirstChild("ButtonContainer")
     
     if not self.ButtonContainer then
-        _G.CensuraG.Logger:error("ButtonContainer not found in taskbar")
-        return
+        -- Create ButtonContainer if it doesn't exist
+        self.ButtonContainer = Instance.new("Frame", self.Frame)
+        self.ButtonContainer.Name = "ButtonContainer"
+        self.ButtonContainer.Size = UDim2.new(1, -120, 1, -10)
+        self.ButtonContainer.Position = UDim2.new(0, 110, 0, 5)
+        self.ButtonContainer.BackgroundTransparency = 1
+        
+        -- Add horizontal layout for buttons
+        local ButtonLayout = Instance.new("UIListLayout", self.ButtonContainer)
+        ButtonLayout.FillDirection = Enum.FillDirection.Horizontal
+        ButtonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+        ButtonLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        ButtonLayout.Padding = UDim.new(0, 5)
+        
+        _G.CensuraG.Logger:warn("ButtonContainer not found, created new one")
+    else
+        _G.CensuraG.Logger:info("ButtonContainer found in taskbar")
     end
     
     self.Buttons = {}
@@ -18,10 +37,18 @@ function TaskbarManager:Initialize()
 end
 
 function TaskbarManager:UpdateTaskbar()
+    -- Ensure Windows table exists
+    if not _G.CensuraG.Windows then
+        _G.CensuraG.Windows = {}
+        _G.CensuraG.Logger:warn("Windows table was nil, initialized new table")
+    end
+    
     -- Clear existing buttons
-    for _, button in pairs(self.Buttons) do
-        if button and button.Destroy then
-            button:Destroy()
+    if self.Buttons then
+        for _, button in pairs(self.Buttons) do
+            if button and typeof(button) == "Instance" then
+                button:Destroy()
+            end
         end
     end
     self.Buttons = {}
@@ -134,21 +161,25 @@ function TaskbarManager:Refresh()
                     }, Config.Animations.FadeDuration)
                 end
             end
-        elseif self.Frame.Refresh then
-            self.Frame:Refresh()
+        elseif self.TaskbarObject and self.TaskbarObject.Refresh then
+            self.TaskbarObject:Refresh()
         end
     end
     
     -- Update buttons for each window
-    for i, button in ipairs(self.Buttons) do
-        local windowIndex = button:GetAttribute("WindowIndex")
-        if windowIndex and _G.CensuraG.Windows[windowIndex] then
-            local isMinimized = _G.CensuraG.Windows[windowIndex].IsMinimized
-            _G.CensuraG.AnimationManager:Tween(button, {
-                BackgroundColor3 = isMinimized and theme.AccentColor or theme.SecondaryColor,
-                TextColor3 = theme.TextColor,
-                Font = theme.Font
-            }, Config.Animations.FadeDuration)
+    if self.Buttons then
+        for i, button in ipairs(self.Buttons) do
+            if typeof(button) == "Instance" then
+                local windowIndex = button:GetAttribute("WindowIndex")
+                if windowIndex and _G.CensuraG.Windows[windowIndex] then
+                    local isMinimized = _G.CensuraG.Windows[windowIndex].IsMinimized
+                    _G.CensuraG.AnimationManager:Tween(button, {
+                        BackgroundColor3 = isMinimized and theme.AccentColor or theme.SecondaryColor,
+                        TextColor3 = theme.TextColor,
+                        Font = theme.Font
+                    }, Config.Animations.FadeDuration)
+                end
+            end
         end
     end
     
