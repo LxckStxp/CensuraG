@@ -54,7 +54,8 @@ return function(parent, text, callback)
     Button.MouseButton1Down:Connect(function()
         _G.CensuraG.AnimationManager:Tween(Button, {BackgroundTransparency = 0.6}, 0.1)
         _G.CensuraG.AnimationManager:Tween(Stroke, {Transparency = 0.1}, 0.1)
-        _G.CensuraG.AnimationManager:Tween(Button, {Size = Button.Size * 0.95}, 0.1)
+        -- Use explicit UDim2 values instead of multiplication
+        _G.CensuraG.AnimationManager:Tween(Button, {Size = UDim2.new(1, -16, 0, 30)}, 0.1)
     end)
     
     Button.MouseButton1Up:Connect(function()
