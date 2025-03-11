@@ -1,4 +1,4 @@
--- CensuraG/src/Methods.lua
+-- CensuraG/src/Methods.lua (fixed syntax error)
 local Methods = {}
 
 function Methods:CreateWindow(title)
@@ -41,7 +41,6 @@ function Methods:SetConfigValue(keyPath, value)
     _G.CensuraG.Logger:info("Set config value for " .. table.concat(keys, ".") .. " to " .. tostring(value))
 end
 
--- CensuraG/src/Methods.lua (updated RefreshComponent function)
 function Methods:RefreshComponent(component, instance)
     -- Check if instance is a table with an Instance property or a direct Instance
     local targetInstance
@@ -167,7 +166,7 @@ function Methods:RefreshComponent(component, instance)
                 Font = theme.Font,
                 TextSize = theme.TextSize
             }, animConfig.FadeDuration)
-        }
+        end
     elseif component == "imagelabel" then
         -- No theme-specific updates for imagelabel yet
     elseif component == "slider" then
@@ -213,7 +212,7 @@ function Methods:RefreshComponent(component, instance)
                     TextSize = theme.TextSize
                 }, animConfig.FadeDuration)
             end
-        }
+        end
     elseif component == "dropdown" then
         if typeof(instance) == "table" then
             if instance.Instance then
@@ -265,7 +264,7 @@ function Methods:RefreshComponent(component, instance)
                     end
                 end
             end
-        }
+        end
     elseif component == "switch" then
         if typeof(instance) == "table" then
             if instance.Instance then
@@ -296,7 +295,7 @@ function Methods:RefreshComponent(component, instance)
                     TextSize = theme.TextSize
                 }, animConfig.FadeDuration)
             end
-        }
+        end
     end
     
     _G.CensuraG.Logger:info("Refreshed component: " .. component)
