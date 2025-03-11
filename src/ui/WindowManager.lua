@@ -1,4 +1,4 @@
--- CensuraG/src/ui/WindowManager.lua (updated for new window structure)
+-- CensuraG/src/ui/WindowManager.lua (fixed for nil value error)
 local WindowManager = {}
 WindowManager.__index = WindowManager
 
@@ -9,7 +9,16 @@ function WindowManager.new(title)
     local self = setmetatable({}, WindowManager)
     
     -- Create the window using the component
+    if not _G.CensuraG.Components or not _G.CensuraG.Components.window then
+        _G.CensuraG.Logger:error("Window component not loaded properly")
+        return nil
+    end
+    
     local windowComponent = _G.CensuraG.Components.window(title)
+    if not windowComponent then
+        _G.CensuraG.Logger:error("Failed to create window component")
+        return nil
+    end
     
     -- Store the entire window component
     self.Window = windowComponent
