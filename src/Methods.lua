@@ -326,14 +326,188 @@ function Methods:RefreshComponent(component, instance)
     _G.CensuraG.Logger:info("Refreshed component: " .. component)
 end
 
+-- CensuraG/src/Methods.lua (update the RefreshAll method)
 function Methods:RefreshAll()
-    for _, window in ipairs(_G.CensuraG.Windows) do
-        window:Refresh()
+    local theme = _G.CensuraG.Config:GetTheme()
+    _G.CensuraG.Logger:info("Refreshing all UI elements with theme: " .. _G.CensuraG.Config.CurrentTheme)
+    
+    -- 1. First, refresh all windows
+    if _G.CensuraG.Windows then
+        for i, window in ipairs(_G.CensuraG.Windows) do
+            if window and typeof(window) == "table" then
+                -- Refresh the window frame
+                if window.Frame then
+                    _G.CensuraG.AnimationManager:Tween(window.Frame, {
+                        BackgroundColor3 = theme.PrimaryColor,
+                        BackgroundTransparency = 0.15
+                    }, _G.CensuraG.Config.Animations.FadeDuration)
+                    
+                    -- Update window border/stroke
+                    for _, child in ipairs(window.Frame:GetChildren()) do
+                        if child:IsA("UIStroke") then
+                            _G.CensuraG.AnimationManager:Tween(child, {
+                                Color = theme.BorderColor
+                            }, _G.CensuraG.Config.Animations.FadeDuration)
+                        end
+                    end
+                end
+                
+                -- Refresh title bar
+                if window.TitleBar then
+                    _G.CensuraG.AnimationManager:Tween(window.TitleBar, {
+                        BackgroundColor3 = theme.SecondaryColor,
+                        BackgroundTransparency = 0.8
+                    }, _G.CensuraG.Config.Animations.FadeDuration)
+                    
+                    -- Update title bar border/stroke
+                    for _, child in ipairs(window.TitleBar:GetChildren()) do
+                        if child:IsA("UIStroke") then
+                            _G.CensuraG.AnimationManager:Tween(child, {
+                                Color = theme.BorderColor
+                            }, _G.CensuraG.Config.Animations.FadeDuration)
+                        end
+                    end
+                end
+                
+                -- Refresh title text
+                if window.TitleText then
+                    _G.CensuraG.AnimationManager:Tween(window.TitleText, {
+                        TextColor3 = theme.TextColor,
+                        TextSize = theme.TextSize
+                    }, _G.CensuraG.Config.Animations.FadeDuration)
+                    
+                    -- Set Font directly
+                    window.TitleText.Font = theme.Font
+                end
+                
+                -- Refresh minimize button
+                if window.MinimizeButton then
+                    _G.CensuraG.AnimationManager:Tween(window.MinimizeButton, {
+                        BackgroundColor3 = theme.AccentColor,
+                        TextColor3 = theme.TextColor
+                    }, _G.CensuraG.Config.Animations.FadeDuration)
+                    
+                    -- Set Font directly
+                    window.MinimizeButton.Font = theme.Font
+                end
+                
+                -- Refresh content frame
+                if window.ContentFrame then
+                    _G.CensuraG.AnimationManager:Tween(window.ContentFrame, {
+                        BackgroundColor3 = theme.PrimaryColor,
+                        BackgroundTransparency = 0.3,
+                        ScrollBarImageColor3 = theme.AccentColor
+                    }, _G.CensuraG.Config.Animations.FadeDuration)
+                    
+                    -- Refresh all components inside content frame
+                    for _, child in ipairs(window.ContentFrame:GetChildren()) do
+                        -- Skip UIListLayout and UIPadding
+                        if not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
+                            self:RefreshUIElement(child, theme)
+                        end
+                    end
+                end
+            end
+        end
     end
+    
+    -- 2. Refresh taskbar
     if _G.CensuraG.Taskbar and _G.CensuraG.Taskbar.Instance then
-        _G.CensuraG.Taskbar.Instance:Refresh()
+        if typeof(_G.CensuraG.Taskbar.Instance) == "table" and _G.CensuraG.Taskbar.Instance.Refresh then
+            _G.CensuraG.Taskbar.Instance:Refresh()
+        elseif _G.CensuraG.TaskbarManager and _G.CensuraG.TaskbarManager.Refresh then
+            _G.CensuraG.TaskbarManager:Refresh()
+        end
     end
+    
     _G.CensuraG.Logger:info("Refreshed all UI elements")
+end
+
+-- New helper method to refresh any UI element based on its type
+function Methods:RefreshUIElement(element, theme)
+    if not element or not theme then return end
+    
+    -- Check element type and refresh accordingly
+    if element:IsA("Frame") then
+        -- Check if this is a container for a custom component
+        local componentType = element:GetAttribute("ComponentType")
+        if componentType then
+            -- Use the RefreshComponent method to refresh this component
+            self:RefreshComponent(componentType, element)
+        else
+            -- Generic frame refresh
+            _G.CensuraG.AnimationManager:Tween(element, {
+                BackgroundColor3 = theme.SecondaryColor,
+                BackgroundTransparency = 0.8
+            }, _G.CensuraG.Config.Animations.FadeDuration)
+            
+            -- Refresh children
+            for _, child in ipairs(element:GetChildren()) do
+                self:RefreshUIElement(child, theme)
+            end
+        end
+    elseif element:IsA("TextLabel") then
+        _G.CensuraG.AnimationManager:Tween(element, {
+            TextColor3 = theme.TextColor,
+            TextSize = theme.TextSize
+        }, _G.CensuraG.Config.Animations.FadeDuration)
+        
+        -- Set Font directly
+        element.Font = theme.Font
+    elseif element:IsA("TextButton") then
+        _G.CensuraG.AnimationManager:Tween(element, {
+            BackgroundColor3 = theme.SecondaryColor,
+            TextColor3 = theme.TextColor,
+            TextSize = theme.TextSize
+        }, _G.CensuraG.Config.Animations.FadeDuration)
+        
+        -- Set Font directly
+        element.Font = theme.Font
+        
+        -- Refresh stroke if present
+        for _, child in ipairs(element:GetChildren()) do
+            if child:IsA("UIStroke") then
+                _G.CensuraG.AnimationManager:Tween(child, {
+                    Color = theme.AccentColor
+                }, _G.CensuraG.Config.Animations.FadeDuration)
+            end
+        end
+    elseif element:IsA("ImageLabel") or element:IsA("ImageButton") then
+        -- Only tween if it has a color property that should be themed
+        local imagePart = element:GetAttribute("ImagePart")
+        if imagePart == "Accent" then
+            _G.CensuraG.AnimationManager:Tween(element, {
+                ImageColor3 = theme.AccentColor
+            }, _G.CensuraG.Config.Animations.FadeDuration)
+        elseif imagePart == "Primary" then
+            _G.CensuraG.AnimationManager:Tween(element, {
+                ImageColor3 = theme.PrimaryColor
+            }, _G.CensuraG.Config.Animations.FadeDuration)
+        end
+    elseif element:IsA("ScrollingFrame") then
+        _G.CensuraG.AnimationManager:Tween(element, {
+            BackgroundColor3 = theme.PrimaryColor,
+            ScrollBarImageColor3 = theme.AccentColor
+        }, _G.CensuraG.Config.Animations.FadeDuration)
+        
+        -- Refresh children
+        for _, child in ipairs(element:GetChildren()) do
+            if not child:IsA("UIListLayout") and not child:IsA("UIPadding") then
+                self:RefreshUIElement(child, theme)
+            end
+        end
+    elseif element:IsA("UIStroke") then
+        _G.CensuraG.AnimationManager:Tween(element, {
+            Color = theme.BorderColor
+        }, _G.CensuraG.Config.Animations.FadeDuration)
+    end
+    
+    -- For any container-like element, recursively refresh its children
+    if element:IsA("GuiObject") and not element:IsA("TextLabel") and not element:IsA("TextButton") then
+        for _, child in ipairs(element:GetChildren()) do
+            self:RefreshUIElement(child, theme)
+        end
+    end
 end
 
 return Methods
