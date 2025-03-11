@@ -1,4 +1,4 @@
--- CensuraG/src/components/window.lua (updated with dynamic sizing)
+-- CensuraG/src/components/window.lua (with improved dynamic sizing)
 local Config = _G.CensuraG.Config
 
 return function(title)
@@ -10,19 +10,24 @@ return function(title)
 
     -- Start with a minimum size for the window
     local Frame = Instance.new("Frame")
+    Frame.Name = "WindowFrame"
     Frame.Size = UDim2.fromOffset(Config.Math.DefaultWindowSize.X, Config.Math.DefaultWindowSize.Y)
     Frame.Position = UDim2.fromOffset(100, 100)
     Frame.BackgroundColor3 = theme.PrimaryColor
     Frame.BorderSizePixel = 0
     Frame.Parent = screenGui
     Frame.BackgroundTransparency = 1
+    Frame.ClipsDescendants = false -- Allow child elements to overflow (important for dropdowns)
     
     local TitleBar = Instance.new("Frame", Frame)
+    TitleBar.Name = "TitleBar"
     TitleBar.Size = UDim2.new(1, 0, 0, 30)
     TitleBar.BackgroundColor3 = theme.SecondaryColor
     TitleBar.BorderSizePixel = 0
+    TitleBar.ZIndex = 2 -- Ensure title bar is above content
     
     local TitleText = Instance.new("TextLabel", TitleBar)
+    TitleText.Name = "TitleText"
     TitleText.Size = UDim2.new(1, -60, 1, 0)
     TitleText.Position = UDim2.new(0, 5, 0, 0)
     TitleText.BackgroundTransparency = 1
@@ -31,24 +36,51 @@ return function(title)
     TitleText.Font = theme.Font
     TitleText.TextSize = theme.TextSize
     TitleText.TextWrapped = true
+    TitleText.ZIndex = 2
     
     local MinimizeButton = Instance.new("TextButton", TitleBar)
+    MinimizeButton.Name = "MinimizeButton"
     MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
-    MinimizeButton.Position = UDim2.new(1, -55, 0, 2)
+    MinimizeButton.Position = UDim2.new(1, -30, 0, 2)
     MinimizeButton.BackgroundColor3 = theme.AccentColor
     MinimizeButton.Text = "-"
     MinimizeButton.TextColor3 = theme.TextColor
     MinimizeButton.Font = theme.Font
+    MinimizeButton.ZIndex = 2
+    
+    -- Create a content frame that will hold the grid
+    local ContentFrame = Instance.new("Frame", Frame)
+    ContentFrame.Name = "ContentFrame"
+    ContentFrame.Size = UDim2.new(1, 0, 1, -30) -- Full width, height minus title bar
+    ContentFrame.Position = UDim2.new(0, 0, 0, 30) -- Position below title bar
+    ContentFrame.BackgroundTransparency = 1
+    ContentFrame.ClipsDescendants = false -- Allow dropdowns to show outside
     
     -- Add grid to window
-    local Grid = _G.CensuraG.Components.grid(Frame)
+    local Grid = _G.CensuraG.Components.grid(ContentFrame)
     
-    -- Create a UIListLayout to track the content size
+    -- Add padding to the grid
     local GridPadding = Instance.new("UIPadding", Grid.Instance)
     GridPadding.PaddingTop = UDim.new(0, Config.Math.Padding)
     GridPadding.PaddingBottom = UDim.new(0, Config.Math.Padding)
     GridPadding.PaddingLeft = UDim.new(0, Config.Math.Padding)
     GridPadding.PaddingRight = UDim.new(0, Config.Math.Padding)
+    
+    -- Listen for changes in the grid's size
+    Grid.Instance:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+        -- Update window size based on grid size
+        local gridSize = Grid.Instance.AbsoluteSize
+        local newHeight = gridSize.Y + 30 + (2 * Config.Math.Padding) -- Add title bar height and padding
+        local newWidth = math.max(gridSize.X + (2 * Config.Math.Padding), Config.Math.DefaultWindowSize.X)
+        
+        -- Avoid unnecessarily small windows
+        newHeight = math.max(newHeight, Config.Math.DefaultWindowSize.Y)
+        
+        -- Update window size
+        _G.CensuraG.AnimationManager:Tween(Frame, {
+            Size = UDim2.new(0, newWidth, 0, newHeight)
+        }, animConfig.FadeDuration)
+    end)
     
     -- Dragging functionality
     local dragging = false
@@ -81,49 +113,17 @@ return function(title)
         end
     end)
     
-    -- Function to resize window based on content
+    -- Function to manually update window size
     local function updateWindowSize()
-        -- Get the content size from the grid layout
-        local contentHeight = 0
-        local contentWidth = 0
+        local gridSize = Grid.Instance.AbsoluteSize
+        local newHeight = gridSize.Y + 30 + (2 * Config.Math.Padding)
+        local newWidth = math.max(gridSize.X + (2 * Config.Math.Padding), Config.Math.DefaultWindowSize.X)
         
-        -- Calculate based on children
-        for _, child in ipairs(Grid.Instance:GetChildren()) do
-            if child:IsA("GuiObject") and not child:IsA("UIGridLayout") and not child:IsA("UIPadding") then
-                local childPos = child.Position
-                local childSize = child.Size
-                
-                -- Convert to absolute size if using scale
-                local absChildWidth = childSize.X.Scale * Grid.Instance.AbsoluteSize.X + childSize.X.Offset
-                local absChildHeight = childSize.Y.Scale * Grid.Instance.AbsoluteSize.Y + childSize.Y.Offset
-                
-                -- Calculate position
-                local absChildX = childPos.X.Scale * Grid.Instance.AbsoluteSize.X + childPos.X.Offset
-                local absChildY = childPos.Y.Scale * Grid.Instance.AbsoluteSize.Y + childPos.Y.Offset
-                
-                -- Update max dimensions
-                contentWidth = math.max(contentWidth, absChildX + absChildWidth)
-                contentHeight = math.max(contentHeight, absChildY + absChildHeight)
-            end
-        end
+        newHeight = math.max(newHeight, Config.Math.DefaultWindowSize.Y)
         
-        -- Use GridLayout's ContentSize if available
-        if Grid.Layout.AbsoluteContentSize then
-            contentWidth = math.max(contentWidth, Grid.Layout.AbsoluteContentSize.X)
-            contentHeight = math.max(contentHeight, Grid.Layout.AbsoluteContentSize.Y)
-        end
-        
-        -- Add padding
-        contentWidth = contentWidth + 2 * Config.Math.Padding
-        contentHeight = contentHeight + 2 * Config.Math.Padding
-        
-        -- Set minimum dimensions
-        contentWidth = math.max(contentWidth, Config.Math.DefaultWindowSize.X)
-        contentHeight = math.max(contentHeight, Config.Math.DefaultWindowSize.Y - 30) -- Subtract title bar height
-        
-        -- Update window size with animation
-        local newSize = UDim2.new(0, contentWidth, 0, contentHeight + 30) -- Add title bar height
-        _G.CensuraG.AnimationManager:Tween(Frame, {Size = newSize}, animConfig.FadeDuration)
+        _G.CensuraG.AnimationManager:Tween(Frame, {
+            Size = UDim2.new(0, newWidth, 0, newHeight)
+        }, animConfig.FadeDuration)
     end
     
     -- Initialize animation
