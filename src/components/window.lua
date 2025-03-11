@@ -3,12 +3,15 @@ local Config = _G.CensuraG.Config
 
 return function(title)
     local theme = Config:GetTheme()
+    local animConfig = Config.Animations
+    
     local Frame = Instance.new("Frame")
     Frame.Size = UDim2.fromOffset(Config.Math.DefaultWindowSize.X, Config.Math.DefaultWindowSize.Y)
-    Frame.Position = UDim2.fromOffset(-Config.Math.DefaultWindowSize.X, 100) -- Start off-screen
+    Frame.Position = UDim2.fromOffset(100, 100)
     Frame.BackgroundColor3 = theme.PrimaryColor
     Frame.BorderSizePixel = 0
     Frame.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ScreenGui")
+    Frame.BackgroundTransparency = 1 -- Start hidden for animation
     
     local TitleBar = Instance.new("Frame", Frame)
     TitleBar.Size = UDim2.new(1, 0, 0, 30)
@@ -32,10 +35,19 @@ return function(title)
     MinimizeButton.TextColor3 = theme.TextColor
     MinimizeButton.Font = theme.Font
     
-    -- Slide-in animation
-    _G.CensuraG.AnimationManager:Tween(Frame, {
-        Position = UDim2.fromOffset(100, 100)
-    }, Config.Animations.SlideDuration)
+    -- Animation
+    _G.CensuraG.AnimationManager:Tween(Frame, {BackgroundTransparency = 0, Position = UDim2.fromOffset(100, 100)}, animConfig.SlideDuration)
     
-    return {Frame = Frame, TitleText = TitleText, MinimizeButton = MinimizeButton}
+    local Window = {
+        Frame = Frame,
+        TitleBar = TitleBar,
+        TitleText = TitleText,
+        MinimizeButton = MinimizeButton,
+        Refresh = function(self)
+            _G.CensuraG.Methods:RefreshComponent("window", self)
+        end
+    }
+    
+    _G.CensuraG.Logger:info("Window created: " .. title)
+    return Window
 end
