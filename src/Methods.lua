@@ -179,8 +179,9 @@ function Methods:RefreshComponent(component, instance)
             end
             
             if instance.Track then
+                local state = instance.State or false
                 _G.CensuraG.AnimationManager:Tween(instance.Track, {
-                    BackgroundColor3 = theme.BorderColor,
+                    BackgroundColor3 = state and theme.EnabledColor or theme.PrimaryColor,
                     BackgroundTransparency = 0.5
                 }, animConfig.FadeDuration)
             end
