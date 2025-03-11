@@ -30,5 +30,5 @@ return function(parent, text, callback)
     }
     
     _G.CensuraG.Logger:info("TextButton created with text: " .. text)
-    return TextButton.Instance
+    return TextButton
 end
