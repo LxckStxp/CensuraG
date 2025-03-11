@@ -305,7 +305,7 @@ function TaskbarManager:HideTaskbar()
     )
     self.IsVisible = false
     _G.CensuraG.Logger:info("Taskbar manually hidden")
-}
+end
 
 -- Method to toggle auto-hide functionality
 function TaskbarManager:SetAutoHide(enabled)
@@ -320,7 +320,7 @@ function TaskbarManager:SetAutoHide(enabled)
     end
     
     _G.CensuraG.Logger:info("Auto-hide " .. (enabled and "enabled" : "disabled"))
-}
+end
 
 -- Clean up connections when needed
 function TaskbarManager:Cleanup()
@@ -328,6 +328,6 @@ function TaskbarManager:Cleanup()
         self.MousePositionConnection:Disconnect()
         self.MousePositionConnection = nil
     end
-}
+end
 
 return TaskbarManager
