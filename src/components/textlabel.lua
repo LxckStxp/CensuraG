@@ -1,29 +1,67 @@
--- CensuraG/src/components/textlabel.lua (updated return)
+-- CensuraG/src/components/textlabel.lua (updated for CensuraDev styling)
 local Config = _G.CensuraG.Config
 
 return function(parent, text)
     local theme = Config:GetTheme()
     local animConfig = Config.Animations
     
-    local Label = Instance.new("TextLabel", parent)
-    Label.Size = UDim2.new(1, 0, 0, 20)
+    local LabelFrame = Instance.new("Frame", parent)
+    LabelFrame.Size = UDim2.new(1, -12, 0, 32)
+    LabelFrame.BackgroundColor3 = theme.SecondaryColor
+    LabelFrame.BackgroundTransparency = 0.9 -- More transparent for labels
+    LabelFrame.BorderSizePixel = 0
+    
+    -- Add corner radius
+    local Corner = Instance.new("UICorner", LabelFrame)
+    Corner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+    
+    local Label = Instance.new("TextLabel", LabelFrame)
+    Label.Size = UDim2.new(1, -10, 1, 0)
+    Label.Position = UDim2.new(0, 5, 0, 0)
     Label.BackgroundTransparency = 1
     Label.Text = text
     Label.TextColor3 = theme.TextColor
     Label.Font = theme.Font
     Label.TextSize = theme.TextSize
-    Label.TextTransparency = 1
-    Label.TextWrapped = true -- Enable text wrapping
+    Label.TextWrapped = true
+    Label.TextXAlignment = Enum.TextXAlignment.Center
     
+    -- Add text shadow for depth
+    local TextShadow = Instance.new("TextLabel", Label)
+    TextShadow.AnchorPoint = Vector2.new(0.5, 0.5)
+    TextShadow.Position = UDim2.new(0.5, 1, 0.5, 1)
+    TextShadow.Size = UDim2.new(1, 0, 1, 0)
+    TextShadow.BackgroundTransparency = 1
+    TextShadow.Text = text
+    TextShadow.TextColor3 = theme.PrimaryColor
+    TextShadow.TextTransparency = 0.8
+    TextShadow.Font = theme.Font
+    TextShadow.TextSize = theme.TextSize
+    TextShadow.TextWrapped = true
+    TextShadow.TextXAlignment = Enum.TextXAlignment.Center
+    
+    -- Animation
+    LabelFrame.BackgroundTransparency = 1
+    Label.TextTransparency = 1
+    TextShadow.TextTransparency = 1
+    
+    _G.CensuraG.AnimationManager:Tween(LabelFrame, {BackgroundTransparency = 0.9}, animConfig.FadeDuration)
     _G.CensuraG.AnimationManager:Tween(Label, {TextTransparency = 0}, animConfig.FadeDuration)
+    _G.CensuraG.AnimationManager:Tween(TextShadow, {TextTransparency = 0.8}, animConfig.FadeDuration)
     
     local TextLabel = {
-        Instance = Label,
+        Instance = LabelFrame,
+        Label = Label,
+        TextShadow = TextShadow,
+        SetText = function(self, newText)
+            self.Label.Text = newText
+            self.TextShadow.Text = newText
+        end,
         Refresh = function(self)
-            _G.CensuraG.Methods:RefreshComponent("textlabel", self.Instance)
+            _G.CensuraG.Methods:RefreshComponent("textlabel", self)
         end
     }
     
     _G.CensuraG.Logger:info("TextLabel created with text: " .. text)
-    return TextLabel -- Return the full table, not TextLabel.Instance
+    return TextLabel
 end
