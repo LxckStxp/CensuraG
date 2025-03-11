@@ -74,5 +74,5 @@ return function(parent, options, callback)
     }
     
     _G.CensuraG.Logger:info("Dropdown created with " .. #options .. " options")
-    return Dropdown.Instance
+    return Dropdown
 end
