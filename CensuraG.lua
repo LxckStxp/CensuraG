@@ -47,9 +47,10 @@ end
 CensuraG.Windows = CensuraG.Windows or {}
 CensuraG.Taskbar = CensuraG.Taskbar or nil
 
--- Initialize Taskbar
+-- Initialize Taskbar (store the full component table)
 if not CensuraG.Taskbar then
-    CensuraG.TaskbarManager:Initialize()
+    CensuraG.Taskbar = { Instance = _G.CensuraG.TaskbarManager }
+    CensuraG.Taskbar.Instance:Initialize()
     CensuraG.Logger:info("Taskbar initialized")
 end
 
