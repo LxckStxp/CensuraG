@@ -1,4 +1,4 @@
--- CensuraG/src/components/systemtray.lua
+-- CensuraG/src/components/systemtray.lua (Updated for server info panel and rejoin button)
 local Config = _G.CensuraG.Config
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -48,11 +48,11 @@ return function(parent)
     DisplayName.TextXAlignment = Enum.TextXAlignment.Left
     DisplayName.TextTruncate = Enum.TextTruncate.AtEnd
     
-    -- Panel (hidden by default)
+    -- Server Info Panel (Frame)
     local Panel = Instance.new("Frame", TrayFrame)
-    Panel.Name = "SystemPanel"
+    Panel.Name = "ServerInfoPanel"
     Panel.Size = UDim2.new(0, 200, 0, 150)
-    Panel.Position = UDim2.new(1, -200, 0, -155) -- Position above tray
+    Panel.Position = UDim2.new(1, -200, 0, -155) -- Above the tray
     Panel.BackgroundColor3 = theme.PrimaryColor
     Panel.BackgroundTransparency = 0.2
     Panel.BorderSizePixel = 0
@@ -67,7 +67,7 @@ return function(parent)
     PanelStroke.Transparency = 0.6
     PanelStroke.Thickness = Config.Math.BorderThickness
     
-    -- Server Info
+    -- Server Info Labels
     local function createInfoLabel(name, value, yPos)
         local label = Instance.new("TextLabel", Panel)
         label.Size = UDim2.new(1, -10, 0, 20)
@@ -82,16 +82,15 @@ return function(parent)
         return label
     end
     
-    -- Gather server info
     local gameInfo = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
-    local serverAge = math.floor((os.time() - game.JobId:match("^(%d+)")) / 60) -- Minutes since server start
+    local serverAge = math.floor((os.time() - (tonumber(game.JobId:match("^(%d+)") or os.time())) / 60)) -- Fallback if JobId parsing fails
     
     local labels = {
-        createInfoLabel("Players", #Players:GetPlayers() .. "/" .. game.Players.MaxPlayers, 5),
-        createInfoLabel("Game", gameInfo.Name, 25),
-        createInfoLabel("Game ID", game.PlaceId, 45),
-        createInfoLabel("Server Age", serverAge .. " min", 65),
-        createInfoLabel("Server ID", game.JobId, 85)
+        players = createInfoLabel("Players", #Players:GetPlayers() .. "/" .. game.Players.MaxPlayers, 5),
+        gameName = createInfoLabel("Game", gameInfo.Name, 25),
+        gameId = createInfoLabel("Game ID", game.PlaceId, 45),
+        serverAge = createInfoLabel("Server Age", serverAge .. " min", 65),
+        serverId = createInfoLabel("Server ID", game.JobId, 85)
     }
     
     -- Rejoin Button
@@ -128,25 +127,19 @@ return function(parent)
         _G.CensuraG.AnimationManager:Tween(RejoinButton, {BackgroundTransparency = 0.7}, 0.2)
     end)
     
-    -- Toggle Panel
+    -- Toggle Panel on Click
     TrayFrame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             Panel.Visible = not Panel.Visible
-            if Panel.Visible then
-                _G.CensuraG.AnimationManager:Tween(Panel, {BackgroundTransparency = 0.2}, 0.2)
-            else
-                _G.CensuraG.AnimationManager:Tween(Panel, {BackgroundTransparency = 1}, 0.2)
+            local targetTransparency = Panel.Visible and 0.2 or 1
+            _G.CensuraG.AnimationManager:Tween(Panel, {BackgroundTransparency = targetTransparency}, 0.2)
+            if not Panel.Visible then
                 task.delay(0.2, function() Panel.Visible = false end)
             end
         end
     end)
     
-    -- Rejoin Functionality
-    RejoinButton.MouseButton1Click:Connect(function()
-        TeleportService:Teleport(game.PlaceId, localPlayer)
-    end)
-    
-    -- Close panel when clicking outside
+    -- Close Panel When Clicking Outside
     game:GetService("UserInputService").InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 and Panel.Visible then
             local mousePos = game:GetService("UserInputService"):GetMouseLocation()
@@ -167,6 +160,26 @@ return function(parent)
         end
     end)
     
+    -- Rejoin Functionality
+    RejoinButton.MouseButton1Click:Connect(function()
+        TeleportService:Teleport(game.PlaceId, localPlayer)
+    end)
+    
+    -- Dynamic Updates
+    local function updateInfo()
+        local currentGameInfo = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
+        local currentServerAge = math.floor((os.time() - (tonumber(game.JobId:match("^(%d+)") or os.time())) / 60))
+        
+        labels.players.Text = "Players: " .. #Players:GetPlayers() .. "/" .. game.Players.MaxPlayers
+        labels.gameName.Text = "Game: " .. currentGameInfo.Name
+        labels.gameId.Text = "Game ID: " .. game.PlaceId
+        labels.serverAge.Text = "Server Age: " .. currentServerAge .. " min"
+        labels.serverId.Text = "Server ID: " .. game.JobId
+    end
+    
+    game:GetService("RunService").Heartbeat:Connect(updateInfo)
+    
+    -- SystemTray Object
     local SystemTray = {
         Instance = TrayFrame,
         Panel = Panel,
@@ -176,49 +189,26 @@ return function(parent)
                 BackgroundColor3 = theme.SecondaryColor,
                 BackgroundTransparency = 0.7
             }, animConfig.FadeDuration)
-            _G.CensuraG.AnimationManager:Tween(TrayStroke, {
-                Color = theme.AccentColor
-            }, animConfig.FadeDuration)
-            _G.CensuraG.AnimationManager:Tween(DisplayName, {
-                TextColor3 = theme.TextColor
-            }, animConfig.FadeDuration)
+            _G.CensuraG.AnimationManager:Tween(TrayStroke, {Color = theme.AccentColor})
+            _G.CensuraG.AnimationManager:Tween(DisplayName, {TextColor3 = theme.TextColor})
             DisplayName.Font = theme.Font
             
-            _G.CensuraG.AnimationManager:Tween(self.Panel, {
-                BackgroundColor3 = theme.PrimaryColor
-            }, animConfig.FadeDuration)
-            _G.CensuraG.AnimationManager:Tween(PanelStroke, {
-                Color = theme.AccentColor
-            }, animConfig.FadeDuration)
+            _G.CensuraG.AnimationManager:Tween(self.Panel, {BackgroundColor3 = theme.PrimaryColor})
+            _G.CensuraG.AnimationManager:Tween(PanelStroke, {Color = theme.AccentColor})
             
             for _, label in pairs(labels) do
-                _G.CensuraG.AnimationManager:Tween(label, {
-                    TextColor3 = theme.TextColor
-                }, animConfig.FadeDuration)
+                _G.CensuraG.AnimationManager:Tween(label, {TextColor3 = theme.TextColor})
                 label.Font = theme.Font
             end
             
             _G.CensuraG.AnimationManager:Tween(RejoinButton, {
                 BackgroundColor3 = theme.AccentColor,
                 TextColor3 = theme.TextColor
-            }, animConfig.FadeDuration)
+            })
             RejoinButton.Font = theme.Font
         end,
-        UpdateInfo = function(self)
-            local gameInfo = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
-            local serverAge = math.floor((os.time() - game.JobId:match("^(%d+)")) / 60)
-            labels[1].Text = "Players: " .. #Players:GetPlayers() .. "/" .. game.Players.MaxPlayers
-            labels[2].Text = "Game: " .. gameInfo.Name
-            labels[3].Text = "Game ID: " .. game.PlaceId
-            labels[4].Text = "Server Age: " .. serverAge .. " min"
-            labels[5].Text = "Server ID: " .. game.JobId
-        end
+        UpdateInfo = updateInfo -- Expose for manual updates if needed
     }
-    
-    -- Periodic update for dynamic info
-    game:GetService("RunService").Heartbeat:Connect(function()
-        SystemTray:UpdateInfo()
-    end)
     
     _G.CensuraG.Logger:info("SystemTray created for " .. localPlayer.DisplayName)
     return SystemTray
