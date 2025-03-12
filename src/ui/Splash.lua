@@ -1,4 +1,4 @@
--- CensuraG/src/ui/Splash.lua
+-- CensuraG/src/ui/Splash.lua (fixed progress bar)
 local Splash = {}
 
 -- This module needs to work without any dependencies
@@ -91,7 +91,7 @@ function Splash:Show()
     -- Progress bar fill
     local progressFill = Instance.new("Frame", progressBg)
     progressFill.Name = "ProgressFill"
-    progressFill.Size = UDim2.new(0, 0, 1, 0)
+    progressFill.Size = UDim2.new(0, 0, 1, 0) -- Start at 0 width
     progressFill.BackgroundColor3 = Color3.fromRGB(50, 200, 100) -- Enabled color
     progressFill.BorderSizePixel = 0
     
@@ -124,7 +124,9 @@ function Splash:Show()
     self.Container = container
     self.StatusText = statusText
     self.ProgressFill = progressFill
+    self.ProgressBg = progressBg
     self.ScreenGui = screenGui
+    self.CurrentProgress = 0
     
     local tweenService = game:GetService("TweenService")
     local tweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
@@ -143,16 +145,35 @@ end
 
 -- Update status text and progress
 function Splash:UpdateStatus(text, progress)
-    if not self.StatusText or not self.ProgressFill then return end
+    if not self.StatusText or not self.ProgressFill or not self.ProgressBg then return end
     
     if text then
         self.StatusText.Text = text
     end
     
     if progress then
+        -- Store current progress
+        self.CurrentProgress = progress
+        
+        -- Calculate absolute width based on progress percentage
+        local bgWidth = self.ProgressBg.AbsoluteSize.X
+        local targetWidth = bgWidth * progress
+        
+        -- Directly set size without tweening first (more reliable)
+        self.ProgressFill.Size = UDim2.new(progress, 0, 1, 0)
+        
+        -- Then apply tween for smooth animation
         local tweenService = game:GetService("TweenService")
         local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-        tweenService:Create(self.ProgressFill, tweenInfo, {Size = UDim2.new(progress, 0, 1, 0)}):Play()
+        
+        -- Create and play the tween
+        local tween = tweenService:Create(self.ProgressFill, tweenInfo, {
+            Size = UDim2.new(progress, 0, 1, 0)
+        })
+        tween:Play()
+        
+        -- Debug output
+        print("Updating progress bar to: " .. progress .. " (width: " .. targetWidth .. "px)")
     end
 end
 
@@ -192,6 +213,7 @@ function Splash:Hide()
             self.Container = nil
             self.StatusText = nil
             self.ProgressFill = nil
+            self.ProgressBg = nil
         end
     end)
 end
