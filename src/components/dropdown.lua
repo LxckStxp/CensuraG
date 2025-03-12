@@ -1,4 +1,4 @@
--- CensuraG/src/components/dropdown.lua (fixed selection issues)
+-- CensuraG/src/components/dropdown.lua (fixed syntax error)
 local Config = _G.CensuraG.Config
 
 return function(parent, title, options, callback)
@@ -108,8 +108,16 @@ return function(parent, title, options, callback)
         local OptionButton = Instance.new("TextButton", OptionList)
         OptionButton.Size = UDim2.new(1, 0, 0, 24)
         OptionButton.Position = UDim2.new(0, 0, 0, (i-1) * 24)
-        OptionButton.BackgroundColor3 = (option == selectedOption) and theme.AccentColor or theme.SecondaryColor
-        OptionButton.BackgroundTransparency = (option == selectedOption) ? 0.5 : 0.8
+        
+        -- Set background color based on selection state
+        if option == selectedOption then
+            OptionButton.BackgroundColor3 = theme.AccentColor
+            OptionButton.BackgroundTransparency = 0.5
+        else
+            OptionButton.BackgroundColor3 = theme.SecondaryColor
+            OptionButton.BackgroundTransparency = 0.8
+        end
+        
         OptionButton.Text = option
         OptionButton.TextColor3 = theme.TextColor
         OptionButton.Font = theme.Font
@@ -137,7 +145,7 @@ return function(parent, title, options, callback)
             SelectedText.Text = option
             
             -- Update option button appearances
-            for _, btn in pairs(optionButtons) do
+            for j, btn in ipairs(optionButtons) do
                 if btn.Text == option then
                     _G.CensuraG.AnimationManager:Tween(btn, {
                         BackgroundColor3 = theme.AccentColor,
