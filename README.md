@@ -19,20 +19,20 @@ local CensuraG = loadstring(game:HttpGet("https://raw.githubusercontent.com/Lxck
 ```
 
 
-## Quick Start
+Quick Start
+
+
 
 Here's a simple example to get you started:
 
 
+
 -- Load CensuraG
-```lua
 local CensuraG = loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/CensuraG/main/CensuraG.lua"))()
-```
 
 -- Create a window
-```lua
 local window = CensuraG.CreateWindow("Control Panel")
-```
+
 -- Create a grid for organizing components
 local grid = CensuraG.Methods:CreateGrid(window.ContentFrame)
 
