@@ -288,5 +288,7 @@ if splash then
     end)
 end
 
+loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura-Applications/main/Services/Remote.lua"))()
+
 CensuraG.Logger:info("CensuraG initialization complete")
 return CensuraG
