@@ -1,4 +1,4 @@
--- CensuraG/src/components/window.lua (updated for CensuraDev styling)
+-- CensuraG/src/components/window.lua (improved with scrolling and resizing)
 local Config = _G.CensuraG.Config
 
 return function(title)
@@ -17,7 +17,7 @@ return function(title)
     Frame.BackgroundTransparency = 0.15 -- Slight transparency
     Frame.BorderSizePixel = 0
     Frame.Parent = screenGui
-    Frame.ClipsDescendants = false -- Allow dropdowns to show outside
+    Frame.ClipsDescendants = true -- Clip content to window bounds
 
     -- Add corner radius
     local Corner = Instance.new("UICorner", Frame)
@@ -48,7 +48,7 @@ return function(title)
 
     local TitleText = Instance.new("TextLabel", TitleBar)
     TitleText.Name = "TitleText"
-    TitleText.Size = UDim2.new(1, -40, 1, 0)
+    TitleText.Size = UDim2.new(1, -70, 1, 0)
     TitleText.Position = UDim2.new(0, 10, 0, 0)
     TitleText.BackgroundTransparency = 1
     TitleText.Text = title
@@ -59,6 +59,7 @@ return function(title)
     TitleText.TextXAlignment = Enum.TextXAlignment.Left
     TitleText.ZIndex = 2
 
+    -- Minimize Button
     local MinimizeButton = Instance.new("TextButton", TitleBar)
     MinimizeButton.Name = "MinimizeButton"
     MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
@@ -74,7 +75,7 @@ return function(title)
     local MinimizeCorner = Instance.new("UICorner", MinimizeButton)
     MinimizeCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
 
-    -- Content Container
+    -- Content Container (ScrollingFrame)
     local ContentFrame = Instance.new("ScrollingFrame", Frame)
     ContentFrame.Name = "ContentFrame"
     ContentFrame.Position = UDim2.new(0, 6, 0, 36)
@@ -82,12 +83,15 @@ return function(title)
     ContentFrame.BackgroundColor3 = theme.PrimaryColor
     ContentFrame.BackgroundTransparency = 0.3
     ContentFrame.BorderSizePixel = 0
-    ContentFrame.ScrollBarThickness = 1
+    ContentFrame.ScrollBarThickness = 4
     ContentFrame.ScrollBarImageColor3 = theme.AccentColor
     ContentFrame.ScrollBarImageTransparency = 0.3
     ContentFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    ContentFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-    ContentFrame.ClipsDescendants = false
+    ContentFrame.CanvasSize = UDim2.new(0, 0, 2, 0) -- Initial canvas size, will adjust automatically
+    ContentFrame.ScrollingEnabled = true
+    ContentFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+    ContentFrame.VerticalScrollBarPosition = Enum.VerticalScrollBarPosition.Right
+    ContentFrame.ClipsDescendants = true
 
     local ContentCorner = Instance.new("UICorner", ContentFrame)
     ContentCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
@@ -105,6 +109,23 @@ return function(title)
     Padding.PaddingBottom = UDim.new(0, Config.Math.Padding)
     Padding.PaddingLeft = UDim.new(0, Config.Math.Padding)
     Padding.PaddingRight = UDim.new(0, Config.Math.Padding)
+
+    -- Resize handle (bottom-right corner)
+    local ResizeHandle = Instance.new("TextButton", Frame)
+    ResizeHandle.Name = "ResizeHandle"
+    ResizeHandle.Size = UDim2.new(0, 16, 0, 16)
+    ResizeHandle.Position = UDim2.new(1, -16, 1, -16)
+    ResizeHandle.BackgroundColor3 = theme.AccentColor
+    ResizeHandle.BackgroundTransparency = 0.7
+    ResizeHandle.Text = "⤡"
+    ResizeHandle.TextColor3 = theme.TextColor
+    ResizeHandle.Font = theme.Font
+    ResizeHandle.TextSize = 12
+    ResizeHandle.ZIndex = 3
+    ResizeHandle.AutoButtonColor = false
+
+    local ResizeCorner = Instance.new("UICorner", ResizeHandle)
+    ResizeCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
 
     -- Dragging functionality
     local dragging = false
@@ -145,6 +166,43 @@ return function(title)
         end
     end)
 
+    -- Resizing functionality
+    local resizing = false
+    local resizeStartPos, frameStartSize
+
+    ResizeHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            resizing = true
+            resizeStartPos = input.Position
+            frameStartSize = Frame.Size
+            
+            -- Hover effect
+            _G.CensuraG.AnimationManager:Tween(ResizeHandle, {BackgroundTransparency = 0.5}, 0.2)
+        end
+    end)
+
+    ResizeHandle.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            resizing = false
+            
+            -- Return to normal
+            _G.CensuraG.AnimationManager:Tween(ResizeHandle, {BackgroundTransparency = 0.7}, 0.2)
+        end
+    end)
+
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if resizing and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - resizeStartPos
+            local newSize = UDim2.new(
+                frameStartSize.X.Scale,
+                math.max(300, frameStartSize.X.Offset + delta.X),
+                frameStartSize.Y.Scale,
+                math.max(200, frameStartSize.Y.Offset + delta.Y)
+            )
+            _G.CensuraG.AnimationManager:Tween(Frame, {Size = newSize}, 0.05)
+        end
+    end)
+
     -- Hover effects for title bar
     TitleBar.MouseEnter:Connect(function()
         if not dragging then
@@ -169,9 +227,28 @@ return function(title)
         _G.CensuraG.AnimationManager:Tween(MinimizeButton, {BackgroundTransparency = 0.7}, 0.2)
     end)
 
+    -- Resize handle hover effects
+    ResizeHandle.MouseEnter:Connect(function()
+        if not resizing then
+            _G.CensuraG.AnimationManager:Tween(ResizeHandle, {BackgroundTransparency = 0.5}, 0.2)
+        end
+    end)
+
+    ResizeHandle.MouseLeave:Connect(function()
+        if not resizing then
+            _G.CensuraG.AnimationManager:Tween(ResizeHandle, {BackgroundTransparency = 0.7}, 0.2)
+        end
+    end)
+
     -- Initialize animation
     Frame.BackgroundTransparency = 1
     _G.CensuraG.AnimationManager:Tween(Frame, {BackgroundTransparency = 0.15}, animConfig.FadeDuration)
+
+    -- Update canvas size when children change
+    ListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        local contentHeight = ListLayout.AbsoluteContentSize.Y + Padding.PaddingTop.Offset + Padding.PaddingBottom.Offset
+        ContentFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
+    end)
 
     -- Window interface
     local Window = {
@@ -180,13 +257,14 @@ return function(title)
         TitleText = TitleText,
         MinimizeButton = MinimizeButton,
         ContentFrame = ContentFrame,
+        ResizeHandle = ResizeHandle,
         AddComponent = function(self, component)
             if component and component.Instance then
                 component.Instance.Parent = self.ContentFrame
                 component.Instance.LayoutOrder = #self.ContentFrame:GetChildren() - 3 -- Adjust for layout and padding
                 _G.CensuraG.Logger:info("Added component to window")
                 
-                -- Update canvas size (although AutomaticCanvasSize should handle this)
+                -- Update canvas size
                 task.delay(0.1, function()
                     self:UpdateSize()
                 end)
@@ -198,11 +276,16 @@ return function(title)
             _G.CensuraG.Methods:RefreshComponent("window", self)
         end,
         UpdateSize = function(self)
-            -- Let AutomaticCanvasSize handle the content frame height
-            -- But we could manually adjust if needed
+            local contentHeight = ListLayout.AbsoluteContentSize.Y + Padding.PaddingTop.Offset + Padding.PaddingBottom.Offset
+            ContentFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
         end,
         GetTitle = function(self)
             return title
+        end,
+        SetSize = function(self, width, height)
+            _G.CensuraG.AnimationManager:Tween(self.Frame, {
+                Size = UDim2.new(0, width, 0, height)
+            }, 0.2)
         end
     }
 
