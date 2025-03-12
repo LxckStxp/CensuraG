@@ -1,4 +1,4 @@
--- CensuraG/src/components/dropdown.lua (enhanced with selection highlighting)
+-- CensuraG/src/components/dropdown.lua (fixed selection issues)
 local Config = _G.CensuraG.Config
 
 return function(parent, title, options, callback)
@@ -51,6 +51,9 @@ return function(parent, title, options, callback)
     SelectedText.Font = theme.Font
     SelectedText.TextSize = theme.TextSize
     
+    -- Store the currently selected option
+    local selectedOption = options[1] or "Select"
+    
     -- Arrow button
     local ArrowButton = Instance.new("TextButton", SelectedDisplay)
     ArrowButton.Size = UDim2.new(0, 24, 1, 0)
@@ -97,78 +100,69 @@ return function(parent, title, options, callback)
         OptionList.Size = UDim2.new(0, displaySize.X, 0, #options * 24)
     end
     
-    -- Keep track of option buttons
+    -- Storage for option buttons
     local optionButtons = {}
-    local selectedOption = options[1] or "Select"
-    
-    -- Function to update selected option visuals
-    local function updateSelectedOption(option)
-        selectedOption = option
-        SelectedText.Text = option
-        
-        -- Update the visual appearance of all option buttons
-        for _, button in pairs(optionButtons) do
-            if button.Text == option then
-                -- Selected option styling
-                _G.CensuraG.AnimationManager:Tween(button, {
-                    BackgroundColor3 = theme.AccentColor,
-                    BackgroundTransparency = 0.5,
-                    TextColor3 = theme.TextColor
-                }, 0.2)
-            else
-                -- Non-selected option styling
-                _G.CensuraG.AnimationManager:Tween(button, {
-                    BackgroundColor3 = theme.SecondaryColor,
-                    BackgroundTransparency = 0.8,
-                    TextColor3 = theme.TextColor
-                }, 0.2)
-            end
-        end
-    end
     
     -- Create option buttons
-    local function createOptions()
-        for i, option in ipairs(options) do
-            local OptionButton = Instance.new("TextButton", OptionList)
-            OptionButton.Size = UDim2.new(1, 0, 0, 24)
-            OptionButton.Position = UDim2.new(0, 0, 0, (i-1) * 24)
-            OptionButton.BackgroundColor3 = theme.SecondaryColor
-            OptionButton.BackgroundTransparency = 0.8
-            OptionButton.Text = option
-            OptionButton.TextColor3 = theme.TextColor
-            OptionButton.Font = theme.Font
-            OptionButton.TextSize = theme.TextSize
-            OptionButton.ZIndex = 100
+    for i, option in ipairs(options) do
+        local OptionButton = Instance.new("TextButton", OptionList)
+        OptionButton.Size = UDim2.new(1, 0, 0, 24)
+        OptionButton.Position = UDim2.new(0, 0, 0, (i-1) * 24)
+        OptionButton.BackgroundColor3 = (option == selectedOption) and theme.AccentColor or theme.SecondaryColor
+        OptionButton.BackgroundTransparency = (option == selectedOption) ? 0.5 : 0.8
+        OptionButton.Text = option
+        OptionButton.TextColor3 = theme.TextColor
+        OptionButton.Font = theme.Font
+        OptionButton.TextSize = theme.TextSize
+        OptionButton.ZIndex = 100
+        OptionButton.Name = "Option_" .. option
+        
+        -- Add hover effect
+        OptionButton.MouseEnter:Connect(function()
+            if option ~= selectedOption then
+                _G.CensuraG.AnimationManager:Tween(OptionButton, {BackgroundTransparency = 0.6}, 0.2)
+            end
+        end)
+        
+        OptionButton.MouseLeave:Connect(function()
+            if option ~= selectedOption then
+                _G.CensuraG.AnimationManager:Tween(OptionButton, {BackgroundTransparency = 0.8}, 0.2)
+            end
+        end)
+        
+        -- Selection logic
+        OptionButton.MouseButton1Click:Connect(function()
+            -- Update the selected option
+            selectedOption = option
+            SelectedText.Text = option
             
-            -- If this is the initially selected option, apply selected styling
-            if option == selectedOption then
-                OptionButton.BackgroundColor3 = theme.AccentColor
-                OptionButton.BackgroundTransparency = 0.5
+            -- Update option button appearances
+            for _, btn in pairs(optionButtons) do
+                if btn.Text == option then
+                    _G.CensuraG.AnimationManager:Tween(btn, {
+                        BackgroundColor3 = theme.AccentColor,
+                        BackgroundTransparency = 0.5
+                    }, 0.2)
+                else
+                    _G.CensuraG.AnimationManager:Tween(btn, {
+                        BackgroundColor3 = theme.SecondaryColor,
+                        BackgroundTransparency = 0.8
+                    }, 0.2)
+                end
             end
             
-            -- Add hover effect
-            OptionButton.MouseEnter:Connect(function()
-                if option ~= selectedOption then
-                    _G.CensuraG.AnimationManager:Tween(OptionButton, {BackgroundTransparency = 0.6}, 0.2)
-                end
-            end)
+            -- Hide dropdown
+            OptionList.Visible = false
+            ArrowButton.Text = "▼"
             
-            OptionButton.MouseLeave:Connect(function()
-                if option ~= selectedOption then
-                    _G.CensuraG.AnimationManager:Tween(OptionButton, {BackgroundTransparency = 0.8}, 0.2)
-                end
-            end)
-            
-            -- Selection logic
-            OptionButton.MouseButton1Click:Connect(function()
-                updateSelectedOption(option)
-                OptionList.Visible = false
-                if callback then callback(option) end
-            end)
-            
-            -- Store reference to button
-            optionButtons[option] = OptionButton
-        end
+            -- Call callback
+            if callback then 
+                callback(option)
+            end
+        end)
+        
+        -- Store reference to the button
+        optionButtons[i] = OptionButton
     end
     
     -- Toggle dropdown
@@ -229,9 +223,7 @@ return function(parent, title, options, callback)
         _G.CensuraG.AnimationManager:Tween(ArrowButton, {BackgroundTransparency = 0.7}, 0.2)
     end)
     
-    -- Initialize
-    createOptions()
-    
+    -- Public API
     local Dropdown = {
         Instance = DropdownFrame,
         SelectedDisplay = SelectedDisplay,
@@ -242,9 +234,35 @@ return function(parent, title, options, callback)
         OptionButtons = optionButtons,
         SetSelected = function(self, option, skipCallback)
             if table.find(options, option) then
-                updateSelectedOption(option)
-                if not skipCallback and callback then
-                    callback(option)
+                -- Find the option in the options table
+                for i, opt in ipairs(options) do
+                    if opt == option then
+                        -- Update selected state
+                        selectedOption = option
+                        SelectedText.Text = option
+                        
+                        -- Update button appearances
+                        for j, btn in ipairs(optionButtons) do
+                            if j == i then
+                                _G.CensuraG.AnimationManager:Tween(btn, {
+                                    BackgroundColor3 = theme.AccentColor,
+                                    BackgroundTransparency = 0.5
+                                }, 0.2)
+                            else
+                                _G.CensuraG.AnimationManager:Tween(btn, {
+                                    BackgroundColor3 = theme.SecondaryColor,
+                                    BackgroundTransparency = 0.8
+                                }, 0.2)
+                            end
+                        end
+                        
+                        -- Call callback if needed
+                        if not skipCallback and callback then
+                            callback(option)
+                        end
+                        
+                        break
+                    end
                 end
             end
         end,
@@ -255,8 +273,24 @@ return function(parent, title, options, callback)
             _G.CensuraG.Methods:RefreshComponent("dropdown", self)
             updateOptionListPosition()
             
-            -- Refresh selected option appearance
-            updateSelectedOption(selectedOption)
+            -- Refresh appearance for all options
+            local theme = Config:GetTheme()
+            for i, btn in ipairs(optionButtons) do
+                if btn.Text == selectedOption then
+                    _G.CensuraG.AnimationManager:Tween(btn, {
+                        BackgroundColor3 = theme.AccentColor,
+                        BackgroundTransparency = 0.5,
+                        TextColor3 = theme.TextColor
+                    }, 0.2)
+                else
+                    _G.CensuraG.AnimationManager:Tween(btn, {
+                        BackgroundColor3 = theme.SecondaryColor,
+                        BackgroundTransparency = 0.8,
+                        TextColor3 = theme.TextColor
+                    }, 0.2)
+                end
+                btn.Font = theme.Font
+            end
         end,
         Cleanup = function(self)
             if self.OptionListContainer then
