@@ -1,4 +1,4 @@
--- CensuraG/src/components/dropdown.lua (updated for CensuraDev styling)
+-- CensuraG/src/components/dropdown.lua (enhanced with selection highlighting)
 local Config = _G.CensuraG.Config
 
 return function(parent, title, options, callback)
@@ -97,6 +97,35 @@ return function(parent, title, options, callback)
         OptionList.Size = UDim2.new(0, displaySize.X, 0, #options * 24)
     end
     
+    -- Keep track of option buttons
+    local optionButtons = {}
+    local selectedOption = options[1] or "Select"
+    
+    -- Function to update selected option visuals
+    local function updateSelectedOption(option)
+        selectedOption = option
+        SelectedText.Text = option
+        
+        -- Update the visual appearance of all option buttons
+        for _, button in pairs(optionButtons) do
+            if button.Text == option then
+                -- Selected option styling
+                _G.CensuraG.AnimationManager:Tween(button, {
+                    BackgroundColor3 = theme.AccentColor,
+                    BackgroundTransparency = 0.5,
+                    TextColor3 = theme.TextColor
+                }, 0.2)
+            else
+                -- Non-selected option styling
+                _G.CensuraG.AnimationManager:Tween(button, {
+                    BackgroundColor3 = theme.SecondaryColor,
+                    BackgroundTransparency = 0.8,
+                    TextColor3 = theme.TextColor
+                }, 0.2)
+            end
+        end
+    end
+    
     -- Create option buttons
     local function createOptions()
         for i, option in ipairs(options) do
@@ -111,21 +140,34 @@ return function(parent, title, options, callback)
             OptionButton.TextSize = theme.TextSize
             OptionButton.ZIndex = 100
             
+            -- If this is the initially selected option, apply selected styling
+            if option == selectedOption then
+                OptionButton.BackgroundColor3 = theme.AccentColor
+                OptionButton.BackgroundTransparency = 0.5
+            end
+            
             -- Add hover effect
             OptionButton.MouseEnter:Connect(function()
-                _G.CensuraG.AnimationManager:Tween(OptionButton, {BackgroundTransparency = 0.6}, 0.2)
+                if option ~= selectedOption then
+                    _G.CensuraG.AnimationManager:Tween(OptionButton, {BackgroundTransparency = 0.6}, 0.2)
+                end
             end)
             
             OptionButton.MouseLeave:Connect(function()
-                _G.CensuraG.AnimationManager:Tween(OptionButton, {BackgroundTransparency = 0.8}, 0.2)
+                if option ~= selectedOption then
+                    _G.CensuraG.AnimationManager:Tween(OptionButton, {BackgroundTransparency = 0.8}, 0.2)
+                end
             end)
             
             -- Selection logic
             OptionButton.MouseButton1Click:Connect(function()
-                SelectedText.Text = option
+                updateSelectedOption(option)
                 OptionList.Visible = false
                 if callback then callback(option) end
             end)
+            
+            -- Store reference to button
+            optionButtons[option] = OptionButton
         end
     end
     
@@ -197,20 +239,24 @@ return function(parent, title, options, callback)
         ArrowButton = ArrowButton,
         OptionList = OptionList,
         OptionListContainer = OptionListContainer,
+        OptionButtons = optionButtons,
         SetSelected = function(self, option, skipCallback)
             if table.find(options, option) then
-                self.SelectedText.Text = option
+                updateSelectedOption(option)
                 if not skipCallback and callback then
                     callback(option)
                 end
             end
         end,
         GetSelected = function(self)
-            return self.SelectedText.Text
+            return selectedOption
         end,
         Refresh = function(self)
             _G.CensuraG.Methods:RefreshComponent("dropdown", self)
             updateOptionListPosition()
+            
+            -- Refresh selected option appearance
+            updateSelectedOption(selectedOption)
         end,
         Cleanup = function(self)
             if self.OptionListContainer then
