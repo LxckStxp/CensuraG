@@ -1,4 +1,4 @@
--- CensuraG/src/components/systemtray.lua (Fixed Overlap, Position, and Hover)
+-- CensuraG/src/components/systemtray.lua (Fixed Error, ZIndex, and Removed Close Button)
 local Config = _G.CensuraG.Config
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
@@ -70,16 +70,16 @@ return function(parent)
     NameShadow.TextTruncate = Enum.TextTruncate.AtEnd
     NameShadow.ZIndex = 5
     
-    -- Server Info Panel (Taller to Prevent Overlap)
+    -- Server Info Panel (Lower ZIndex to Slide Behind Taskbar)
     local Panel = Instance.new("Frame", TrayFrame)
     Panel.Name = "ServerInfoPanel"
-    Panel.Size = UDim2.new(0, 220, 0, 200) -- Increased height from 160 to 200
-    Panel.Position = UDim2.new(1, -220, 0, -210) -- Adjusted to stay above tray
+    Panel.Size = UDim2.new(0, 220, 0, 200)
+    Panel.Position = UDim2.new(1, -220, 0, -210)
     Panel.BackgroundColor3 = theme.PrimaryColor
-    Panel.BackgroundTransparency = 1 -- Start fully transparent
+    Panel.BackgroundTransparency = 1
     Panel.BorderSizePixel = 0
     Panel.Visible = false
-    Panel.ZIndex = 10
+    Panel.ZIndex = 2 -- Lower ZIndex to appear behind taskbar (taskbar ZIndex is 5)
     
     local PanelCorner = Instance.new("UICorner", Panel)
     PanelCorner.CornerRadius = UDim.new(0, 6)
@@ -88,6 +88,7 @@ return function(parent)
     PanelStroke.Color = theme.AccentColor
     PanelStroke.Transparency = 0.5
     PanelStroke.Thickness = 1.5
+    PanelStroke.ZIndex = 2
     
     local PanelShadow = Instance.new("ImageLabel", Panel)
     PanelShadow.Size = UDim2.new(1, 10, 1, 10)
@@ -98,9 +99,9 @@ return function(parent)
     PanelShadow.ImageTransparency = 0.7
     PanelShadow.ScaleType = Enum.ScaleType.Slice
     PanelShadow.SliceCenter = Rect.new(10, 10, 10, 10)
-    PanelShadow.ZIndex = 9
+    PanelShadow.ZIndex = 1
     
-    -- Server Info Labels with Adjusted Positions
+    -- Server Info Labels
     local function createInfoLabel(name, value, yPos)
         local label = Instance.new("TextLabel", Panel)
         label.Size = UDim2.new(1, -20, 0, 20)
@@ -111,7 +112,7 @@ return function(parent)
         label.Font = theme.Font
         label.TextSize = 12
         label.TextXAlignment = Enum.TextXAlignment.Left
-        label.ZIndex = 11
+        label.ZIndex = 3
         
         local shadow = Instance.new("TextLabel", Panel)
         shadow.Size = label.Size
@@ -123,9 +124,9 @@ return function(parent)
         shadow.Font = theme.Font
         shadow.TextSize = 12
         shadow.TextXAlignment = Enum.TextXAlignment.Left
-        shadow.ZIndex = 10
+        shadow.ZIndex = 2
         
-        return label, shadow
+        return {label, shadow} -- Return as a table
     end
     
     local gameInfo = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
@@ -149,7 +150,7 @@ return function(parent)
     RejoinButton.TextColor3 = theme.TextColor
     RejoinButton.Font = theme.Font
     RejoinButton.TextSize = 14
-    RejoinButton.ZIndex = 11
+    RejoinButton.ZIndex = 3
     RejoinButton.Active = true
     
     local RejoinCorner = Instance.new("UICorner", RejoinButton)
@@ -159,23 +160,9 @@ return function(parent)
     RejoinStroke.Color = theme.TextColor
     RejoinStroke.Transparency = 0.8
     RejoinStroke.Thickness = 1
+    RejoinStroke.ZIndex = 3
     
-    -- Close Button
-    local CloseButton = Instance.new("TextButton", Panel)
-    CloseButton.Size = UDim2.new(0, 20, 0, 20)
-    CloseButton.Position = UDim2.new(1, -25, 0, 5)
-    CloseButton.BackgroundTransparency = 1
-    CloseButton.Text = "✖"
-    CloseButton.TextColor3 = theme.TextColor
-    CloseButton.Font = Enum.Font.GothamBold
-    CloseButton.TextSize = 14
-    CloseButton.ZIndex = 11
-    
-    CloseButton.MouseButton1Click:Connect(function()
-        Panel.Visible = false
-    end)
-    
-    -- Enhanced Hover Effects (No Position Shift)
+    -- Hover Effects
     local function hoverEffect(obj, scaleUp)
         local targetTransparency = scaleUp and 0.4 or 0.6
         TweenService:Create(obj, TweenInfo.new(0.2), {BackgroundTransparency = targetTransparency}):Play()
@@ -202,20 +189,18 @@ return function(parent)
     
     -- Toggle Panel with Animation
     local defaultPanelPos = UDim2.new(1, -220, 0, -210)
-    local hiddenPanelPos = UDim2.new(1, -220, 0, 0) -- Hidden below tray
+    local hiddenPanelPos = UDim2.new(1, -220, 0, 0)
     
     TrayFrame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             Panel.Visible = true
             if Panel.Position == hiddenPanelPos then
-                -- Reset tray position and animate panel up
                 TrayFrame.Position = UDim2.new(1, -165, 0, 4)
                 TweenService:Create(Panel, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
                     Position = defaultPanelPos,
                     BackgroundTransparency = 0.1
                 }):Play()
             else
-                -- Animate panel down and hide
                 TweenService:Create(Panel, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
                     Position = hiddenPanelPos,
                     BackgroundTransparency = 1
@@ -233,7 +218,7 @@ return function(parent)
         TeleportService:Teleport(game.PlaceId, localPlayer)
     end)
     
-    -- Dynamic Updates
+    -- Dynamic Updates (Fixed Error)
     local function updateInfo()
         local currentGameInfo = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
         local currentServerAge = math.floor((os.time() - (tonumber(game.JobId:match("^(%d+)") or os.time())) / 60))
@@ -244,9 +229,12 @@ return function(parent)
         labels.serverAge[1].Text = "Server Age: " .. currentServerAge .. " min"
         labels.serverId[1].Text = "Server ID: " .. game.JobId
         
-        for _, labelPair in pairs(labels) do
-            labelPair[2].Text = labelPair[1].Text
-        end
+        -- Update shadows
+        labels.players[2].Text = labels.players[1].Text
+        labels.gameName[2].Text = labels.gameName[1].Text
+        labels.gameId[2].Text = labels.gameId[1].Text
+        labels.serverAge[2].Text = labels.serverAge[1].Text
+        labels.serverId[2].Text = labels.serverId[1].Text
     end
     
     game:GetService("RunService").Heartbeat:Connect(updateInfo)
@@ -274,7 +262,6 @@ return function(parent)
             
             TweenService:Create(RejoinButton, TweenInfo.new(animConfig.FadeDuration), {BackgroundColor3 = theme.AccentColor, TextColor3 = theme.TextColor})
             RejoinButton.Font = theme.Font
-            TweenService:Create(CloseButton, TweenInfo.new(animConfig.FadeDuration), {TextColor3 = theme.TextColor})
         end,
         UpdateInfo = updateInfo
     }
