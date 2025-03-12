@@ -1,4 +1,4 @@
--- CensuraG/CensuraG.lua (revised with RefreshManager)
+-- CensuraG/CensuraG.lua (revised with RefreshManager and SystemTray)
 local function safeLoadstring(url, errorMsg)
     local success, result = pcall(function()
         return game:HttpGet(url, true)
@@ -73,7 +73,7 @@ local coreModules = {
     Config = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/Config.lua",
     Methods = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/Methods.lua",
     AnimationManager = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/AnimationManager.lua",
-    RefreshManager = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/RefreshManager.lua" -- Added RefreshManager
+    RefreshManager = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/RefreshManager.lua"
 }
 
 local allCoreModulesLoaded = true
@@ -101,7 +101,7 @@ end
 -- Load Components with better error handling
 CensuraG.Components = {}
 local componentList = {
-    "window", "taskbar", "textlabel", "textbutton", "imagelabel", "slider", "dropdown", "switch", "grid"
+    "window", "taskbar", "textlabel", "textbutton", "imagelabel", "slider", "dropdown", "switch", "grid", "systemtray"
 }
 
 local allComponentsLoaded = true
@@ -158,6 +158,12 @@ if allComponentsLoaded then
             if CensuraG.Taskbar.Instance and typeof(CensuraG.Taskbar.Instance) == "table" and CensuraG.Taskbar.Instance.Initialize then
                 CensuraG.Taskbar.Instance:Initialize()
                 CensuraG.Logger:info("Taskbar initialized")
+                
+                -- Initialize SystemTray after Taskbar
+                if CensuraG.Components.systemtray and not CensuraG.SystemTray then
+                    CensuraG.SystemTray = CensuraG.Components.systemtray(CensuraG.Taskbar.Instance.Frame)
+                    CensuraG.Logger:info("SystemTray initialized")
+                end
             else
                 CensuraG.Logger:error("TaskbarManager invalid or Initialize method missing")
             end
@@ -188,10 +194,16 @@ CensuraG.SetTheme = function(themeName)
         -- Refresh all UI elements using RefreshManager if available
         if CensuraG.RefreshManager then
             CensuraG.RefreshManager:RefreshAll()
+            if CensuraG.SystemTray then
+                CensuraG.SystemTray:Refresh()
+            end
             CensuraG.Logger:info("Theme changed from " .. oldTheme .. " to " .. themeName .. " (using RefreshManager)")
         -- Fall back to Methods if RefreshManager isn't available
         elseif CensuraG.Methods and CensuraG.Methods.RefreshAll then
             CensuraG.Methods:RefreshAll()
+            if CensuraG.SystemTray then
+                CensuraG.SystemTray:Refresh()
+            end
             CensuraG.Logger:info("Theme changed from " .. oldTheme .. " to " .. themeName .. " (using Methods)")
         else
             CensuraG.Logger:warn("Theme changed to " .. themeName .. " but no refresh mechanism available")
@@ -215,8 +227,14 @@ end
 CensuraG.RefreshAll = function()
     if CensuraG.RefreshManager then
         CensuraG.RefreshManager:RefreshAll()
+        if CensuraG.SystemTray then
+            CensuraG.SystemTray:Refresh()
+        end
     elseif CensuraG.Methods and CensuraG.Methods.RefreshAll then
         CensuraG.Methods:RefreshAll()
+        if CensuraG.SystemTray then
+            CensuraG.SystemTray:Refresh()
+        end
     else
         CensuraG.Logger:error("No refresh mechanism available, cannot refresh all components")
     end
