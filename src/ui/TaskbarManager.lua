@@ -1,4 +1,4 @@
--- CensuraG/src/ui/TaskbarManager.lua (fixed syntax error)
+-- CensuraG/src/ui/TaskbarManager.lua (fixed with simpler timer approach)
 local TaskbarManager = {}
 TaskbarManager.__index = TaskbarManager
 
@@ -59,8 +59,8 @@ function TaskbarManager:Initialize()
 end
 
 function TaskbarManager:SetupAutoHide()
-    local hideTimer = nil
-    local isInHideDelay = false
+    self.HideDelayActive = false
+    self.HideTaskbarScheduled = false
     
     -- Function to show the taskbar
     local function showTaskbar()
@@ -73,43 +73,34 @@ function TaskbarManager:SetupAutoHide()
             self.IsVisible = true
         end
         
-        -- Cancel any pending hide timer
-        if hideTimer then
-            hideTimer:Disconnect()
-            hideTimer = nil
-        end
-        isInHideDelay = false
+        -- Cancel any pending hide
+        self.HideTaskbarScheduled = false
     end
     
-    -- Function to hide the taskbar
-    local function hideTaskbar()
-        if self.IsVisible and not isInHideDelay then
-            isInHideDelay = true
+    -- Function to hide the taskbar after delay
+    local function scheduleHideTaskbar()
+        if self.IsVisible and not self.HideDelayActive then
+            self.HideDelayActive = true
+            self.HideTaskbarScheduled = true
             
-            -- Set timer to hide after delay
-            hideTimer = RunService.Heartbeat:Connect(function()
-                local elapsed = 0
-                
-                return function(delta)
-                    elapsed = elapsed + delta
-                    if elapsed >= HIDE_DELAY then
-                        _G.CensuraG.AnimationManager:Tween(
-                            self.Frame, 
-                            {Position = UDim2.new(0, 0, 1, Config.Math.TaskbarHeight)}, 
-                            ANIMATION_SPEED
-                        )
-                        self.IsVisible = false
-                        hideTimer:Disconnect()
-                        hideTimer = nil
-                        isInHideDelay = false
-                    end
+            task.delay(HIDE_DELAY, function()
+                if self.HideTaskbarScheduled then
+                    _G.CensuraG.AnimationManager:Tween(
+                        self.Frame, 
+                        {Position = UDim2.new(0, 0, 1, Config.Math.TaskbarHeight)}, 
+                        ANIMATION_SPEED
+                    )
+                    self.IsVisible = false
                 end
-            end)()
+                self.HideDelayActive = false
+            end)
         end
     end
     
-    -- Check mouse position on every frame
-    local mousePositionConnection = RunService.RenderStepped:Connect(function()
+    -- Check mouse position on RenderStepped
+    self.MousePositionConnection = RunService.RenderStepped:Connect(function()
+        if not self.Frame then return end -- Safety check
+        
         local mousePosition = UserInputService:GetMouseLocation()
         local viewportSize = workspace.CurrentCamera.ViewportSize
         
@@ -119,12 +110,9 @@ function TaskbarManager:SetupAutoHide()
         if isInBottomPortion then
             showTaskbar()
         else
-            hideTaskbar()
+            scheduleHideTaskbar()
         end
     end)
-    
-    -- Store connection for cleanup
-    self.MousePositionConnection = mousePositionConnection
     
     _G.CensuraG.Logger:info("Auto-hide taskbar functionality set up")
 end
@@ -287,6 +275,8 @@ end
 
 -- Method to manually show the taskbar
 function TaskbarManager:ShowTaskbar()
+    self.HideTaskbarScheduled = false
+    
     _G.CensuraG.AnimationManager:Tween(
         self.Frame, 
         {Position = UDim2.new(0, 0, 1, -Config.Math.TaskbarHeight)}, 
