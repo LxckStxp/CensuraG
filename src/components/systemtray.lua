@@ -1,4 +1,4 @@
--- CensuraG/src/components/systemtray.lua (Updated for server info panel and rejoin button)
+-- CensuraG/src/components/systemtray.lua (Debugged and Simplified)
 local Config = _G.CensuraG.Config
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -17,6 +17,8 @@ return function(parent)
     TrayFrame.BackgroundColor3 = theme.SecondaryColor
     TrayFrame.BackgroundTransparency = 0.7
     TrayFrame.BorderSizePixel = 0
+    TrayFrame.ZIndex = 5 -- Ensure it’s above other taskbar elements
+    TrayFrame.Active = true -- Make it clickable
     
     local TrayCorner = Instance.new("UICorner", TrayFrame)
     TrayCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
@@ -32,6 +34,7 @@ return function(parent)
     AvatarImage.Position = UDim2.new(0, 5, 0.5, -15)
     AvatarImage.BackgroundTransparency = 1
     AvatarImage.Image = Players:GetUserThumbnailAsync(localPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
+    AvatarImage.ZIndex = 6
     
     local AvatarCorner = Instance.new("UICorner", AvatarImage)
     AvatarCorner.CornerRadius = UDim.new(1, 0)
@@ -47,12 +50,13 @@ return function(parent)
     DisplayName.TextSize = 12
     DisplayName.TextXAlignment = Enum.TextXAlignment.Left
     DisplayName.TextTruncate = Enum.TextTruncate.AtEnd
+    DisplayName.ZIndex = 6
     
-    -- Server Info Panel (Frame)
+    -- Server Info Panel
     local Panel = Instance.new("Frame", TrayFrame)
     Panel.Name = "ServerInfoPanel"
     Panel.Size = UDim2.new(0, 200, 0, 150)
-    Panel.Position = UDim2.new(1, -200, 0, -155) -- Above the tray
+    Panel.Position = UDim2.new(1, -200, 0, -155)
     Panel.BackgroundColor3 = theme.PrimaryColor
     Panel.BackgroundTransparency = 0.2
     Panel.BorderSizePixel = 0
@@ -83,7 +87,7 @@ return function(parent)
     end
     
     local gameInfo = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
-    local serverAge = math.floor((os.time() - (tonumber(game.JobId:match("^(%d+)") or os.time())) / 60)) -- Fallback if JobId parsing fails
+    local serverAge = math.floor((os.time() - (tonumber(game.JobId:match("^(%d+)") or os.time())) / 60))
     
     local labels = {
         players = createInfoLabel("Players", #Players:GetPlayers() .. "/" .. game.Players.MaxPlayers, 5),
@@ -104,9 +108,24 @@ return function(parent)
     RejoinButton.Font = theme.Font
     RejoinButton.TextSize = 12
     RejoinButton.ZIndex = 11
+    RejoinButton.Active = true
     
     local RejoinCorner = Instance.new("UICorner", RejoinButton)
     RejoinCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+    
+    -- Click Handler with Debugging
+    TrayFrame.InputBegan:Connect(function(input)
+        _G.CensuraG.Logger:info("SystemTray clicked, input type: " .. tostring(input.UserInputType))
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            _G.CensuraG.Logger:info("Toggling ServerInfoPanel, current visibility: " .. tostring(Panel.Visible))
+            Panel.Visible = not Panel.Visible
+            local targetTransparency = Panel.Visible and 0.2 or 1
+            _G.CensuraG.AnimationManager:Tween(Panel, {BackgroundTransparency = targetTransparency}, 0.2)
+            if not Panel.Visible then
+                task.delay(0.2, function() Panel.Visible = false end)
+            end
+        end
+    end)
     
     -- Hover Effects
     TrayFrame.MouseEnter:Connect(function()
@@ -127,41 +146,9 @@ return function(parent)
         _G.CensuraG.AnimationManager:Tween(RejoinButton, {BackgroundTransparency = 0.7}, 0.2)
     end)
     
-    -- Toggle Panel on Click
-    TrayFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            Panel.Visible = not Panel.Visible
-            local targetTransparency = Panel.Visible and 0.2 or 1
-            _G.CensuraG.AnimationManager:Tween(Panel, {BackgroundTransparency = targetTransparency}, 0.2)
-            if not Panel.Visible then
-                task.delay(0.2, function() Panel.Visible = false end)
-            end
-        end
-    end)
-    
-    -- Close Panel When Clicking Outside
-    game:GetService("UserInputService").InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 and Panel.Visible then
-            local mousePos = game:GetService("UserInputService"):GetMouseLocation()
-            local panelPos = Panel.AbsolutePosition
-            local panelSize = Panel.AbsoluteSize
-            local trayPos = TrayFrame.AbsolutePosition
-            local traySize = TrayFrame.AbsoluteSize
-            
-            if not (
-                (mousePos.X >= panelPos.X and mousePos.X <= panelPos.X + panelSize.X and
-                 mousePos.Y >= panelPos.Y and mousePos.Y <= panelPos.Y + panelSize.Y) or
-                (mousePos.X >= trayPos.X and mousePos.X <= trayPos.X + traySize.X and
-                 mousePos.Y >= trayPos.Y and mousePos.Y <= trayPos.Y + traySize.Y)
-            ) then
-                Panel.Visible = false
-                _G.CensuraG.AnimationManager:Tween(Panel, {BackgroundTransparency = 1}, 0.2)
-            end
-        end
-    end)
-    
     -- Rejoin Functionality
     RejoinButton.MouseButton1Click:Connect(function()
+        _G.CensuraG.Logger:info("Rejoin button clicked")
         TeleportService:Teleport(game.PlaceId, localPlayer)
     end)
     
@@ -185,10 +172,7 @@ return function(parent)
         Panel = Panel,
         Refresh = function(self)
             local theme = Config:GetTheme()
-            _G.CensuraG.AnimationManager:Tween(self.Instance, {
-                BackgroundColor3 = theme.SecondaryColor,
-                BackgroundTransparency = 0.7
-            }, animConfig.FadeDuration)
+            _G.CensuraG.AnimationManager:Tween(self.Instance, {BackgroundColor3 = theme.SecondaryColor, BackgroundTransparency = 0.7}, animConfig.FadeDuration)
             _G.CensuraG.AnimationManager:Tween(TrayStroke, {Color = theme.AccentColor})
             _G.CensuraG.AnimationManager:Tween(DisplayName, {TextColor3 = theme.TextColor})
             DisplayName.Font = theme.Font
@@ -201,13 +185,10 @@ return function(parent)
                 label.Font = theme.Font
             end
             
-            _G.CensuraG.AnimationManager:Tween(RejoinButton, {
-                BackgroundColor3 = theme.AccentColor,
-                TextColor3 = theme.TextColor
-            })
+            _G.CensuraG.AnimationManager:Tween(RejoinButton, {BackgroundColor3 = theme.AccentColor, TextColor3 = theme.TextColor})
             RejoinButton.Font = theme.Font
         end,
-        UpdateInfo = updateInfo -- Expose for manual updates if needed
+        UpdateInfo = updateInfo
     }
     
     _G.CensuraG.Logger:info("SystemTray created for " .. localPlayer.DisplayName)
