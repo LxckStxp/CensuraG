@@ -1,4 +1,4 @@
--- CensuraG/src/components/window.lua (fixed scrolling)
+-- CensuraG/src/components/window.lua (fixed ScrollBarInset error)
 local Config = _G.CensuraG.Config
 
 return function(title)
@@ -75,35 +75,22 @@ return function(title)
     local MinimizeCorner = Instance.new("UICorner", MinimizeButton)
     MinimizeCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
 
-    -- Create a content container that will hold the scrolling frame
-    local ContentContainer = Instance.new("Frame", Frame)
-    ContentContainer.Name = "ContentContainer"
-    ContentContainer.Position = UDim2.new(0, 6, 0, 36)
-    ContentContainer.Size = UDim2.new(1, -12, 1, -46) -- Leave room for resize handle
-    ContentContainer.BackgroundTransparency = 1
-    ContentContainer.ClipsDescendants = true
-
-    -- Content Scrolling Frame
-    local ContentFrame = Instance.new("ScrollingFrame", ContentContainer)
+    -- Content Scrolling Frame - Simplified and fixed
+    local ContentFrame = Instance.new("ScrollingFrame", Frame)
     ContentFrame.Name = "ContentFrame"
-    ContentFrame.Size = UDim2.new(1, 0, 1, 0)
-    ContentFrame.Position = UDim2.new(0, 0, 0, 0)
+    ContentFrame.Position = UDim2.new(0, 6, 0, 36)
+    ContentFrame.Size = UDim2.new(1, -12, 1, -46) -- Leave room for resize handle
     ContentFrame.BackgroundColor3 = theme.PrimaryColor
     ContentFrame.BackgroundTransparency = 0.3
     ContentFrame.BorderSizePixel = 0
-    ContentFrame.ScrollBarThickness = 6 -- Make scrollbar more visible
+    ContentFrame.ScrollBarThickness = 6
     ContentFrame.ScrollBarImageColor3 = theme.AccentColor
     ContentFrame.ScrollBarImageTransparency = 0.3
-    ContentFrame.CanvasSize = UDim2.new(0, 0, 4, 0) -- Start with a large canvas to ensure scrolling works
+    ContentFrame.CanvasSize = UDim2.new(0, 0, 2, 0) -- Start with larger canvas
     ContentFrame.ScrollingEnabled = true
-    ContentFrame.ScrollingDirection = Enum.ScrollingDirection.Y
-    ContentFrame.VerticalScrollBarPosition = Enum.VerticalScrollBarPosition.Right
-    ContentFrame.ElasticBehavior = Enum.ElasticBehavior.Always
-    ContentFrame.ScrollBarInset = Enum.ScrollBarInset.ScrollBar
-    ContentFrame.BottomImage = "rbxasset://textures/ui/Scroll/scroll-bottom.png"
-    ContentFrame.MidImage = "rbxasset://textures/ui/Scroll/scroll-middle.png"
-    ContentFrame.TopImage = "rbxasset://textures/ui/Scroll/scroll-top.png"
-    ContentFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+    -- Remove problematic properties
+    -- ContentFrame.ScrollBarInset = Enum.ScrollBarInset.ScrollBar
+    -- ContentFrame.ElasticBehavior = Enum.ElasticBehavior.Always
 
     local ContentCorner = Instance.new("UICorner", ContentFrame)
     ContentCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
@@ -262,10 +249,11 @@ return function(title)
         ContentFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
     end)
 
-    -- Force initial canvas size update
-    task.defer(function()
+    -- Force initial canvas size update after a short delay
+    task.spawn(function()
+        task.wait(0.5) -- Wait for content to be added
         local contentHeight = ListLayout.AbsoluteContentSize.Y + Padding.PaddingTop.Offset + Padding.PaddingBottom.Offset
-        ContentFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
+        ContentFrame.CanvasSize = UDim2.new(0, 0, 0, math.max(contentHeight, ContentFrame.AbsoluteSize.Y * 1.1))
     end)
 
     -- Window interface
@@ -295,14 +283,8 @@ return function(title)
         end,
         UpdateSize = function(self)
             local contentHeight = ListLayout.AbsoluteContentSize.Y + Padding.PaddingTop.Offset + Padding.PaddingBottom.Offset
-            ContentFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
-            
-            -- Make sure scrolling is enabled and scrollbar is visible
-            if contentHeight > ContentFrame.AbsoluteSize.Y then
-                ContentFrame.ScrollBarImageTransparency = 0.3
-            else
-                ContentFrame.ScrollBarImageTransparency = 0.7
-            end
+            -- Ensure the canvas is at least as tall as the content
+            ContentFrame.CanvasSize = UDim2.new(0, 0, 0, math.max(contentHeight, ContentFrame.AbsoluteSize.Y * 1.1))
         end,
         GetTitle = function(self)
             return title
