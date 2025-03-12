@@ -1,4 +1,4 @@
--- CensuraG/src/ui/WindowManager.lua (fixed minimization)
+-- CensuraG/src/ui/WindowManager.lua (improved minimize animation)
 local WindowManager = {}
 WindowManager.__index = WindowManager
 
@@ -44,7 +44,6 @@ function WindowManager.new(title)
     return self
 end
 
--- CensuraG/src/ui/WindowManager.lua (fixed minimize animation)
 function WindowManager:ToggleMinimize()
     self.IsMinimized = not self.IsMinimized
     
@@ -53,17 +52,60 @@ function WindowManager:ToggleMinimize()
         self.OriginalPosition = self.Frame.Position
         self.OriginalSize = self.Frame.Size
         
-        -- Get taskbar position for better animation
-        local taskbarPosition = UDim2.new(0, 0, 1, -Config.Math.TaskbarHeight)
-        if _G.CensuraG.Taskbar and _G.CensuraG.Taskbar.Instance and _G.CensuraG.Taskbar.Instance.Frame then
-            taskbarPosition = _G.CensuraG.Taskbar.Instance.Frame.Position
+        -- Find corresponding taskbar button position
+        local targetButton = nil
+        local targetPosition = UDim2.new(0.5, 0, 1, -Config.Math.TaskbarHeight / 2)
+        
+        if _G.CensuraG.Taskbar and _G.CensuraG.Taskbar.Instance then
+            -- Find the taskbar button for this window
+            local windowIndex = nil
+            for i, window in ipairs(_G.CensuraG.Windows) do
+                if window == self then
+                    windowIndex = i
+                    break
+                end
+            end
+            
+            if windowIndex then
+                -- Find the corresponding button in the taskbar
+                for _, button in ipairs(_G.CensuraG.Taskbar.Instance.Buttons or {}) do
+                    if button:GetAttribute("WindowIndex") == windowIndex then
+                        targetButton = button
+                        break
+                    end
+                end
+            end
         end
         
-        -- Minimize animation - move down to taskbar
+        if targetButton then
+            -- Calculate the position of the button in screen space
+            local buttonPos = targetButton.AbsolutePosition
+            local buttonSize = targetButton.AbsoluteSize
+            
+            -- Calculate the center of the button in screen space
+            local buttonCenterX = buttonPos.X + buttonSize.X / 2
+            local buttonCenterY = buttonPos.Y + buttonSize.Y / 2
+            
+            -- Calculate the target position relative to the screen
+            local screenSize = game.Workspace.CurrentCamera.ViewportSize
+            targetPosition = UDim2.new(
+                buttonCenterX / screenSize.X, 
+                0, 
+                buttonCenterY / screenSize.Y, 
+                0
+            )
+            
+            _G.CensuraG.Logger:info("Minimizing window to button position: " .. 
+                tostring(targetPosition.X.Scale) .. ", " .. tostring(targetPosition.Y.Scale))
+        else
+            _G.CensuraG.Logger:warn("No taskbar button found for window, using default position")
+        end
+        
+        -- Minimize animation - move to the taskbar button position
         _G.CensuraG.AnimationManager:Tween(self.Frame, {
-            Position = UDim2.new(0.5, -self.Frame.AbsoluteSize.X/2, 1, -Config.Math.TaskbarHeight - 10),
-            Size = UDim2.new(0, self.Frame.AbsoluteSize.X * 0.8, 0, self.Frame.AbsoluteSize.Y * 0.8),
-            BackgroundTransparency = 0.8
+            Position = targetPosition,
+            Size = UDim2.new(0, self.Frame.AbsoluteSize.X * 0.1, 0, self.Frame.AbsoluteSize.Y * 0.1),
+            BackgroundTransparency = 0.9
         }, Config.Animations.FadeDuration)
         
         -- Delay making invisible to allow animation to complete
