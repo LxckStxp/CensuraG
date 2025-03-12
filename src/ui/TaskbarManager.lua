@@ -1,4 +1,4 @@
--- CensuraG/src/ui/TaskbarManager.lua (with auto-hide functionality)
+-- CensuraG/src/ui/TaskbarManager.lua (fixed syntax error)
 local TaskbarManager = {}
 TaskbarManager.__index = TaskbarManager
 
@@ -319,7 +319,7 @@ function TaskbarManager:SetAutoHide(enabled)
         self:ShowTaskbar() -- Show taskbar when disabling auto-hide
     end
     
-    _G.CensuraG.Logger:info("Auto-hide " .. (enabled and "enabled" : "disabled"))
+    _G.CensuraG.Logger:info("Auto-hide " .. (enabled and "enabled" or "disabled"))
 end
 
 -- Clean up connections when needed
