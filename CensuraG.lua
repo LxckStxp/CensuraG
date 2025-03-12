@@ -1,4 +1,4 @@
--- CensuraG/CensuraG.lua (revised with RefreshManager and SystemTray)
+-- CensuraG/CensuraG.lua (revised with Splash Screen integration)
 local function safeLoadstring(url, errorMsg)
     local success, result = pcall(function()
         return game:HttpGet(url, true)
@@ -21,9 +21,22 @@ local function safeLoadstring(url, errorMsg)
     return execResult
 end
 
+-- Load and initialize splash screen first
+local splash
+local splashModule, splashError = safeLoadstring("https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/Splash.lua", "Failed to load Splash")
+if splashModule then
+    splash = splashModule:Show()
+else
+    warn("Failed to load splash screen: " .. (splashError or "Unknown error"))
+end
+
 -- Initialize the library
+if splash then splash:UpdateStatus("Loading core libraries...", 0.1) end
 local Oratio, oratioError = safeLoadstring("https://raw.githubusercontent.com/LxckStxp/Oratio/main/init.lua", "Failed to load Oratio")
-if not Oratio then error("Failed to load Oratio: " .. (oratioError or "Unknown error")) end
+if not Oratio then 
+    if splash then splash:Hide() end
+    error("Failed to load Oratio: " .. (oratioError or "Unknown error")) 
+end
 
 local CensuraG = rawget(_G, "CensuraG") or {}
 _G.CensuraG = CensuraG
@@ -39,6 +52,7 @@ CensuraG.Logger:section("CensuraG Initialization")
 CensuraG.Logger:info("Starting CensuraG UI API")
 
 -- Create ScreenGui early to ensure it exists
+if splash then splash:UpdateStatus("Creating screen container...", 0.15) end
 local function createScreenGui()
     local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
     local existingGui = playerGui:FindFirstChild("CensuraGScreenGui")
@@ -56,6 +70,7 @@ CensuraG.ScreenGui = createScreenGui()
 CensuraG.Logger:info("Created ScreenGui container")
 
 -- Load Utilities first
+if splash then splash:UpdateStatus("Loading utilities...", 0.2) end
 local Utilities, utilitiesError = safeLoadstring("https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/Utilities.lua", "Failed to load Utilities")
 if not Utilities then
     CensuraG.Logger:error("Failed to load Utilities: " .. (utilitiesError or "Unknown error"))
@@ -69,6 +84,7 @@ end
 CensuraG.Utilities = Utilities
 
 -- Load Core Modules with better error handling
+if splash then splash:UpdateStatus("Loading core modules...", 0.3) end
 local coreModules = {
     Config = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/Config.lua",
     Methods = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/Methods.lua",
@@ -77,7 +93,13 @@ local coreModules = {
 }
 
 local allCoreModulesLoaded = true
+local moduleCount = 0
 for name, url in pairs(coreModules) do
+    moduleCount = moduleCount + 1
+    if splash then 
+        splash:UpdateStatus("Loading " .. name .. "...", 0.3 + (moduleCount / #coreModules) * 0.2) 
+    end
+    
     local module, error = safeLoadstring(url, "Failed to load " .. name)
     if module then
         CensuraG[name] = module
@@ -93,19 +115,25 @@ if not allCoreModulesLoaded then
 end
 
 -- Initialize RefreshManager early if it's loaded
+if splash then splash:UpdateStatus("Initializing refresh manager...", 0.5) end
 if CensuraG.RefreshManager then
     CensuraG.RefreshManager:Initialize()
     CensuraG.Logger:info("RefreshManager initialized")
 end
 
 -- Load Components with better error handling
+if splash then splash:UpdateStatus("Loading UI components...", 0.55) end
 CensuraG.Components = {}
 local componentList = {
     "window", "taskbar", "textlabel", "textbutton", "imagelabel", "slider", "dropdown", "switch", "grid", "systemtray"
 }
 
 local allComponentsLoaded = true
-for _, component in ipairs(componentList) do
+for i, component in ipairs(componentList) do
+    if splash then 
+        splash:UpdateStatus("Loading component: " .. component, 0.55 + (i / #componentList) * 0.2) 
+    end
+    
     local url = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/components/" .. component .. ".lua"
     local loadedComponent = Utilities.LoadModule(url)
     if loadedComponent then
@@ -124,13 +152,20 @@ end
 -- Wait to load managers after components
 if allComponentsLoaded then
     -- Load manager modules that depend on components
+    if splash then splash:UpdateStatus("Loading managers...", 0.75) end
     local managerModules = {
         WindowManager = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/WindowManager.lua",
         TaskbarManager = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/TaskbarManager.lua"
     }
     
     local allManagersLoaded = true
+    local managerCount = 0
     for name, url in pairs(managerModules) do
+        managerCount = managerCount + 1
+        if splash then 
+            splash:UpdateStatus("Loading " .. name .. "...", 0.75 + (managerCount / #managerModules) * 0.1) 
+        end
+        
         local module, error = safeLoadstring(url, "Failed to load " .. name)
         if module then
             CensuraG[name] = module
@@ -146,10 +181,12 @@ if allComponentsLoaded then
     end
     
     -- Initialize global state
+    if splash then splash:UpdateStatus("Initializing global state...", 0.85) end
     CensuraG.Windows = CensuraG.Windows or {}
     CensuraG.Taskbar = CensuraG.Taskbar or nil
     
     -- Initialize Taskbar only if TaskbarManager loaded
+    if splash then splash:UpdateStatus("Initializing taskbar...", 0.9) end
     if CensuraG.TaskbarManager and not CensuraG.Taskbar then
         pcall(function()
             CensuraG.Taskbar = { Instance = CensuraG.TaskbarManager }
@@ -160,6 +197,7 @@ if allComponentsLoaded then
                 CensuraG.Logger:info("Taskbar initialized")
                 
                 -- Initialize SystemTray after Taskbar
+                if splash then splash:UpdateStatus("Initializing system tray...", 0.95) end
                 if CensuraG.Components.systemtray and not CensuraG.SystemTray then
                     CensuraG.SystemTray = CensuraG.Components.systemtray(CensuraG.Taskbar.Instance.Frame)
                     CensuraG.Logger:info("SystemTray initialized")
@@ -174,6 +212,8 @@ else
 end
 
 -- Add utility methods to CensuraG
+if splash then splash:UpdateStatus("Setting up API methods...", 0.98) end
+
 CensuraG.CreateWindow = function(title)
     if CensuraG.Methods and CensuraG.Methods.CreateWindow then
         return CensuraG.Methods:CreateWindow(title)
@@ -238,6 +278,14 @@ CensuraG.RefreshAll = function()
     else
         CensuraG.Logger:error("No refresh mechanism available, cannot refresh all components")
     end
+end
+
+-- Hide splash screen and complete initialization
+if splash then 
+    splash:UpdateStatus("Ready!", 1.0)
+    task.delay(0.5, function()
+        splash:Hide()
+    end)
 end
 
 CensuraG.Logger:info("CensuraG initialization complete")
