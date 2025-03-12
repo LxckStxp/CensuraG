@@ -1,4 +1,4 @@
--- CensuraG/src/components/window.lua (improved with scrolling and resizing)
+-- CensuraG/src/components/window.lua (fixed scrolling)
 local Config = _G.CensuraG.Config
 
 return function(title)
@@ -75,23 +75,35 @@ return function(title)
     local MinimizeCorner = Instance.new("UICorner", MinimizeButton)
     MinimizeCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
 
-    -- Content Container (ScrollingFrame)
-    local ContentFrame = Instance.new("ScrollingFrame", Frame)
+    -- Create a content container that will hold the scrolling frame
+    local ContentContainer = Instance.new("Frame", Frame)
+    ContentContainer.Name = "ContentContainer"
+    ContentContainer.Position = UDim2.new(0, 6, 0, 36)
+    ContentContainer.Size = UDim2.new(1, -12, 1, -46) -- Leave room for resize handle
+    ContentContainer.BackgroundTransparency = 1
+    ContentContainer.ClipsDescendants = true
+
+    -- Content Scrolling Frame
+    local ContentFrame = Instance.new("ScrollingFrame", ContentContainer)
     ContentFrame.Name = "ContentFrame"
-    ContentFrame.Position = UDim2.new(0, 6, 0, 36)
-    ContentFrame.Size = UDim2.new(1, -12, 1, -42)
+    ContentFrame.Size = UDim2.new(1, 0, 1, 0)
+    ContentFrame.Position = UDim2.new(0, 0, 0, 0)
     ContentFrame.BackgroundColor3 = theme.PrimaryColor
     ContentFrame.BackgroundTransparency = 0.3
     ContentFrame.BorderSizePixel = 0
-    ContentFrame.ScrollBarThickness = 4
+    ContentFrame.ScrollBarThickness = 6 -- Make scrollbar more visible
     ContentFrame.ScrollBarImageColor3 = theme.AccentColor
     ContentFrame.ScrollBarImageTransparency = 0.3
-    ContentFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    ContentFrame.CanvasSize = UDim2.new(0, 0, 2, 0) -- Initial canvas size, will adjust automatically
+    ContentFrame.CanvasSize = UDim2.new(0, 0, 4, 0) -- Start with a large canvas to ensure scrolling works
     ContentFrame.ScrollingEnabled = true
     ContentFrame.ScrollingDirection = Enum.ScrollingDirection.Y
     ContentFrame.VerticalScrollBarPosition = Enum.VerticalScrollBarPosition.Right
-    ContentFrame.ClipsDescendants = true
+    ContentFrame.ElasticBehavior = Enum.ElasticBehavior.Always
+    ContentFrame.ScrollBarInset = Enum.ScrollBarInset.ScrollBar
+    ContentFrame.BottomImage = "rbxasset://textures/ui/Scroll/scroll-bottom.png"
+    ContentFrame.MidImage = "rbxasset://textures/ui/Scroll/scroll-middle.png"
+    ContentFrame.TopImage = "rbxasset://textures/ui/Scroll/scroll-top.png"
+    ContentFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 
     local ContentCorner = Instance.new("UICorner", ContentFrame)
     ContentCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
@@ -108,7 +120,7 @@ return function(title)
     Padding.PaddingTop = UDim.new(0, Config.Math.Padding)
     Padding.PaddingBottom = UDim.new(0, Config.Math.Padding)
     Padding.PaddingLeft = UDim.new(0, Config.Math.Padding)
-    Padding.PaddingRight = UDim.new(0, Config.Math.Padding)
+    Padding.PaddingRight = UDim.new(0, Config.Math.Padding + 6) -- Extra padding for scrollbar
 
     -- Resize handle (bottom-right corner)
     local ResizeHandle = Instance.new("TextButton", Frame)
@@ -250,6 +262,12 @@ return function(title)
         ContentFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
     end)
 
+    -- Force initial canvas size update
+    task.defer(function()
+        local contentHeight = ListLayout.AbsoluteContentSize.Y + Padding.PaddingTop.Offset + Padding.PaddingBottom.Offset
+        ContentFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
+    end)
+
     -- Window interface
     local Window = {
         Frame = Frame,
@@ -278,6 +296,13 @@ return function(title)
         UpdateSize = function(self)
             local contentHeight = ListLayout.AbsoluteContentSize.Y + Padding.PaddingTop.Offset + Padding.PaddingBottom.Offset
             ContentFrame.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
+            
+            -- Make sure scrolling is enabled and scrollbar is visible
+            if contentHeight > ContentFrame.AbsoluteSize.Y then
+                ContentFrame.ScrollBarImageTransparency = 0.3
+            else
+                ContentFrame.ScrollBarImageTransparency = 0.7
+            end
         end,
         GetTitle = function(self)
             return title
@@ -286,6 +311,11 @@ return function(title)
             _G.CensuraG.AnimationManager:Tween(self.Frame, {
                 Size = UDim2.new(0, width, 0, height)
             }, 0.2)
+            
+            -- Update canvas size after resize
+            task.delay(0.25, function()
+                self:UpdateSize()
+            end)
         end
     }
 
