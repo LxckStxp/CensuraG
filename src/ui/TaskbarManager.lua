@@ -1,4 +1,4 @@
--- CensuraG/src/ui/TaskbarManager.lua (fixed with simpler timer approach)
+-- CensuraG/src/ui/TaskbarManager.lua (updated with system tray support)
 local TaskbarManager = {}
 TaskbarManager.__index = TaskbarManager
 
@@ -17,18 +17,15 @@ function TaskbarManager:Initialize()
     self.Frame = frame
     self.TaskbarObject = taskbarObject
     
-    -- Find ButtonContainer
+    -- Find or create ButtonContainer
     self.ButtonContainer = self.Frame:FindFirstChild("ButtonContainer")
-    
     if not self.ButtonContainer then
-        -- Create ButtonContainer if it doesn't exist
         self.ButtonContainer = Instance.new("Frame", self.Frame)
         self.ButtonContainer.Name = "ButtonContainer"
-        self.ButtonContainer.Size = UDim2.new(1, -120, 1, -10)
+        self.ButtonContainer.Size = UDim2.new(1, -270, 1, -10) -- Adjusted for system tray (150 width + padding)
         self.ButtonContainer.Position = UDim2.new(0, 110, 0, 5)
         self.ButtonContainer.BackgroundTransparency = 1
         
-        -- Add horizontal layout for buttons
         local ButtonLayout = Instance.new("UIListLayout", self.ButtonContainer)
         ButtonLayout.FillDirection = Enum.FillDirection.Horizontal
         ButtonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
@@ -37,10 +34,13 @@ function TaskbarManager:Initialize()
         
         _G.CensuraG.Logger:warn("ButtonContainer not found, created new one")
     else
-        _G.CensuraG.Logger:info("ButtonContainer found in taskbar")
+        -- Adjust existing ButtonContainer to accommodate system tray
+        self.ButtonContainer.Size = UDim2.new(1, -270, 1, -10)
+        self.ButtonContainer.Position = UDim2.new(0, 110, 0, 5)
+        _G.CensuraG.Logger:info("ButtonContainer found and adjusted in taskbar")
     end
     
-    -- Initialize taskbar in the hidden position if auto-hide is enabled
+    -- Initialize taskbar position
     if AUTO_HIDE then
         self.Frame.Position = UDim2.new(0, 0, 1, Config.Math.TaskbarHeight)
         self.IsVisible = false
@@ -52,6 +52,14 @@ function TaskbarManager:Initialize()
     self.Buttons = {}
     self:UpdateTaskbar()
     
+    -- Add system tray if not already initialized
+    if not _G.CensuraG.SystemTray and _G.CensuraG.Components.systemtray then
+        pcall(function()
+            _G.CensuraG.SystemTray = _G.CensuraG.Components.systemtray(self.Frame)
+            _G.CensuraG.Logger:info("SystemTray initialized within TaskbarManager")
+        end)
+    end
+    
     -- Setup auto-hide functionality
     if AUTO_HIDE then
         self:SetupAutoHide()
@@ -62,7 +70,6 @@ function TaskbarManager:SetupAutoHide()
     self.HideDelayActive = false
     self.HideTaskbarScheduled = false
     
-    -- Function to show the taskbar
     local function showTaskbar()
         if not self.IsVisible then
             _G.CensuraG.AnimationManager:Tween(
@@ -72,12 +79,9 @@ function TaskbarManager:SetupAutoHide()
             )
             self.IsVisible = true
         end
-        
-        -- Cancel any pending hide
         self.HideTaskbarScheduled = false
     end
     
-    -- Function to hide the taskbar after delay
     local function scheduleHideTaskbar()
         if self.IsVisible and not self.HideDelayActive then
             self.HideDelayActive = true
@@ -97,14 +101,11 @@ function TaskbarManager:SetupAutoHide()
         end
     end
     
-    -- Check mouse position on RenderStepped
     self.MousePositionConnection = RunService.RenderStepped:Connect(function()
-        if not self.Frame then return end -- Safety check
+        if not self.Frame then return end
         
         local mousePosition = UserInputService:GetMouseLocation()
         local viewportSize = workspace.CurrentCamera.ViewportSize
-        
-        -- Calculate if mouse is in the bottom portion of the screen
         local isInBottomPortion = (mousePosition.Y / viewportSize.Y) > SHOW_THRESHOLD
         
         if isInBottomPortion then
@@ -118,7 +119,6 @@ function TaskbarManager:SetupAutoHide()
 end
 
 function TaskbarManager:UpdateTaskbar()
-    -- Ensure Windows table exists
     if not _G.CensuraG.Windows then
         _G.CensuraG.Windows = {}
         _G.CensuraG.Logger:warn("Windows table was nil, initialized new table")
@@ -141,7 +141,6 @@ function TaskbarManager:UpdateTaskbar()
     
     local theme = Config:GetTheme()
     
-    -- Create buttons for each window
     for i, window in ipairs(_G.CensuraG.Windows) do
         if window and window.Frame then
             local button = Instance.new("TextButton", self.ButtonContainer)
@@ -156,20 +155,16 @@ function TaskbarManager:UpdateTaskbar()
             button.LayoutOrder = i
             button.Name = "WindowButton_" .. (window:GetTitle() or "Window")
             
-            -- Add corner radius
             local corner = Instance.new("UICorner", button)
             corner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
             
-            -- Add stroke for better visibility
             local stroke = Instance.new("UIStroke", button)
             stroke.Color = theme.BorderColor
             stroke.Transparency = 0.8
             stroke.Thickness = Config.Math.BorderThickness
             
-            -- Store reference to the window
             button:SetAttribute("WindowIndex", i)
             
-            -- Add hover effects
             button.MouseEnter:Connect(function()
                 _G.CensuraG.AnimationManager:Tween(button, {BackgroundTransparency = 0.5}, 0.2)
                 _G.CensuraG.AnimationManager:Tween(stroke, {Transparency = 0.6}, 0.2)
@@ -180,7 +175,6 @@ function TaskbarManager:UpdateTaskbar()
                 _G.CensuraG.AnimationManager:Tween(stroke, {Transparency = 0.8}, 0.2)
             end)
             
-            -- Button press effect
             button.MouseButton1Down:Connect(function()
                 _G.CensuraG.AnimationManager:Tween(button, {
                     BackgroundTransparency = 0.4,
@@ -197,8 +191,6 @@ function TaskbarManager:UpdateTaskbar()
                 local windowIndex = button:GetAttribute("WindowIndex")
                 if windowIndex and _G.CensuraG.Windows[windowIndex] then
                     _G.CensuraG.Windows[windowIndex]:ToggleMinimize()
-                    
-                    -- Update button color based on window state
                     local isMinimized = _G.CensuraG.Windows[windowIndex].IsMinimized
                     _G.CensuraG.AnimationManager:Tween(button, {
                         BackgroundColor3 = isMinimized and theme.AccentColor or theme.SecondaryColor
@@ -213,11 +205,9 @@ function TaskbarManager:UpdateTaskbar()
     _G.CensuraG.Logger:info("Taskbar updated with " .. #self.Buttons .. " items")
 end
 
--- Refresh method to update taskbar and buttons
 function TaskbarManager:Refresh()
     local theme = Config:GetTheme()
     
-    -- Update taskbar appearance
     if self.Frame then
         if typeof(self.Frame) == "Instance" then
             _G.CensuraG.AnimationManager:Tween(self.Frame, {
@@ -225,7 +215,6 @@ function TaskbarManager:Refresh()
                 BackgroundTransparency = 0.1
             }, Config.Animations.FadeDuration)
             
-            -- Update other taskbar elements if they exist
             for _, child in pairs(self.Frame:GetChildren()) do
                 if child.Name == "TopBorder" then
                     _G.CensuraG.AnimationManager:Tween(child, {
@@ -236,12 +225,9 @@ function TaskbarManager:Refresh()
                         ImageColor3 = theme.AccentColor
                     }, Config.Animations.FadeDuration)
                 elseif child.Name == "Logo" then
-                    -- Tween the color but set Font directly
                     _G.CensuraG.AnimationManager:Tween(child, {
                         TextColor3 = theme.TextColor
                     }, Config.Animations.FadeDuration)
-                    
-                    -- Set Font directly
                     child.Font = theme.Font
                 end
             end
@@ -250,7 +236,6 @@ function TaskbarManager:Refresh()
         end
     end
     
-    -- Update buttons for each window
     if self.Buttons then
         for i, button in ipairs(self.Buttons) do
             if typeof(button) == "Instance" then
@@ -261,22 +246,22 @@ function TaskbarManager:Refresh()
                         BackgroundColor3 = isMinimized and theme.AccentColor or theme.SecondaryColor,
                         TextColor3 = theme.TextColor
                     }, Config.Animations.FadeDuration)
-                    
-                    -- Set Font directly
                     button.Font = theme.Font
                 end
             end
         end
     end
     
-    -- Rebuild taskbar if needed
+    -- Refresh system tray if it exists
+    if _G.CensuraG.SystemTray then
+        _G.CensuraG.SystemTray:Refresh()
+    end
+    
     self:UpdateTaskbar()
 end
 
--- Method to manually show the taskbar
 function TaskbarManager:ShowTaskbar()
     self.HideTaskbarScheduled = false
-    
     _G.CensuraG.AnimationManager:Tween(
         self.Frame, 
         {Position = UDim2.new(0, 0, 1, -Config.Math.TaskbarHeight)}, 
@@ -286,7 +271,6 @@ function TaskbarManager:ShowTaskbar()
     _G.CensuraG.Logger:info("Taskbar manually shown")
 end
 
--- Method to manually hide the taskbar
 function TaskbarManager:HideTaskbar()
     _G.CensuraG.AnimationManager:Tween(
         self.Frame, 
@@ -297,7 +281,6 @@ function TaskbarManager:HideTaskbar()
     _G.CensuraG.Logger:info("Taskbar manually hidden")
 end
 
--- Method to toggle auto-hide functionality
 function TaskbarManager:SetAutoHide(enabled)
     AUTO_HIDE = enabled
     
@@ -306,13 +289,12 @@ function TaskbarManager:SetAutoHide(enabled)
     elseif not enabled and self.MousePositionConnection then
         self.MousePositionConnection:Disconnect()
         self.MousePositionConnection = nil
-        self:ShowTaskbar() -- Show taskbar when disabling auto-hide
+        self:ShowTaskbar()
     end
     
     _G.CensuraG.Logger:info("Auto-hide " .. (enabled and "enabled" or "disabled"))
 end
 
--- Clean up connections when needed
 function TaskbarManager:Cleanup()
     if self.MousePositionConnection then
         self.MousePositionConnection:Disconnect()
