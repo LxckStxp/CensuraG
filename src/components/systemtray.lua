@@ -1,4 +1,4 @@
--- CensuraG/src/components/systemtray.lua (Enhanced Visuals)
+-- CensuraG/src/components/systemtray.lua (Fixed and Enhanced)
 local Config = _G.CensuraG.Config
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -75,7 +75,7 @@ return function(parent)
     local Panel = Instance.new("Frame", TrayFrame)
     Panel.Name = "ServerInfoPanel"
     Panel.Size = UDim2.new(0, 220, 0, 160)
-    Panel.Position = UDim2.new(1, -220, 0, -165)
+    Panel.Position = UDim2.new(1, -220, 0, -165) -- Start hidden above tray
     Panel.BackgroundColor3 = theme.PrimaryColor
     Panel.BackgroundTransparency = 0.1
     Panel.BorderSizePixel = 0
@@ -94,7 +94,7 @@ return function(parent)
     PanelShadow.Size = UDim2.new(1, 10, 1, 10)
     PanelShadow.Position = UDim2.new(0, -5, 0, -5)
     PanelShadow.BackgroundTransparency = 1
-    PanelShadow.Image = "rbxassetid://1316045217" -- Shadow image
+    PanelShadow.Image = "rbxassetid://1316045217"
     PanelShadow.ImageColor3 = Color3.new(0, 0, 0)
     PanelShadow.ImageTransparency = 0.7
     PanelShadow.ScaleType = Enum.ScaleType.Slice
@@ -161,57 +161,57 @@ return function(parent)
     RejoinStroke.Transparency = 0.8
     RejoinStroke.Thickness = 1
     
-    -- Close Button for Panel
-    local CloseButton = Instance.new("TextButton", Panel)
-    CloseButton.Size = UDim2.new(0, 20, 0, 20)
-    CloseButton.Position = UDim2.new(1, -25, 0, 5)
-    CloseButton.BackgroundTransparency = 1
-    CloseButton.Text = "✖"
-    CloseButton.TextColor3 = theme.TextColor
-    CloseButton.Font = Enum.Font.GothamBold
-    CloseButton.TextSize = 14
-    CloseButton.ZIndex = 11
-    
-    CloseButton.MouseButton1Click:Connect(function()
-        Panel.Visible = false
-    end)
-    
-    -- Enhanced Hover Effects with Scale
+    -- Hover Effects (No Scaling)
     local function hoverEffect(obj, scaleUp)
-        local targetSize = scaleUp and UDim2.new(obj.Size.X.Scale * 1.05, obj.Size.X.Offset * 1.05, obj.Size.Y.Scale * 1.05, obj.Size.Y.Offset * 1.05) or obj.Size
-        TweenService:Create(obj, TweenInfo.new(0.2), {Size = targetSize}):Play()
+        local targetTransparency = scaleUp and 0.4 or 0.6
+        TweenService:Create(obj, TweenInfo.new(0.2), {BackgroundTransparency = targetTransparency}):Play()
+        if obj == TrayFrame then
+            TweenService:Create(TrayStroke, TweenInfo.new(0.2), {Transparency = scaleUp and 0.5 or 0.7}):Play()
+        end
     end
     
     TrayFrame.MouseEnter:Connect(function()
         hoverEffect(TrayFrame, true)
-        TweenService:Create(TrayFrame, TweenInfo.new(0.2), {BackgroundTransparency = 0.4}):Play()
-        TweenService:Create(TrayStroke, TweenInfo.new(0.2), {Transparency = 0.5}):Play()
     end)
     
     TrayFrame.MouseLeave:Connect(function()
         hoverEffect(TrayFrame, false)
-        TweenService:Create(TrayFrame, TweenInfo.new(0.2), {BackgroundTransparency = 0.6}):Play()
-        TweenService:Create(TrayStroke, TweenInfo.new(0.2), {Transparency = 0.7}):Play()
     end)
     
     RejoinButton.MouseEnter:Connect(function()
         hoverEffect(RejoinButton, true)
-        TweenService:Create(RejoinButton, TweenInfo.new(0.2), {BackgroundTransparency = 0.4}):Play()
     end)
     
     RejoinButton.MouseLeave:Connect(function()
         hoverEffect(RejoinButton, false)
-        TweenService:Create(RejoinButton, TweenInfo.new(0.2), {BackgroundTransparency = 0.6}):Play()
     end)
     
-    -- Toggle Panel on Click
+    -- Panel Animation Setup
+    local shownPos = UDim2.new(1, -220, 0, -165) -- Above tray
+    local hiddenPos = UDim2.new(1, -220, 0, 0)   -- Below tray
+    Panel.Position = hiddenPos -- Start hidden
+    
+    local isOpen = false
     TrayFrame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            Panel.Visible = not Panel.Visible
-            local targetTransparency = Panel.Visible and 0.1 or 1
-            TweenService:Create(Panel, TweenInfo.new(0.3), {BackgroundTransparency = targetTransparency}):Play()
-            if not Panel.Visible then
-                task.delay(0.3, function() Panel.Visible = false end)
+            if not isOpen then
+                -- Show panel with animation
+                Panel.Visible = true
+                TweenService:Create(Panel, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+                    Position = shownPos,
+                    BackgroundTransparency = 0.1
+                }):Play()
+                isOpen = true
+            else
+                -- Hide panel with animation
+                TweenService:Create(Panel, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+                    Position = hiddenPos,
+                    BackgroundTransparency = 0.1
+                }):Play()
+                task.delay(0.3, function()
+                    Panel.Visible = false
+                end)
+                isOpen = false
             end
         end
     end)
@@ -232,7 +232,6 @@ return function(parent)
         labels.serverAge[1].Text = "Server Age: " .. currentServerAge .. " min"
         labels.serverId[1].Text = "Server ID: " .. game.JobId
         
-        -- Update shadows
         for _, labelPair in pairs(labels) do
             labelPair[2].Text = labelPair[1].Text
         end
@@ -263,7 +262,6 @@ return function(parent)
             
             TweenService:Create(RejoinButton, TweenInfo.new(animConfig.FadeDuration), {BackgroundColor3 = theme.AccentColor, TextColor3 = theme.TextColor})
             RejoinButton.Font = theme.Font
-            TweenService:Create(CloseButton, TweenInfo.new(animConfig.FadeDuration), {TextColor3 = theme.TextColor})
         end,
         UpdateInfo = updateInfo
     }
