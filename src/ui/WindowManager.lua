@@ -1,4 +1,4 @@
--- CensuraG/src/ui/WindowManager.lua (improved minimize animation)
+-- CensuraG/src/ui/WindowManager.lua (improved minimize animation and added SetSize)
 local WindowManager = {}
 WindowManager.__index = WindowManager
 
@@ -155,6 +155,16 @@ end
 
 function WindowManager:GetTitle()
     return self.Title
+end
+
+-- Add SetSize method to delegate to the inner Window component
+function WindowManager:SetSize(width, height)
+    if self.Window and self.Window.SetSize then
+        self.Window:SetSize(width, height)
+        _G.CensuraG.Logger:info("Set window size to " .. width .. "x" .. height .. " for: " .. self.Title)
+    else
+        _G.CensuraG.Logger:error("Failed to set size: Window component missing SetSize method")
+    end
 end
 
 return WindowManager
