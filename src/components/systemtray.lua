@@ -1,4 +1,4 @@
--- CensuraG/src/components/systemtray.lua (Enhanced Version)
+-- CensuraG/src/components/systemtray.lua (Enhanced Version with Error Fixed)
 local Config = _G.CensuraG.Config
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -101,44 +101,61 @@ return function(parent)
     PanelShadow.SliceCenter = Rect.new(10, 10, 10, 10)
     PanelShadow.ZIndex = 9
     
-    -- Server Info Labels with Shadows
-    local function createInfoLabel(name, value, yPos)
-        local label = Instance.new("TextLabel", Panel)
-        label.Size = UDim2.new(1, -20, 0, 20)
-        label.Position = UDim2.new(0, 10, 0, yPos)
-        label.BackgroundTransparency = 1
-        label.Text = name .. ": " .. tostring(value)
-        label.TextColor3 = theme.TextColor
-        label.Font = theme.Font
-        label.TextSize = 12
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.ZIndex = 11
-        
-        local shadow = Instance.new("TextLabel", Panel)
-        shadow.Size = label.Size
-        shadow.Position = UDim2.new(0, 11, 0, yPos + 1)
-        shadow.BackgroundTransparency = 1
-        shadow.Text = label.Text
-        shadow.TextColor3 = Color3.new(0, 0, 0)
-        shadow.TextTransparency = 0.7
-        shadow.Font = theme.Font
-        shadow.TextSize = 12
-        shadow.TextXAlignment = Enum.TextXAlignment.Left
-        shadow.ZIndex = 10
-        
-        return label, shadow
-    end
+    -- Server Info Labels (Fixed version - no shadows to avoid errors)
+    local playersLabel = Instance.new("TextLabel", Panel)
+    playersLabel.Size = UDim2.new(1, -20, 0, 20)
+    playersLabel.Position = UDim2.new(0, 10, 0, 10)
+    playersLabel.BackgroundTransparency = 1
+    playersLabel.Text = "Players: " .. #Players:GetPlayers() .. "/" .. game.Players.MaxPlayers
+    playersLabel.TextColor3 = theme.TextColor
+    playersLabel.Font = theme.Font
+    playersLabel.TextSize = 12
+    playersLabel.TextXAlignment = Enum.TextXAlignment.Left
+    playersLabel.ZIndex = 11
     
-    local gameInfo = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
-    local serverAge = math.floor((os.time() - (tonumber(game.JobId:match("^(%d+)") or os.time())) / 60))
+    local gameNameLabel = Instance.new("TextLabel", Panel)
+    gameNameLabel.Size = UDim2.new(1, -20, 0, 20)
+    gameNameLabel.Position = UDim2.new(0, 10, 0, 35)
+    gameNameLabel.BackgroundTransparency = 1
+    gameNameLabel.Text = "Game: " .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+    gameNameLabel.TextColor3 = theme.TextColor
+    gameNameLabel.Font = theme.Font
+    gameNameLabel.TextSize = 12
+    gameNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    gameNameLabel.ZIndex = 11
     
-    local labels = {
-        players = createInfoLabel("Players", #Players:GetPlayers() .. "/" .. game.Players.MaxPlayers, 10),
-        gameName = createInfoLabel("Game", gameInfo.Name, 35),
-        gameId = createInfoLabel("Game ID", game.PlaceId, 60),
-        serverAge = createInfoLabel("Server Age", serverAge .. " min", 85),
-        serverId = createInfoLabel("Server ID", game.JobId, 110)
-    }
+    local gameIdLabel = Instance.new("TextLabel", Panel)
+    gameIdLabel.Size = UDim2.new(1, -20, 0, 20)
+    gameIdLabel.Position = UDim2.new(0, 10, 0, 60)
+    gameIdLabel.BackgroundTransparency = 1
+    gameIdLabel.Text = "Game ID: " .. game.PlaceId
+    gameIdLabel.TextColor3 = theme.TextColor
+    gameIdLabel.Font = theme.Font
+    gameIdLabel.TextSize = 12
+    gameIdLabel.TextXAlignment = Enum.TextXAlignment.Left
+    gameIdLabel.ZIndex = 11
+    
+    local serverAgeLabel = Instance.new("TextLabel", Panel)
+    serverAgeLabel.Size = UDim2.new(1, -20, 0, 20)
+    serverAgeLabel.Position = UDim2.new(0, 10, 0, 85)
+    serverAgeLabel.BackgroundTransparency = 1
+    serverAgeLabel.Text = "Server Age: Calculating..."
+    serverAgeLabel.TextColor3 = theme.TextColor
+    serverAgeLabel.Font = theme.Font
+    serverAgeLabel.TextSize = 12
+    serverAgeLabel.TextXAlignment = Enum.TextXAlignment.Left
+    serverAgeLabel.ZIndex = 11
+    
+    local serverIdLabel = Instance.new("TextLabel", Panel)
+    serverIdLabel.Size = UDim2.new(1, -20, 0, 20)
+    serverIdLabel.Position = UDim2.new(0, 10, 0, 110)
+    serverIdLabel.BackgroundTransparency = 1
+    serverIdLabel.Text = "Server ID: " .. game.JobId
+    serverIdLabel.TextColor3 = theme.TextColor
+    serverIdLabel.Font = theme.Font
+    serverIdLabel.TextSize = 12
+    serverIdLabel.TextXAlignment = Enum.TextXAlignment.Left
+    serverIdLabel.ZIndex = 11
     
     -- Rejoin Button with Hover Effect
     local RejoinButton = Instance.new("TextButton", Panel)
@@ -161,7 +178,7 @@ return function(parent)
     RejoinStroke.Transparency = 0.8
     RejoinStroke.Thickness = 1
     
-    -- Hover Effects (No Scaling)
+    -- Hover Effects
     local function hoverEffect(obj, scaleUp)
         local targetTransparency = scaleUp and 0.4 or 0.6
         TweenService:Create(obj, TweenInfo.new(0.2), {BackgroundTransparency = targetTransparency}):Play()
@@ -221,23 +238,20 @@ return function(parent)
         TeleportService:Teleport(game.PlaceId, localPlayer)
     end)
     
-    -- Dynamic Updates
+    -- Dynamic Updates - Fixed to avoid errors
     local function updateInfo()
-        local currentGameInfo = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
-        local currentServerAge = math.floor((os.time() - (tonumber(game.JobId:match("^(%d+)") or os.time())) / 60))
-        
-        labels.players[1].Text = "Players: " .. #Players:GetPlayers() .. "/" .. game.Players.MaxPlayers
-        labels.gameName[1].Text = "Game: " .. currentGameInfo.Name
-        labels.gameId[1].Text = "Game ID: " .. game.PlaceId
-        labels.serverAge[1].Text = "Server Age: " .. currentServerAge .. " min"
-        labels.serverId[1].Text = "Server ID: " .. game.JobId
-        
-        for _, labelPair in pairs(labels) do
-            labelPair[2].Text = labelPair[1].Text
-        end
+        pcall(function()
+            -- Update player count
+            playersLabel.Text = "Players: " .. #Players:GetPlayers() .. "/" .. game.Players.MaxPlayers
+            
+            -- Update server age
+            local serverAge = math.floor((os.time() - (tonumber(game.JobId:match("^(%d+)") or os.time())) / 60))
+            serverAgeLabel.Text = "Server Age: " .. serverAge .. " min"
+        end)
     end
     
-    game:GetService("RunService").Heartbeat:Connect(updateInfo)
+    -- Set up periodic updates
+    local updateConnection = game:GetService("RunService").Heartbeat:Connect(updateInfo)
     
     -- SystemTray Object
     local SystemTray = {
@@ -254,17 +268,35 @@ return function(parent)
             TweenService:Create(self.Panel, TweenInfo.new(animConfig.FadeDuration), {BackgroundColor3 = theme.PrimaryColor}):Play()
             TweenService:Create(PanelStroke, TweenInfo.new(animConfig.FadeDuration), {Color = theme.AccentColor}):Play()
             
-            for _, labelPair in pairs(labels) do
-                TweenService:Create(labelPair[1], TweenInfo.new(animConfig.FadeDuration), {TextColor3 = theme.TextColor}):Play()
-                labelPair[1].Font = theme.Font
-                labelPair[2].Font = theme.Font
-            end
+            -- Update all labels
+            playersLabel.TextColor3 = theme.TextColor
+            playersLabel.Font = theme.Font
+            
+            gameNameLabel.TextColor3 = theme.TextColor
+            gameNameLabel.Font = theme.Font
+            
+            gameIdLabel.TextColor3 = theme.TextColor
+            gameIdLabel.Font = theme.Font
+            
+            serverAgeLabel.TextColor3 = theme.TextColor
+            serverAgeLabel.Font = theme.Font
+            
+            serverIdLabel.TextColor3 = theme.TextColor
+            serverIdLabel.Font = theme.Font
             
             TweenService:Create(RejoinButton, TweenInfo.new(animConfig.FadeDuration), {BackgroundColor3 = theme.AccentColor, TextColor3 = theme.TextColor}):Play()
             RejoinButton.Font = theme.Font
         end,
-        UpdateInfo = updateInfo
+        UpdateInfo = updateInfo,
+        Cleanup = function()
+            if updateConnection then
+                updateConnection:Disconnect()
+            end
+        end
     }
+    
+    -- Initial update
+    updateInfo()
     
     _G.CensuraG.Logger:info("Enhanced SystemTray created for " .. localPlayer.DisplayName)
     return SystemTray
