@@ -1,8 +1,9 @@
--- CensuraG/src/components/systemtray.lua (Debugged and Simplified)
+-- CensuraG/src/components/systemtray.lua (Enhanced Visuals)
 local Config = _G.CensuraG.Config
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
+local TweenService = game:GetService("TweenService")
 
 return function(parent)
     local theme = Config:GetTheme()
@@ -12,26 +13,26 @@ return function(parent)
     -- Main System Tray Button
     local TrayFrame = Instance.new("Frame", parent)
     TrayFrame.Name = "SystemTray"
-    TrayFrame.Size = UDim2.new(0, 150, 0, Config.Math.TaskbarHeight - 10)
-    TrayFrame.Position = UDim2.new(1, -155, 0, 5)
+    TrayFrame.Size = UDim2.new(0, 160, 0, Config.Math.TaskbarHeight - 8)
+    TrayFrame.Position = UDim2.new(1, -165, 0, 4)
     TrayFrame.BackgroundColor3 = theme.SecondaryColor
-    TrayFrame.BackgroundTransparency = 0.7
+    TrayFrame.BackgroundTransparency = 0.6
     TrayFrame.BorderSizePixel = 0
-    TrayFrame.ZIndex = 5 -- Ensure it’s above other taskbar elements
-    TrayFrame.Active = true -- Make it clickable
+    TrayFrame.ZIndex = 5
+    TrayFrame.Active = true
     
     local TrayCorner = Instance.new("UICorner", TrayFrame)
-    TrayCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+    TrayCorner.CornerRadius = UDim.new(0, 4)
     
     local TrayStroke = Instance.new("UIStroke", TrayFrame)
     TrayStroke.Color = theme.AccentColor
-    TrayStroke.Transparency = 0.8
-    TrayStroke.Thickness = Config.Math.BorderThickness
+    TrayStroke.Transparency = 0.7
+    TrayStroke.Thickness = 1
     
-    -- Avatar Image
+    -- Avatar Image with Glow
     local AvatarImage = Instance.new("ImageLabel", TrayFrame)
-    AvatarImage.Size = UDim2.new(0, 30, 0, 30)
-    AvatarImage.Position = UDim2.new(0, 5, 0.5, -15)
+    AvatarImage.Size = UDim2.new(0, 32, 0, 32)
+    AvatarImage.Position = UDim2.new(0, 8, 0.5, -16)
     AvatarImage.BackgroundTransparency = 1
     AvatarImage.Image = Players:GetUserThumbnailAsync(localPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size48x48)
     AvatarImage.ZIndex = 6
@@ -39,43 +40,72 @@ return function(parent)
     local AvatarCorner = Instance.new("UICorner", AvatarImage)
     AvatarCorner.CornerRadius = UDim.new(1, 0)
     
-    -- Display Name
+    local AvatarGlow = Instance.new("UIStroke", AvatarImage)
+    AvatarGlow.Color = theme.AccentColor
+    AvatarGlow.Thickness = 2
+    AvatarGlow.Transparency = 0.8
+    
+    -- Display Name with Shadow
     local DisplayName = Instance.new("TextLabel", TrayFrame)
-    DisplayName.Size = UDim2.new(1, -40, 1, 0)
-    DisplayName.Position = UDim2.new(0, 40, 0, 0)
+    DisplayName.Size = UDim2.new(1, -48, 1, 0)
+    DisplayName.Position = UDim2.new(0, 48, 0, 0)
     DisplayName.BackgroundTransparency = 1
     DisplayName.Text = localPlayer.DisplayName .. " (@" .. localPlayer.Name .. ")"
     DisplayName.TextColor3 = theme.TextColor
     DisplayName.Font = theme.Font
-    DisplayName.TextSize = 12
+    DisplayName.TextSize = 13
     DisplayName.TextXAlignment = Enum.TextXAlignment.Left
     DisplayName.TextTruncate = Enum.TextTruncate.AtEnd
     DisplayName.ZIndex = 6
     
-    -- Server Info Panel
+    local NameShadow = Instance.new("TextLabel", TrayFrame)
+    NameShadow.Size = DisplayName.Size
+    NameShadow.Position = UDim2.new(0, 49, 0, 1)
+    NameShadow.BackgroundTransparency = 1
+    NameShadow.Text = DisplayName.Text
+    NameShadow.TextColor3 = Color3.new(0, 0, 0)
+    NameShadow.TextTransparency = 0.7
+    NameShadow.Font = theme.Font
+    NameShadow.TextSize = 13
+    NameShadow.TextXAlignment = Enum.TextXAlignment.Left
+    NameShadow.TextTruncate = Enum.TextTruncate.AtEnd
+    NameShadow.ZIndex = 5
+    
+    -- Server Info Panel with Shadow
     local Panel = Instance.new("Frame", TrayFrame)
     Panel.Name = "ServerInfoPanel"
-    Panel.Size = UDim2.new(0, 200, 0, 150)
-    Panel.Position = UDim2.new(1, -200, 0, -155)
+    Panel.Size = UDim2.new(0, 220, 0, 160)
+    Panel.Position = UDim2.new(1, -220, 0, -165)
     Panel.BackgroundColor3 = theme.PrimaryColor
-    Panel.BackgroundTransparency = 0.2
+    Panel.BackgroundTransparency = 0.1
     Panel.BorderSizePixel = 0
     Panel.Visible = false
     Panel.ZIndex = 10
     
     local PanelCorner = Instance.new("UICorner", Panel)
-    PanelCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+    PanelCorner.CornerRadius = UDim.new(0, 6)
     
     local PanelStroke = Instance.new("UIStroke", Panel)
     PanelStroke.Color = theme.AccentColor
-    PanelStroke.Transparency = 0.6
-    PanelStroke.Thickness = Config.Math.BorderThickness
+    PanelStroke.Transparency = 0.5
+    PanelStroke.Thickness = 1.5
     
-    -- Server Info Labels
+    local PanelShadow = Instance.new("ImageLabel", Panel)
+    PanelShadow.Size = UDim2.new(1, 10, 1, 10)
+    PanelShadow.Position = UDim2.new(0, -5, 0, -5)
+    PanelShadow.BackgroundTransparency = 1
+    PanelShadow.Image = "rbxassetid://1316045217" -- Shadow image
+    PanelShadow.ImageColor3 = Color3.new(0, 0, 0)
+    PanelShadow.ImageTransparency = 0.7
+    PanelShadow.ScaleType = Enum.ScaleType.Slice
+    PanelShadow.SliceCenter = Rect.new(10, 10, 10, 10)
+    PanelShadow.ZIndex = 9
+    
+    -- Server Info Labels with Shadows
     local function createInfoLabel(name, value, yPos)
         local label = Instance.new("TextLabel", Panel)
-        label.Size = UDim2.new(1, -10, 0, 20)
-        label.Position = UDim2.new(0, 5, 0, yPos)
+        label.Size = UDim2.new(1, -20, 0, 20)
+        label.Position = UDim2.new(0, 10, 0, yPos)
         label.BackgroundTransparency = 1
         label.Text = name .. ": " .. tostring(value)
         label.TextColor3 = theme.TextColor
@@ -83,72 +113,111 @@ return function(parent)
         label.TextSize = 12
         label.TextXAlignment = Enum.TextXAlignment.Left
         label.ZIndex = 11
-        return label
+        
+        local shadow = Instance.new("TextLabel", Panel)
+        shadow.Size = label.Size
+        shadow.Position = UDim2.new(0, 11, 0, yPos + 1)
+        shadow.BackgroundTransparency = 1
+        shadow.Text = label.Text
+        shadow.TextColor3 = Color3.new(0, 0, 0)
+        shadow.TextTransparency = 0.7
+        shadow.Font = theme.Font
+        shadow.TextSize = 12
+        shadow.TextXAlignment = Enum.TextXAlignment.Left
+        shadow.ZIndex = 10
+        
+        return label, shadow
     end
     
     local gameInfo = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
     local serverAge = math.floor((os.time() - (tonumber(game.JobId:match("^(%d+)") or os.time())) / 60))
     
     local labels = {
-        players = createInfoLabel("Players", #Players:GetPlayers() .. "/" .. game.Players.MaxPlayers, 5),
-        gameName = createInfoLabel("Game", gameInfo.Name, 25),
-        gameId = createInfoLabel("Game ID", game.PlaceId, 45),
-        serverAge = createInfoLabel("Server Age", serverAge .. " min", 65),
-        serverId = createInfoLabel("Server ID", game.JobId, 85)
+        players = createInfoLabel("Players", #Players:GetPlayers() .. "/" .. game.Players.MaxPlayers, 10),
+        gameName = createInfoLabel("Game", gameInfo.Name, 35),
+        gameId = createInfoLabel("Game ID", game.PlaceId, 60),
+        serverAge = createInfoLabel("Server Age", serverAge .. " min", 85),
+        serverId = createInfoLabel("Server ID", game.JobId, 110)
     }
     
-    -- Rejoin Button
+    -- Rejoin Button with Hover Effect
     local RejoinButton = Instance.new("TextButton", Panel)
-    RejoinButton.Size = UDim2.new(0, 80, 0, 25)
-    RejoinButton.Position = UDim2.new(0.5, -40, 1, -30)
+    RejoinButton.Size = UDim2.new(0, 90, 0, 30)
+    RejoinButton.Position = UDim2.new(0.5, -45, 1, -40)
     RejoinButton.BackgroundColor3 = theme.AccentColor
-    RejoinButton.BackgroundTransparency = 0.7
+    RejoinButton.BackgroundTransparency = 0.6
     RejoinButton.Text = "Rejoin"
     RejoinButton.TextColor3 = theme.TextColor
     RejoinButton.Font = theme.Font
-    RejoinButton.TextSize = 12
+    RejoinButton.TextSize = 14
     RejoinButton.ZIndex = 11
     RejoinButton.Active = true
     
     local RejoinCorner = Instance.new("UICorner", RejoinButton)
-    RejoinCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+    RejoinCorner.CornerRadius = UDim.new(0, 4)
     
-    -- Click Handler with Debugging
+    local RejoinStroke = Instance.new("UIStroke", RejoinButton)
+    RejoinStroke.Color = theme.TextColor
+    RejoinStroke.Transparency = 0.8
+    RejoinStroke.Thickness = 1
+    
+    -- Close Button for Panel
+    local CloseButton = Instance.new("TextButton", Panel)
+    CloseButton.Size = UDim2.new(0, 20, 0, 20)
+    CloseButton.Position = UDim2.new(1, -25, 0, 5)
+    CloseButton.BackgroundTransparency = 1
+    CloseButton.Text = "✖"
+    CloseButton.TextColor3 = theme.TextColor
+    CloseButton.Font = Enum.Font.GothamBold
+    CloseButton.TextSize = 14
+    CloseButton.ZIndex = 11
+    
+    CloseButton.MouseButton1Click:Connect(function()
+        Panel.Visible = false
+    end)
+    
+    -- Enhanced Hover Effects with Scale
+    local function hoverEffect(obj, scaleUp)
+        local targetSize = scaleUp and UDim2.new(obj.Size.X.Scale * 1.05, obj.Size.X.Offset * 1.05, obj.Size.Y.Scale * 1.05, obj.Size.Y.Offset * 1.05) or obj.Size
+        TweenService:Create(obj, TweenInfo.new(0.2), {Size = targetSize}):Play()
+    end
+    
+    TrayFrame.MouseEnter:Connect(function()
+        hoverEffect(TrayFrame, true)
+        TweenService:Create(TrayFrame, TweenInfo.new(0.2), {BackgroundTransparency = 0.4}):Play()
+        TweenService:Create(TrayStroke, TweenInfo.new(0.2), {Transparency = 0.5}):Play()
+    end)
+    
+    TrayFrame.MouseLeave:Connect(function()
+        hoverEffect(TrayFrame, false)
+        TweenService:Create(TrayFrame, TweenInfo.new(0.2), {BackgroundTransparency = 0.6}):Play()
+        TweenService:Create(TrayStroke, TweenInfo.new(0.2), {Transparency = 0.7}):Play()
+    end)
+    
+    RejoinButton.MouseEnter:Connect(function()
+        hoverEffect(RejoinButton, true)
+        TweenService:Create(RejoinButton, TweenInfo.new(0.2), {BackgroundTransparency = 0.4}):Play()
+    end)
+    
+    RejoinButton.MouseLeave:Connect(function()
+        hoverEffect(RejoinButton, false)
+        TweenService:Create(RejoinButton, TweenInfo.new(0.2), {BackgroundTransparency = 0.6}):Play()
+    end)
+    
+    -- Toggle Panel on Click
     TrayFrame.InputBegan:Connect(function(input)
-        _G.CensuraG.Logger:info("SystemTray clicked, input type: " .. tostring(input.UserInputType))
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            _G.CensuraG.Logger:info("Toggling ServerInfoPanel, current visibility: " .. tostring(Panel.Visible))
             Panel.Visible = not Panel.Visible
-            local targetTransparency = Panel.Visible and 0.2 or 1
-            _G.CensuraG.AnimationManager:Tween(Panel, {BackgroundTransparency = targetTransparency}, 0.2)
+            local targetTransparency = Panel.Visible and 0.1 or 1
+            TweenService:Create(Panel, TweenInfo.new(0.3), {BackgroundTransparency = targetTransparency}):Play()
             if not Panel.Visible then
-                task.delay(0.2, function() Panel.Visible = false end)
+                task.delay(0.3, function() Panel.Visible = false end)
             end
         end
     end)
     
-    -- Hover Effects
-    TrayFrame.MouseEnter:Connect(function()
-        _G.CensuraG.AnimationManager:Tween(TrayFrame, {BackgroundTransparency = 0.5}, 0.2)
-        _G.CensuraG.AnimationManager:Tween(TrayStroke, {Transparency = 0.6}, 0.2)
-    end)
-    
-    TrayFrame.MouseLeave:Connect(function()
-        _G.CensuraG.AnimationManager:Tween(TrayFrame, {BackgroundTransparency = 0.7}, 0.2)
-        _G.CensuraG.AnimationManager:Tween(TrayStroke, {Transparency = 0.8}, 0.2)
-    end)
-    
-    RejoinButton.MouseEnter:Connect(function()
-        _G.CensuraG.AnimationManager:Tween(RejoinButton, {BackgroundTransparency = 0.5}, 0.2)
-    end)
-    
-    RejoinButton.MouseLeave:Connect(function()
-        _G.CensuraG.AnimationManager:Tween(RejoinButton, {BackgroundTransparency = 0.7}, 0.2)
-    end)
-    
     -- Rejoin Functionality
     RejoinButton.MouseButton1Click:Connect(function()
-        _G.CensuraG.Logger:info("Rejoin button clicked")
         TeleportService:Teleport(game.PlaceId, localPlayer)
     end)
     
@@ -157,11 +226,16 @@ return function(parent)
         local currentGameInfo = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
         local currentServerAge = math.floor((os.time() - (tonumber(game.JobId:match("^(%d+)") or os.time())) / 60))
         
-        labels.players.Text = "Players: " .. #Players:GetPlayers() .. "/" .. game.Players.MaxPlayers
-        labels.gameName.Text = "Game: " .. currentGameInfo.Name
-        labels.gameId.Text = "Game ID: " .. game.PlaceId
-        labels.serverAge.Text = "Server Age: " .. currentServerAge .. " min"
-        labels.serverId.Text = "Server ID: " .. game.JobId
+        labels.players[1].Text = "Players: " .. #Players:GetPlayers() .. "/" .. game.Players.MaxPlayers
+        labels.gameName[1].Text = "Game: " .. currentGameInfo.Name
+        labels.gameId[1].Text = "Game ID: " .. game.PlaceId
+        labels.serverAge[1].Text = "Server Age: " .. currentServerAge .. " min"
+        labels.serverId[1].Text = "Server ID: " .. game.JobId
+        
+        -- Update shadows
+        for _, labelPair in pairs(labels) do
+            labelPair[2].Text = labelPair[1].Text
+        end
     end
     
     game:GetService("RunService").Heartbeat:Connect(updateInfo)
@@ -172,25 +246,28 @@ return function(parent)
         Panel = Panel,
         Refresh = function(self)
             local theme = Config:GetTheme()
-            _G.CensuraG.AnimationManager:Tween(self.Instance, {BackgroundColor3 = theme.SecondaryColor, BackgroundTransparency = 0.7}, animConfig.FadeDuration)
-            _G.CensuraG.AnimationManager:Tween(TrayStroke, {Color = theme.AccentColor})
-            _G.CensuraG.AnimationManager:Tween(DisplayName, {TextColor3 = theme.TextColor})
+            TweenService:Create(self.Instance, TweenInfo.new(animConfig.FadeDuration), {BackgroundColor3 = theme.SecondaryColor, BackgroundTransparency = 0.6})
+            TweenService:Create(TrayStroke, TweenInfo.new(animConfig.FadeDuration), {Color = theme.AccentColor})
+            TweenService:Create(DisplayName, TweenInfo.new(animConfig.FadeDuration), {TextColor3 = theme.TextColor})
             DisplayName.Font = theme.Font
+            NameShadow.Font = theme.Font
             
-            _G.CensuraG.AnimationManager:Tween(self.Panel, {BackgroundColor3 = theme.PrimaryColor})
-            _G.CensuraG.AnimationManager:Tween(PanelStroke, {Color = theme.AccentColor})
+            TweenService:Create(self.Panel, TweenInfo.new(animConfig.FadeDuration), {BackgroundColor3 = theme.PrimaryColor})
+            TweenService:Create(PanelStroke, TweenInfo.new(animConfig.FadeDuration), {Color = theme.AccentColor})
             
-            for _, label in pairs(labels) do
-                _G.CensuraG.AnimationManager:Tween(label, {TextColor3 = theme.TextColor})
-                label.Font = theme.Font
+            for _, labelPair in pairs(labels) do
+                TweenService:Create(labelPair[1], TweenInfo.new(animConfig.FadeDuration), {TextColor3 = theme.TextColor})
+                labelPair[1].Font = theme.Font
+                labelPair[2].Font = theme.Font
             end
             
-            _G.CensuraG.AnimationManager:Tween(RejoinButton, {BackgroundColor3 = theme.AccentColor, TextColor3 = theme.TextColor})
+            TweenService:Create(RejoinButton, TweenInfo.new(animConfig.FadeDuration), {BackgroundColor3 = theme.AccentColor, TextColor3 = theme.TextColor})
             RejoinButton.Font = theme.Font
+            TweenService:Create(CloseButton, TweenInfo.new(animConfig.FadeDuration), {TextColor3 = theme.TextColor})
         end,
         UpdateInfo = updateInfo
     }
     
-    _G.CensuraG.Logger:info("SystemTray created for " .. localPlayer.DisplayName)
+    _G.CensuraG.Logger:info("Enhanced SystemTray created for " .. localPlayer.DisplayName)
     return SystemTray
 end
