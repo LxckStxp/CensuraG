@@ -1,4 +1,4 @@
--- CensuraG/src/components/systemtray.lua (Fixed and Enhanced)
+-- CensuraG/src/components/systemtray.lua (Enhanced Version)
 local Config = _G.CensuraG.Config
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -245,22 +245,22 @@ return function(parent)
         Panel = Panel,
         Refresh = function(self)
             local theme = Config:GetTheme()
-            TweenService:Create(self.Instance, TweenInfo.new(animConfig.FadeDuration), {BackgroundColor3 = theme.SecondaryColor, BackgroundTransparency = 0.6})
-            TweenService:Create(TrayStroke, TweenInfo.new(animConfig.FadeDuration), {Color = theme.AccentColor})
-            TweenService:Create(DisplayName, TweenInfo.new(animConfig.FadeDuration), {TextColor3 = theme.TextColor})
+            TweenService:Create(self.Instance, TweenInfo.new(animConfig.FadeDuration), {BackgroundColor3 = theme.SecondaryColor, BackgroundTransparency = 0.6}):Play()
+            TweenService:Create(TrayStroke, TweenInfo.new(animConfig.FadeDuration), {Color = theme.AccentColor}):Play()
+            TweenService:Create(DisplayName, TweenInfo.new(animConfig.FadeDuration), {TextColor3 = theme.TextColor}):Play()
             DisplayName.Font = theme.Font
             NameShadow.Font = theme.Font
             
-            TweenService:Create(self.Panel, TweenInfo.new(animConfig.FadeDuration), {BackgroundColor3 = theme.PrimaryColor})
-            TweenService:Create(PanelStroke, TweenInfo.new(animConfig.FadeDuration), {Color = theme.AccentColor})
+            TweenService:Create(self.Panel, TweenInfo.new(animConfig.FadeDuration), {BackgroundColor3 = theme.PrimaryColor}):Play()
+            TweenService:Create(PanelStroke, TweenInfo.new(animConfig.FadeDuration), {Color = theme.AccentColor}):Play()
             
             for _, labelPair in pairs(labels) do
-                TweenService:Create(labelPair[1], TweenInfo.new(animConfig.FadeDuration), {TextColor3 = theme.TextColor})
+                TweenService:Create(labelPair[1], TweenInfo.new(animConfig.FadeDuration), {TextColor3 = theme.TextColor}):Play()
                 labelPair[1].Font = theme.Font
                 labelPair[2].Font = theme.Font
             end
             
-            TweenService:Create(RejoinButton, TweenInfo.new(animConfig.FadeDuration), {BackgroundColor3 = theme.AccentColor, TextColor3 = theme.TextColor})
+            TweenService:Create(RejoinButton, TweenInfo.new(animConfig.FadeDuration), {BackgroundColor3 = theme.AccentColor, TextColor3 = theme.TextColor}):Play()
             RejoinButton.Font = theme.Font
         end,
         UpdateInfo = updateInfo
