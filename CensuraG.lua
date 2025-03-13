@@ -288,7 +288,7 @@ if splash then
     end)
 end
 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura-Applications/main/Services/Remote.lua"))()
+--loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura-Applications/main/Services/Remote.lua"))() -- Debug Tool
 
 CensuraG.Logger:info("CensuraG initialization complete")
 return CensuraG
