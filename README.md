@@ -1,3 +1,7 @@
+## Discord
+If youd like to communicate feel free to join
+https://discord.gg/KrnPpxHKbM
+
 # CensuraG - Modern UI Library for Roblox
 
 CensuraG is a sleek, modern UI library for Roblox that provides a complete solution for creating stylish interfaces with minimal effort. This lightweight yet powerful library includes animated windows, auto-hiding taskbar, and a variety of UI components.
