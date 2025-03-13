@@ -1,5 +1,5 @@
 ## Discord
-If youd like to communicate feel free to join
+If you would like to communicate feel free to join
 https://discord.gg/KrnPpxHKbM
 
 # CensuraG - Modern UI Library for Roblox
