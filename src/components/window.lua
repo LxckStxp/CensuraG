@@ -48,7 +48,7 @@ return function(title)
 
     local TitleText = Instance.new("TextLabel", TitleBar)
     TitleText.Name = "TitleText"
-    TitleText.Size = UDim2.new(1, -70, 1, 0)
+    TitleText.Size = UDim2.new(1, -100, 1, 0)  -- More space for buttons
     TitleText.Position = UDim2.new(0, 10, 0, 0)
     TitleText.BackgroundTransparency = 1
     TitleText.Text = title
@@ -59,21 +59,67 @@ return function(title)
     TitleText.TextXAlignment = Enum.TextXAlignment.Left
     TitleText.ZIndex = 2
 
+    -- Window Control Buttons Container
+    local ControlsFrame = Instance.new("Frame", TitleBar)
+    ControlsFrame.Name = "WindowControls"
+    ControlsFrame.Size = UDim2.new(0, 85, 1, -4)
+    ControlsFrame.Position = UDim2.new(1, -87, 0, 2)
+    ControlsFrame.BackgroundTransparency = 1
+    ControlsFrame.ZIndex = 2
+
+    local ControlsLayout = Instance.new("UIListLayout", ControlsFrame)
+    ControlsLayout.FillDirection = Enum.FillDirection.Horizontal
+    ControlsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+    ControlsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    ControlsLayout.Padding = UDim.new(0, 2)
+
     -- Minimize Button
-    local MinimizeButton = Instance.new("TextButton", TitleBar)
+    local MinimizeButton = Instance.new("TextButton", ControlsFrame)
     MinimizeButton.Name = "MinimizeButton"
-    MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
-    MinimizeButton.Position = UDim2.new(1, -30, 0.5, -12.5)
-    MinimizeButton.BackgroundColor3 = theme.AccentColor
+    MinimizeButton.Size = UDim2.new(0, Config.Math.ButtonSize, 0, Config.Math.ButtonSize)
+    MinimizeButton.BackgroundColor3 = theme.SecondaryColor
     MinimizeButton.BackgroundTransparency = 0.7
-    MinimizeButton.Text = "-"
+    MinimizeButton.Text = "−"
     MinimizeButton.TextColor3 = theme.TextColor
     MinimizeButton.Font = theme.Font
-    MinimizeButton.TextSize = 18
-    MinimizeButton.ZIndex = 2
+    MinimizeButton.TextSize = 14
+    MinimizeButton.ZIndex = 3
+    MinimizeButton.AutoButtonColor = false
 
     local MinimizeCorner = Instance.new("UICorner", MinimizeButton)
     MinimizeCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+
+    -- Maximize Button
+    local MaximizeButton = Instance.new("TextButton", ControlsFrame)
+    MaximizeButton.Name = "MaximizeButton"
+    MaximizeButton.Size = UDim2.new(0, Config.Math.ButtonSize, 0, Config.Math.ButtonSize)
+    MaximizeButton.BackgroundColor3 = theme.SecondaryColor
+    MaximizeButton.BackgroundTransparency = 0.7
+    MaximizeButton.Text = "□"
+    MaximizeButton.TextColor3 = theme.TextColor
+    MaximizeButton.Font = theme.Font
+    MaximizeButton.TextSize = 14
+    MaximizeButton.ZIndex = 3
+    MaximizeButton.AutoButtonColor = false
+
+    local MaximizeCorner = Instance.new("UICorner", MaximizeButton)
+    MaximizeCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+
+    -- Close Button
+    local CloseButton = Instance.new("TextButton", ControlsFrame)
+    CloseButton.Name = "CloseButton"
+    CloseButton.Size = UDim2.new(0, Config.Math.ButtonSize, 0, Config.Math.ButtonSize)
+    CloseButton.BackgroundColor3 = Color3.fromRGB(180, 70, 70)  -- Red close button
+    CloseButton.BackgroundTransparency = 0.7
+    CloseButton.Text = "×"
+    CloseButton.TextColor3 = theme.TextColor
+    CloseButton.Font = theme.Font
+    CloseButton.TextSize = 16
+    CloseButton.ZIndex = 3
+    CloseButton.AutoButtonColor = false
+
+    local CloseCorner = Instance.new("UICorner", CloseButton)
+    CloseCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
 
     -- Content Scrolling Frame - Simplified and fixed
     local ContentFrame = Instance.new("ScrollingFrame", Frame)
@@ -109,6 +155,16 @@ return function(title)
     Padding.PaddingLeft = UDim.new(0, Config.Math.Padding)
     Padding.PaddingRight = UDim.new(0, Config.Math.Padding + 6) -- Extra padding for scrollbar
 
+    -- Window State Management
+    local WindowState = {
+        current = Config.WindowStates.NORMAL,
+        previousPosition = Frame.Position,
+        previousSize = Frame.Size,
+        isMaximized = false,
+        isFocused = false,
+        zIndex = 1
+    }
+
     -- Resize handle (bottom-right corner)
     local ResizeHandle = Instance.new("TextButton", Frame)
     ResizeHandle.Name = "ResizeHandle"
@@ -126,15 +182,47 @@ return function(title)
     local ResizeCorner = Instance.new("UICorner", ResizeHandle)
     ResizeCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
 
-    -- Dragging functionality
+    -- Focus Management
+    local function bringToFront()
+        if not WindowState.isFocused and _G.CensuraG.WindowManager then
+            -- Find highest ZIndex among all windows
+            local maxZIndex = 1
+            if _G.CensuraG.Windows then
+                for _, window in ipairs(_G.CensuraG.Windows) do
+                    if window.Frame and window.Frame.ZIndex > maxZIndex then
+                        maxZIndex = window.Frame.ZIndex
+                    end
+                end
+            end
+            
+            -- Set this window to highest + 1
+            Frame.ZIndex = maxZIndex + 1
+            WindowState.zIndex = Frame.ZIndex
+            WindowState.isFocused = true
+            
+            -- Visual focus feedback
+            _G.CensuraG.AnimationManager:Tween(Stroke, {
+                Color = theme.AccentColor,
+                Transparency = 0.4
+            }, Config.Animations.FocusAnimationSpeed)
+            
+            _G.CensuraG.Logger:info("Window focused: " .. title)
+        end
+    end
+
+    -- Dragging functionality with focus
     local dragging = false
     local dragStartPos, frameStartPos
 
     TitleBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            bringToFront() -- Focus window when clicked
             dragging = true
             dragStartPos = input.Position
             frameStartPos = Frame.Position
+            
+            -- Store current state
+            WindowState.previousPosition = Frame.Position
             
             -- Hover effect
             _G.CensuraG.AnimationManager:Tween(TitleStroke, {Transparency = 0.4}, 0.2)
@@ -146,7 +234,39 @@ return function(title)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = false
             
-            -- Return to normal
+            -- Check for window snapping if enabled
+            if Config.Windows.EnableSnapping and WindowState.current == Config.WindowStates.NORMAL then
+                local screenSize = game.Workspace.CurrentCamera.ViewportSize
+                local windowPos = Frame.AbsolutePosition
+                local snapDistance = Config.Math.SnapDistance
+                
+                -- Snap to left edge
+                if windowPos.X < snapDistance then
+                    WindowState.current = Config.WindowStates.SNAPPED_LEFT
+                    _G.CensuraG.AnimationManager:Tween(Frame, {
+                        Position = UDim2.new(0, 0, 0, 0),
+                        Size = UDim2.new(0.5, 0, 1, -Config.Math.TaskbarHeight)
+                    }, Config.Animations.WindowAnimationSpeed)
+                -- Snap to right edge
+                elseif windowPos.X + Frame.AbsoluteSize.X > screenSize.X - snapDistance then
+                    WindowState.current = Config.WindowStates.SNAPPED_RIGHT
+                    _G.CensuraG.AnimationManager:Tween(Frame, {
+                        Position = UDim2.new(0.5, 0, 0, 0),
+                        Size = UDim2.new(0.5, 0, 1, -Config.Math.TaskbarHeight)
+                    }, Config.Animations.WindowAnimationSpeed)
+                -- Snap to top (maximize)
+                elseif windowPos.Y < snapDistance then
+                    WindowState.isMaximized = true
+                    WindowState.current = Config.WindowStates.MAXIMIZED
+                    MaximizeButton.Text = "❐"
+                    _G.CensuraG.AnimationManager:Tween(Frame, {
+                        Position = UDim2.new(0, 0, 0, 0),
+                        Size = UDim2.new(1, 0, 1, -Config.Math.TaskbarHeight)
+                    }, Config.Animations.WindowAnimationSpeed)
+                end
+            end
+            
+            -- Return to normal visual state
             _G.CensuraG.AnimationManager:Tween(TitleStroke, {Transparency = 0.6}, 0.2)
             _G.CensuraG.AnimationManager:Tween(TitleBar, {BackgroundTransparency = 0.8}, 0.2)
         end
@@ -154,14 +274,32 @@ return function(title)
 
     game:GetService("UserInputService").InputChanged:Connect(function(input)
         if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStartPos
-            local newPos = UDim2.new(
-                frameStartPos.X.Scale,
-                frameStartPos.X.Offset + delta.X,
-                frameStartPos.Y.Scale,
-                frameStartPos.Y.Offset + delta.Y
-            )
-            _G.CensuraG.AnimationManager:Tween(Frame, {Position = newPos}, 0.05)
+            -- If window is maximized or snapped, restore to normal first
+            if WindowState.isMaximized or WindowState.current ~= Config.WindowStates.NORMAL then
+                WindowState.isMaximized = false
+                WindowState.current = Config.WindowStates.NORMAL
+                MaximizeButton.Text = "□"
+                
+                -- Restore size and adjust position to follow cursor
+                local cursorX = input.Position.X
+                local screenSize = game.Workspace.CurrentCamera.ViewportSize
+                local normalWidth = Config.Math.DefaultWindowSize.X
+                local newX = math.max(0, math.min(screenSize.X - normalWidth, cursorX - normalWidth/2))
+                
+                Frame.Size = UDim2.fromOffset(normalWidth, Config.Math.DefaultWindowSize.Y)
+                Frame.Position = UDim2.fromOffset(newX, 50)
+                frameStartPos = Frame.Position
+                dragStartPos = input.Position
+            else
+                local delta = input.Position - dragStartPos
+                local newPos = UDim2.new(
+                    frameStartPos.X.Scale,
+                    frameStartPos.X.Offset + delta.X,
+                    frameStartPos.Y.Scale,
+                    frameStartPos.Y.Offset + delta.Y
+                )
+                _G.CensuraG.AnimationManager:Tween(Frame, {Position = newPos}, 0.05)
+            end
         end
     end)
 
@@ -217,14 +355,85 @@ return function(title)
         end
     end)
 
-    -- Button hover effects
-    MinimizeButton.MouseEnter:Connect(function()
-        _G.CensuraG.AnimationManager:Tween(MinimizeButton, {BackgroundTransparency = 0.5}, 0.2)
+    -- Window Control Button Functionality
+    
+    -- Maximize Button Logic
+    local function toggleMaximize()
+        if WindowState.isMaximized then
+            -- Restore window
+            WindowState.isMaximized = false
+            WindowState.current = Config.WindowStates.NORMAL
+            MaximizeButton.Text = "□"
+            
+            _G.CensuraG.AnimationManager:Tween(Frame, {
+                Position = WindowState.previousPosition,
+                Size = WindowState.previousSize
+            }, Config.Animations.WindowAnimationSpeed)
+        else
+            -- Maximize window
+            WindowState.previousPosition = Frame.Position
+            WindowState.previousSize = Frame.Size
+            WindowState.isMaximized = true
+            WindowState.current = Config.WindowStates.MAXIMIZED
+            MaximizeButton.Text = "❐"
+            
+            _G.CensuraG.AnimationManager:Tween(Frame, {
+                Position = UDim2.new(0, 0, 0, 0),
+                Size = UDim2.new(1, 0, 1, -Config.Math.TaskbarHeight)
+            }, Config.Animations.WindowAnimationSpeed)
+        end
+    end
+    
+    MaximizeButton.MouseButton1Click:Connect(toggleMaximize)
+    
+    -- Double-click title bar to maximize
+    local lastTitleClick = 0
+    TitleText.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            local currentTime = tick()
+            if currentTime - lastTitleClick < Config.Desktop.DoubleClickTime then
+                toggleMaximize()
+            end
+            lastTitleClick = currentTime
+        end
     end)
-
-    MinimizeButton.MouseLeave:Connect(function()
-        _G.CensuraG.AnimationManager:Tween(MinimizeButton, {BackgroundTransparency = 0.7}, 0.2)
+    
+    -- Close Button Logic
+    CloseButton.MouseButton1Click:Connect(function()
+        if _G.CensuraG.WindowManager and _G.CensuraG.WindowManager.CloseWindow then
+            _G.CensuraG.WindowManager:CloseWindow(title)
+        else
+            -- Fallback close behavior
+            _G.CensuraG.AnimationManager:Tween(Frame, {
+                Size = UDim2.new(0, 0, 0, 0),
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                BackgroundTransparency = 1
+            }, Config.Animations.WindowAnimationSpeed)
+            
+            task.delay(Config.Animations.WindowAnimationSpeed, function()
+                Frame:Destroy()
+            end)
+        end
     end)
+    
+    -- Button Hover Effects
+    for _, button in pairs({MinimizeButton, MaximizeButton, CloseButton}) do
+        button.MouseEnter:Connect(function()
+            _G.CensuraG.AnimationManager:Tween(button, {BackgroundTransparency = 0.3}, 0.15)
+        end)
+        
+        button.MouseLeave:Connect(function()
+            _G.CensuraG.AnimationManager:Tween(button, {BackgroundTransparency = 0.7}, 0.15)
+        end)
+        
+        button.MouseButton1Down:Connect(function()
+            _G.CensuraG.AnimationManager:Tween(button, {BackgroundTransparency = 0.1}, 0.1)
+        end)
+        
+        button.MouseButton1Up:Connect(function()
+            _G.CensuraG.AnimationManager:Tween(button, {BackgroundTransparency = 0.3}, 0.1)
+        end)
+    end
 
     -- Resize handle hover effects
     ResizeHandle.MouseEnter:Connect(function()
@@ -256,21 +465,25 @@ return function(title)
         ContentFrame.CanvasSize = UDim2.new(0, 0, 0, math.max(contentHeight, ContentFrame.AbsoluteSize.Y * 1.1))
     end)
 
-    -- Window interface
+    -- Window interface with enhanced functionality
     local Window = {
         Frame = Frame,
         TitleBar = TitleBar,
         TitleText = TitleText,
         MinimizeButton = MinimizeButton,
+        MaximizeButton = MaximizeButton,
+        CloseButton = CloseButton,
         ContentFrame = ContentFrame,
         ResizeHandle = ResizeHandle,
+        State = WindowState,
+        
+        -- Window management methods
         AddComponent = function(self, component)
             if component and component.Instance then
                 component.Instance.Parent = self.ContentFrame
-                component.Instance.LayoutOrder = #self.ContentFrame:GetChildren() - 3 -- Adjust for layout and padding
+                component.Instance.LayoutOrder = #self.ContentFrame:GetChildren() - 3
                 _G.CensuraG.Logger:info("Added component to window")
                 
-                -- Update canvas size
                 task.delay(0.1, function()
                     self:UpdateSize()
                 end)
@@ -278,26 +491,79 @@ return function(title)
                 _G.CensuraG.Logger:warn("Invalid component provided to window")
             end
         end,
+        
         Refresh = function(self)
             _G.CensuraG.Methods:RefreshComponent("window", self)
         end,
+        
         UpdateSize = function(self)
             local contentHeight = ListLayout.AbsoluteContentSize.Y + Padding.PaddingTop.Offset + Padding.PaddingBottom.Offset
-            -- Ensure the canvas is at least as tall as the content
             ContentFrame.CanvasSize = UDim2.new(0, 0, 0, math.max(contentHeight, ContentFrame.AbsoluteSize.Y * 1.1))
         end,
+        
         GetTitle = function(self)
             return title
         end,
+        
         SetSize = function(self, width, height)
-            _G.CensuraG.AnimationManager:Tween(self.Frame, {
-                Size = UDim2.new(0, width, 0, height)
-            }, 0.2)
-            
-            -- Update canvas size after resize
-            task.delay(0.25, function()
-                self:UpdateSize()
-            end)
+            if not WindowState.isMaximized then
+                WindowState.previousSize = UDim2.new(0, width, 0, height)
+                _G.CensuraG.AnimationManager:Tween(self.Frame, {
+                    Size = UDim2.new(0, width, 0, height)
+                }, Config.Animations.WindowAnimationSpeed)
+                
+                task.delay(Config.Animations.WindowAnimationSpeed, function()
+                    self:UpdateSize()
+                end)
+            end
+        end,
+        
+        -- New desktop functionality
+        BringToFront = function(self)
+            bringToFront()
+        end,
+        
+        Maximize = function(self)
+            if not WindowState.isMaximized then
+                toggleMaximize()
+            end
+        end,
+        
+        Restore = function(self)
+            if WindowState.isMaximized then
+                toggleMaximize()
+            elseif WindowState.current ~= Config.WindowStates.NORMAL then
+                WindowState.current = Config.WindowStates.NORMAL
+                _G.CensuraG.AnimationManager:Tween(Frame, {
+                    Position = WindowState.previousPosition,
+                    Size = WindowState.previousSize
+                }, Config.Animations.WindowAnimationSpeed)
+            end
+        end,
+        
+        Close = function(self)
+            CloseButton.MouseButton1Click:Fire()
+        end,
+        
+        GetState = function(self)
+            return WindowState.current
+        end,
+        
+        IsMaximized = function(self)
+            return WindowState.isMaximized
+        end,
+        
+        IsFocused = function(self)
+            return WindowState.isFocused
+        end,
+        
+        SetFocused = function(self, focused)
+            WindowState.isFocused = focused
+            if not focused then
+                _G.CensuraG.AnimationManager:Tween(Stroke, {
+                    Transparency = 0.6
+                }, Config.Animations.FocusAnimationSpeed)
+            end
         end
     }
 

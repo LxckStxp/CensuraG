@@ -89,7 +89,8 @@ local coreModules = {
     Config = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/Config.lua",
     Methods = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/Methods.lua",
     AnimationManager = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/AnimationManager.lua",
-    RefreshManager = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/RefreshManager.lua"
+    RefreshManager = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/RefreshManager.lua",
+    DesktopManager = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/DesktopManager.lua"
 }
 
 local allCoreModulesLoaded = true
@@ -197,7 +198,7 @@ if allComponentsLoaded then
                 CensuraG.Logger:info("Taskbar initialized")
                 
                 -- Initialize SystemTray after Taskbar
-                if splash then splash:UpdateStatus("Initializing system tray...", 0.95) end
+                if splash then splash:UpdateStatus("Initializing system tray...", 0.93) end
                 if CensuraG.Components.systemtray and not CensuraG.SystemTray then
                     CensuraG.SystemTray = CensuraG.Components.systemtray(CensuraG.Taskbar.Instance.Frame)
                     CensuraG.Logger:info("SystemTray initialized")
@@ -206,6 +207,18 @@ if allComponentsLoaded then
                 CensuraG.Logger:error("TaskbarManager invalid or Initialize method missing")
             end
         end)
+    end
+    
+    -- Initialize Desktop Manager
+    if splash then splash:UpdateStatus("Initializing desktop environment...", 0.95) end
+    if CensuraG.DesktopManager then
+        pcall(function()
+            CensuraG.Desktop = CensuraG.DesktopManager
+            CensuraG.Desktop:Initialize()
+            CensuraG.Logger:info("Desktop environment initialized")
+        end)
+    else
+        CensuraG.Logger:warn("DesktopManager not loaded, desktop features disabled")
     end
 else
     CensuraG.Logger:error("Not initializing managers due to missing components")
@@ -216,7 +229,12 @@ if splash then splash:UpdateStatus("Setting up API methods...", 0.98) end
 
 CensuraG.CreateWindow = function(title)
     if CensuraG.Methods and CensuraG.Methods.CreateWindow then
-        return CensuraG.Methods:CreateWindow(title)
+        local window = CensuraG.Methods:CreateWindow(title)
+        if window then
+            -- Automatically bring new windows to front
+            window:BringToFront()
+        end
+        return window
     else
         CensuraG.Logger:error("Methods module not loaded, cannot create window")
         return nil
@@ -270,13 +288,60 @@ CensuraG.RefreshAll = function()
         if CensuraG.SystemTray then
             CensuraG.SystemTray:Refresh()
         end
+        if CensuraG.Desktop then
+            CensuraG.Desktop:Refresh()
+        end
     elseif CensuraG.Methods and CensuraG.Methods.RefreshAll then
         CensuraG.Methods:RefreshAll()
         if CensuraG.SystemTray then
             CensuraG.SystemTray:Refresh()
         end
+        if CensuraG.Desktop then
+            CensuraG.Desktop:Refresh()
+        end
     else
         CensuraG.Logger:error("No refresh mechanism available, cannot refresh all components")
+    end
+end
+
+-- Desktop Management Functions
+CensuraG.TileWindows = function()
+    if CensuraG.WindowManager then
+        CensuraG.WindowManager.TileWindows()
+    else
+        CensuraG.Logger:error("WindowManager not available")
+    end
+end
+
+CensuraG.CascadeWindows = function()
+    if CensuraG.WindowManager then
+        CensuraG.WindowManager.CascadeWindows()
+    else
+        CensuraG.Logger:error("WindowManager not available")
+    end
+end
+
+CensuraG.CloseAllWindows = function()
+    if CensuraG.WindowManager then
+        CensuraG.WindowManager.CloseAllWindows()
+    else
+        CensuraG.Logger:error("WindowManager not available")
+    end
+end
+
+CensuraG.GetActiveWindow = function()
+    if CensuraG.WindowManager then
+        return CensuraG.WindowManager.GetActiveWindow()
+    end
+    return nil
+end
+
+CensuraG.CreateDesktopIcon = function(name, iconId, callback)
+    if CensuraG.Desktop then
+        return CensuraG.Desktop:CreateDesktopIcon(name, iconId, callback)
+    else
+        CensuraG.Logger:error("Desktop not initialized")
+        return nil
     end
 end
 

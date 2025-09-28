@@ -1,14 +1,19 @@
--- CensuraG/src/Config.lua (small update to ensure backward compatibility)
+-- CensuraG/src/Config.lua (Enhanced for Desktop Environment)
 local Config = {
     -- UI Math Values
     Math = {
         DefaultWindowSize = Vector2.new(300, 400),
+        MinWindowSize = Vector2.new(200, 150),
+        MaxWindowSize = Vector2.new(1200, 800),
         TaskbarHeight = 40,
         Padding = 10,              -- Standard padding between elements
         BorderThickness = 1,       -- Thickness for borders
         ElementSpacing = 6,        -- Spacing between UI elements
         ScaleFactor = 1,           -- For potential DPI scaling
         CornerRadius = 2,          -- Rounded corners radius
+        SnapDistance = 15,         -- Pixels to snap to edges
+        TitleBarHeight = 32,       -- Height of window title bars
+        ButtonSize = 25,           -- Size of window control buttons
     },
 
     -- Animation Values
@@ -17,6 +22,40 @@ local Config = {
         SlideDuration = 0.3,       -- Duration for slide animations
         DefaultEasingStyle = Enum.EasingStyle.Quad,
         DefaultEasingDirection = Enum.EasingDirection.Out,
+        WindowAnimationSpeed = 0.25, -- Window state change animations
+        FocusAnimationSpeed = 0.15,  -- Window focus change animations
+    },
+
+    -- Desktop Environment Settings
+    Desktop = {
+        BackgroundColor = Color3.fromRGB(25, 30, 35),
+        ShowDesktopIcons = true,
+        IconSize = 64,
+        IconSpacing = 20,
+        DoubleClickTime = 0.3,     -- Double-click detection time
+        EnableContextMenu = true,   -- Right-click desktop menu
+    },
+
+    -- Window Behavior Settings
+    Windows = {
+        EnableSnapping = true,      -- Snap windows to screen edges
+        EnableFocusManagement = true, -- Click to bring to front
+        EnableMaximize = true,      -- Allow window maximizing
+        RememberPositions = false,  -- Remember window positions (future feature)
+        MaxOpenWindows = 15,        -- Maximum concurrent windows
+        DefaultPosition = "cascade", -- "center", "cascade", "random"
+        EnableAnimations = true,    -- Window state change animations
+        EnableShadows = false,      -- Window drop shadows (performance impact)
+    },
+
+    -- Taskbar Settings
+    Taskbar = {
+        AutoHide = true,           -- Auto-hide taskbar
+        ShowClock = true,          -- Show system clock
+        ShowStartButton = true,     -- Show start button
+        ShowNotifications = true,   -- Show notification area
+        ButtonMaxWidth = 150,      -- Maximum taskbar button width
+        ShowWindowPreviews = false, -- Hover previews (future feature)
     },
 
     -- Themes based on CensuraDev
@@ -65,9 +104,40 @@ local Config = {
     CurrentTheme = "Military"
 }
 
+-- Window State Enumeration
+Config.WindowStates = {
+    NORMAL = "normal",
+    MINIMIZED = "minimized", 
+    MAXIMIZED = "maximized",
+    SNAPPED_LEFT = "snapped_left",
+    SNAPPED_RIGHT = "snapped_right",
+    SNAPPED_TOP = "snapped_top",
+    SNAPPED_BOTTOM = "snapped_bottom"
+}
+
 -- Convenience function to get the active theme
 function Config:GetTheme()
     return self.Themes[self.CurrentTheme]
+end
+
+-- Get window snap zones based on screen size
+function Config:GetSnapZones()
+    local camera = game.Workspace.CurrentCamera
+    local screenSize = camera.ViewportSize
+    
+    return {
+        left = UDim2.new(0, 0, 0, 0),
+        right = UDim2.new(0.5, 0, 0, 0),
+        top = UDim2.new(0, 0, 0, 0),
+        bottom = UDim2.new(0, 0, 0.5, 0),
+        maximize = UDim2.new(0, 0, 0, 0)
+    }
+end
+
+-- Calculate cascade position for new windows
+function Config:GetCascadePosition(windowIndex)
+    local offset = (windowIndex - 1) * 30
+    return UDim2.new(0, 100 + offset, 0, 100 + offset)
 end
 
 return Config
