@@ -8,78 +8,287 @@ local ContextActionService = game:GetService("ContextActionService")
 
 function DesktopManager:Initialize()
     self.Desktop = nil
+    self.StartMenu = nil
     self.ContextMenu = nil
-    self.Icons = {}
+    self.RegisteredApps = {}
+    self.RecentApps = {}
     
     self:CreateDesktop()
-    self:SetupContextMenu()
+    self:SetupStartMenu()
     self:SetupGlobalInputHandling()
     
-    _G.CensuraG.Logger:info("Desktop Manager initialized")
+    -- Register built-in apps
+    self:RegisterBuiltInApps()
+    
+    _G.CensuraG.Logger:info("Desktop Manager initialized with glassmorphic design")
+end
+
+function DesktopManager:RegisterBuiltInApps()
+    -- Register system apps
+    self:RegisterApp(
+        "Settings", 
+        "System settings and preferences", 
+        "rbxassetid://0", 
+        function() self:OpenSettings() end, 
+        "System"
+    )
+    
+    self:RegisterApp(
+        "Task Manager", 
+        "View and manage running applications", 
+        "rbxassetid://0", 
+        function() self:OpenTaskManager() end, 
+        "System"
+    )
+    
+    _G.CensuraG.Logger:info("Built-in applications registered")
 end
 
 function DesktopManager:CreateDesktop()
     local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
     
-    -- Create desktop background
+    -- Create transparent desktop overlay (no background - shows game world)
     self.Desktop = Instance.new("Frame")
     self.Desktop.Name = "CensuraGDesktop"
     self.Desktop.Size = UDim2.new(1, 0, 1, 0)
     self.Desktop.Position = UDim2.new(0, 0, 0, 0)
-    self.Desktop.BackgroundColor3 = Config.Desktop.BackgroundColor
+    self.Desktop.BackgroundTransparency = 1 -- Completely transparent
     self.Desktop.BorderSizePixel = 0
-    self.Desktop.ZIndex = -10 -- Behind everything
+    self.Desktop.ZIndex = -5 -- Low but not lowest
     self.Desktop.Parent = _G.CensuraG.ScreenGui or playerGui:FindFirstChild("CensuraGScreenGui")
     
-    -- Add subtle gradient or pattern (optional)
-    local Gradient = Instance.new("UIGradient", self.Desktop)
-    Gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Config.Desktop.BackgroundColor),
-        ColorSequenceKeypoint.new(1, Color3.new(
-            Config.Desktop.BackgroundColor.R * 0.8,
-            Config.Desktop.BackgroundColor.G * 0.8,
-            Config.Desktop.BackgroundColor.B * 0.8
-        ))
-    })
-    Gradient.Rotation = 45
-    
-    -- Desktop icons container
-    self.IconsContainer = Instance.new("Frame", self.Desktop)
-    self.IconsContainer.Name = "DesktopIcons"
-    self.IconsContainer.Size = UDim2.new(1, -20, 1, -Config.Math.TaskbarHeight - 20)
-    self.IconsContainer.Position = UDim2.new(0, 10, 0, 10)
-    self.IconsContainer.BackgroundTransparency = 1
-    
-    -- Grid layout for desktop icons
-    local IconLayout = Instance.new("UIGridLayout", self.IconsContainer)
-    IconLayout.CellSize = UDim2.new(0, Config.Desktop.IconSize + Config.Desktop.IconSpacing, 0, Config.Desktop.IconSize + 30)
-    IconLayout.CellPadding = UDim2.new(0, Config.Desktop.IconSpacing, 0, Config.Desktop.IconSpacing)
-    IconLayout.FillDirectionMaxCells = math.floor(self.IconsContainer.AbsoluteSize.X / (Config.Desktop.IconSize + Config.Desktop.IconSpacing))
-    
-    _G.CensuraG.Logger:info("Desktop background created")
+    -- No background or icons - we'll use start menu instead
+    _G.CensuraG.Logger:info("Transparent desktop overlay created")
 end
 
-function DesktopManager:SetupContextMenu()
+function DesktopManager:SetupStartMenu()
+    local theme = Config:GetTheme()
+    
+    -- Create glassmorphic start menu (initially hidden)
+    self.StartMenu = Instance.new("Frame")
+    self.StartMenu.Name = "CensuraGStartMenu"
+    self.StartMenu.Size = Config.StartMenu.Size
+    self.StartMenu.Position = Config.StartMenu.Position
+    self.StartMenu.BackgroundColor3 = theme.PrimaryColor
+    self.StartMenu.BackgroundTransparency = theme.GlassTransparency
+    self.StartMenu.BorderSizePixel = 0
+    self.StartMenu.Visible = false
+    self.StartMenu.ZIndex = 1000
+    self.StartMenu.Parent = _G.CensuraG.ScreenGui or game.Players.LocalPlayer.PlayerGui:FindFirstChild("CensuraGScreenGui")
+    
+    -- Glassmorphic styling
+    local MenuCorner = Instance.new("UICorner", self.StartMenu)
+    MenuCorner.CornerRadius = UDim.new(0, 12)
+    
+    local MenuStroke = Instance.new("UIStroke", self.StartMenu)
+    MenuStroke.Color = theme.BorderColor
+    MenuStroke.Transparency = theme.BorderTransparency
+    MenuStroke.Thickness = 1
+    
+    -- Blur effect background
+    local BlurFrame = Instance.new("Frame", self.StartMenu)
+    BlurFrame.Size = UDim2.new(1, 0, 1, 0)
+    BlurFrame.BackgroundTransparency = 1
+    BlurFrame.ZIndex = -1
+    
+    -- Create sections
+    self:CreateStartMenuSections()
+    
+    -- Apps registry for start menu
+    self.RegisteredApps = {}
+    self.RecentApps = {}
+    
+    -- Create context menu for desktop
+    self:CreateDesktopContextMenu()
+end
+
+function DesktopManager:CreateStartMenuSections()
+    local theme = Config:GetTheme()
+    
+    -- Main scroll frame
+    local ScrollFrame = Instance.new("ScrollingFrame", self.StartMenu)
+    ScrollFrame.Size = UDim2.new(1, -20, 1, -20)
+    ScrollFrame.Position = UDim2.new(0, 10, 0, 10)
+    ScrollFrame.BackgroundTransparency = 1
+    ScrollFrame.BorderSizePixel = 0
+    ScrollFrame.ScrollBarThickness = 4
+    ScrollFrame.ScrollBarImageColor3 = theme.AccentColor
+    ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    
+    local Layout = Instance.new("UIListLayout", ScrollFrame)
+    Layout.Padding = UDim.new(0, 8)
+    Layout.SortOrder = Enum.SortOrder.LayoutOrder
+    
+    -- Update canvas size when content changes
+    Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, Layout.AbsoluteContentSize.Y + 20)
+    end)
+    
+    self.StartMenuContent = ScrollFrame
+    self.StartMenuLayout = Layout
+end
+
+function DesktopManager:RefreshStartMenu()
+    if not self.StartMenuContent then return end
+    
+    -- Clear existing content
+    for _, child in pairs(self.StartMenuContent:GetChildren()) do
+        if not child:IsA("UIListLayout") then
+            child:Destroy()
+        end
+    end
+    
+    local theme = Config:GetTheme()
+    local layoutOrder = 1
+    
+    -- Recent Apps Section
+    if Config.StartMenu.ShowRecent and #self.RecentApps > 0 then
+        self:CreateMenuSection("Recent", self.RecentApps, layoutOrder)
+        layoutOrder = layoutOrder + 1
+    end
+    
+    -- App Categories
+    if Config.StartMenu.ShowCategories then
+        for category, apps in pairs(self.RegisteredApps) do
+            local appList = {}
+            for _, app in pairs(apps) do
+                table.insert(appList, app)
+            end
+            
+            if #appList > 0 then
+                self:CreateMenuSection(category, appList, layoutOrder)
+                layoutOrder = layoutOrder + 1
+            end
+        end
+    end
+end
+
+function DesktopManager:CreateMenuSection(title, apps, layoutOrder)
+    local theme = Config:GetTheme()
+    
+    -- Section container
+    local Section = Instance.new("Frame", self.StartMenuContent)
+    Section.Size = UDim2.new(1, 0, 0, Config.StartMenu.CategoryHeight + (#apps * Config.StartMenu.ItemHeight))
+    Section.BackgroundTransparency = 1
+    Section.LayoutOrder = layoutOrder
+    
+    -- Section title
+    local Title = Instance.new("TextLabel", Section)
+    Title.Size = UDim2.new(1, 0, 0, Config.StartMenu.CategoryHeight)
+    Title.BackgroundTransparency = 1
+    Title.Text = title
+    Title.TextColor3 = theme.SecondaryTextColor
+    Title.TextSize = theme.TextSize - 1
+    Title.Font = theme.BoldFont
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    
+    -- Apps container
+    local AppsFrame = Instance.new("Frame", Section)
+    AppsFrame.Size = UDim2.new(1, 0, 1, -Config.StartMenu.CategoryHeight)
+    AppsFrame.Position = UDim2.new(0, 0, 0, Config.StartMenu.CategoryHeight)
+    AppsFrame.BackgroundTransparency = 1
+    
+    local AppsLayout = Instance.new("UIListLayout", AppsFrame)
+    AppsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    
+    -- Create app items
+    for i, app in ipairs(apps) do
+        self:CreateAppItem(app, AppsFrame, i)
+    end
+end
+
+function DesktopManager:CreateAppItem(app, parent, layoutOrder)
+    local theme = Config:GetTheme()
+    
+    -- App item button
+    local AppButton = Instance.new("TextButton", parent)
+    AppButton.Size = UDim2.new(1, 0, 0, Config.StartMenu.ItemHeight)
+    AppButton.BackgroundColor3 = theme.SecondaryColor
+    AppButton.BackgroundTransparency = 1
+    AppButton.BorderSizePixel = 0
+    AppButton.Text = ""
+    AppButton.LayoutOrder = layoutOrder
+    AppButton.AutoButtonColor = false
+    
+    local ButtonCorner = Instance.new("UICorner", AppButton)
+    ButtonCorner.CornerRadius = UDim.new(0, 6)
+    
+    -- App icon (placeholder)
+    local Icon = Instance.new("Frame", AppButton)
+    Icon.Size = UDim2.new(0, 24, 0, 24)
+    Icon.Position = UDim2.new(0, 12, 0.5, -12)
+    Icon.BackgroundColor3 = theme.AccentColor
+    Icon.BackgroundTransparency = 0.8
+    
+    local IconCorner = Instance.new("UICorner", Icon)
+    IconCorner.CornerRadius = UDim.new(0, 4)
+    
+    -- App name
+    local Name = Instance.new("TextLabel", AppButton)
+    Name.Size = UDim2.new(1, -50, 0.6, 0)
+    Name.Position = UDim2.new(0, 45, 0, 0)
+    Name.BackgroundTransparency = 1
+    Name.Text = app.Name
+    Name.TextColor3 = theme.TextColor
+    Name.TextSize = theme.TextSize
+    Name.Font = theme.Font
+    Name.TextXAlignment = Enum.TextXAlignment.Left
+    Name.TextYAlignment = Enum.TextYAlignment.Bottom
+    
+    -- App description
+    local Description = Instance.new("TextLabel", AppButton)
+    Description.Size = UDim2.new(1, -50, 0.4, 0)
+    Description.Position = UDim2.new(0, 45, 0.6, 0)
+    Description.BackgroundTransparency = 1
+    Description.Text = app.Description
+    Description.TextColor3 = theme.SecondaryTextColor
+    Description.TextSize = theme.TextSize - 2
+    Description.Font = theme.Font
+    Description.TextXAlignment = Enum.TextXAlignment.Left
+    Description.TextYAlignment = Enum.TextYAlignment.Top
+    
+    -- Hover effects
+    AppButton.MouseEnter:Connect(function()
+        _G.CensuraG.AnimationManager:Tween(AppButton, {
+            BackgroundTransparency = 0.9
+        }, 0.15)
+    end)
+    
+    AppButton.MouseLeave:Connect(function()
+        _G.CensuraG.AnimationManager:Tween(AppButton, {
+            BackgroundTransparency = 1
+        }, 0.15)
+    end)
+    
+    -- Click handler
+    AppButton.MouseButton1Click:Connect(function()
+        self:LaunchApp(app.Name, app.Category)
+    end)
+end
+
+function DesktopManager:CreateDesktopContextMenu()
     if not Config.Desktop.EnableContextMenu then return end
+    
+    local theme = Config:GetTheme()
     
     -- Create context menu (initially hidden)
     self.ContextMenu = Instance.new("Frame")
     self.ContextMenu.Name = "DesktopContextMenu"
     self.ContextMenu.Size = UDim2.new(0, 180, 0, 120)
-    self.ContextMenu.BackgroundColor3 = Config:GetTheme().SecondaryColor
-    self.ContextMenu.BackgroundTransparency = 0.1
+    self.ContextMenu.BackgroundColor3 = theme.PrimaryColor
+    self.ContextMenu.BackgroundTransparency = theme.GlassTransparency
     self.ContextMenu.BorderSizePixel = 0
     self.ContextMenu.Visible = false
-    self.ContextMenu.ZIndex = 1000 -- Very high to be above everything
+    self.ContextMenu.ZIndex = 1100
     self.ContextMenu.Parent = _G.CensuraG.ScreenGui or game.Players.LocalPlayer.PlayerGui:FindFirstChild("CensuraGScreenGui")
     
-    -- Add corner radius and stroke
+    -- Glassmorphic styling
     local MenuCorner = Instance.new("UICorner", self.ContextMenu)
-    MenuCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+    MenuCorner.CornerRadius = UDim.new(0, 8)
     
     local MenuStroke = Instance.new("UIStroke", self.ContextMenu)
-    MenuStroke.Color = Config:GetTheme().BorderColor
-    MenuStroke.Transparency = 0.5
+    MenuStroke.Color = theme.BorderColor
+    MenuStroke.Transparency = theme.BorderTransparency
     MenuStroke.Thickness = 1
     
     -- Menu items layout
@@ -286,48 +495,114 @@ function DesktopManager:OpenSettings()
     end
 end
 
-function DesktopManager:CreateDesktopIcon(name, iconId, callback)
-    if not Config.Desktop.ShowDesktopIcons then return end
+-- Start Menu Management
+function DesktopManager:RegisterApp(name, description, iconId, callback, category)
+    category = category or "Applications"
     
-    local theme = Config:GetTheme()
+    local appData = {
+        Name = name,
+        Description = description or "",
+        Icon = iconId or "rbxassetid://0",
+        Callback = callback,
+        Category = category,
+        LastUsed = 0
+    }
     
-    -- Icon container
-    local IconFrame = Instance.new("Frame", self.IconsContainer)
-    IconFrame.Size = UDim2.new(0, Config.Desktop.IconSize, 0, Config.Desktop.IconSize + 20)
-    IconFrame.BackgroundTransparency = 1
+    -- Add to registry
+    if not self.RegisteredApps[category] then
+        self.RegisteredApps[category] = {}
+    end
     
-    -- Icon image
-    local IconImage = Instance.new("ImageLabel", IconFrame)
-    IconImage.Size = UDim2.new(0, Config.Desktop.IconSize, 0, Config.Desktop.IconSize)
-    IconImage.BackgroundTransparency = 1
-    IconImage.Image = iconId or "rbxassetid://0"
-    IconImage.ImageColor3 = theme.TextColor
+    self.RegisteredApps[category][name] = appData
     
-    -- Icon label
-    local IconLabel = Instance.new("TextLabel", IconFrame)
-    IconLabel.Size = UDim2.new(1, 0, 0, 20)
-    IconLabel.Position = UDim2.new(0, 0, 1, -20)
-    IconLabel.BackgroundTransparency = 1
-    IconLabel.Text = name
-    IconLabel.TextColor3 = theme.TextColor
-    IconLabel.TextSize = 10
-    IconLabel.Font = theme.Font
-    IconLabel.TextWrapped = true
+    -- Refresh start menu
+    self:RefreshStartMenu()
     
-    -- Double-click detection
-    local lastClick = 0
-    IconFrame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            local currentTime = tick()
-            if currentTime - lastClick < Config.Desktop.DoubleClickTime then
-                if callback then callback() end
-            end
-            lastClick = currentTime
+    _G.CensuraG.Logger:info("Registered app: " .. name .. " in category: " .. category)
+    return appData
+end
+
+function DesktopManager:LaunchApp(appName, category)
+    local app = self.RegisteredApps[category] and self.RegisteredApps[category][appName]
+    if not app then return false end
+    
+    -- Update recent apps
+    app.LastUsed = tick()
+    
+    -- Add to recent if not already there
+    local inRecent = false
+    for i, recentApp in ipairs(self.RecentApps) do
+        if recentApp.Name == appName then
+            table.remove(self.RecentApps, i)
+            inRecent = true
+            break
+        end
+    end
+    
+    table.insert(self.RecentApps, 1, app)
+    
+    -- Limit recent apps
+    if #self.RecentApps > Config.StartMenu.MaxRecentApps then
+        table.remove(self.RecentApps)
+    end
+    
+    -- Launch the app
+    if app.Callback then
+        app.Callback()
+    end
+    
+    -- Hide start menu
+    self:HideStartMenu()
+    
+    _G.CensuraG.Logger:info("Launched app: " .. appName)
+    return true
+end
+
+function DesktopManager:ShowStartMenu()
+    if not self.StartMenu then return end
+    
+    self.StartMenu.Visible = true
+    
+    -- Animate in
+    self.StartMenu.Position = UDim2.new(
+        Config.StartMenu.Position.X.Scale,
+        Config.StartMenu.Position.X.Offset,
+        1,
+        50
+    )
+    
+    _G.CensuraG.AnimationManager:Tween(self.StartMenu, {
+        Position = Config.StartMenu.Position
+    }, Config.StartMenu.AnimationSpeed)
+    
+    self:RefreshStartMenu()
+end
+
+function DesktopManager:HideStartMenu()
+    if not self.StartMenu then return end
+    
+    _G.CensuraG.AnimationManager:Tween(self.StartMenu, {
+        Position = UDim2.new(
+            Config.StartMenu.Position.X.Scale,
+            Config.StartMenu.Position.X.Offset,
+            1,
+            50
+        )
+    }, Config.StartMenu.AnimationSpeed)
+    
+    task.delay(Config.StartMenu.AnimationSpeed, function()
+        if self.StartMenu then
+            self.StartMenu.Visible = false
         end
     end)
-    
-    table.insert(self.Icons, {Frame = IconFrame, Name = name, Callback = callback})
-    return IconFrame
+end
+
+function DesktopManager:ToggleStartMenu()
+    if self.StartMenu.Visible then
+        self:HideStartMenu()
+    else
+        self:ShowStartMenu()
+    end
 end
 
 function DesktopManager:Refresh()

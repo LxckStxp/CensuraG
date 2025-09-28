@@ -1,77 +1,95 @@
--- CensuraG/src/components/taskbar.lua (fixed Font tweening issue)
+-- CensuraG/src/components/taskbar.lua (Glassmorphic Design)
 local Config = _G.CensuraG.Config
 
 return function()
     local theme = Config:GetTheme()
     local animConfig = Config.Animations
     
-    -- Create main taskbar frame
+    -- Create main glassmorphic taskbar frame
     local Frame = Instance.new("Frame")
     Frame.Name = "Taskbar"
     Frame.Size = UDim2.new(1, 0, 0, Config.Math.TaskbarHeight)
     Frame.Position = UDim2.new(0, 0, 1, 0) -- Start off-screen
     Frame.BackgroundColor3 = theme.PrimaryColor
-    Frame.BackgroundTransparency = 0.1 -- More solid than windows
+    Frame.BackgroundTransparency = theme.GlassTransparency or 0.1
     Frame.BorderSizePixel = 0
     Frame.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ScreenGui") or
                    game.Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("CensuraGScreenGui")
     
-    -- Add corner radius (top corners only)
+    -- Glassmorphic styling
     local Corner = Instance.new("UICorner", Frame)
-    Corner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+    Corner.CornerRadius = UDim.new(0, 0) -- Sharp edges for taskbar
     
-    -- Add a top border highlight
+    local Stroke = Instance.new("UIStroke", Frame)
+    Stroke.Color = theme.BorderColor
+    Stroke.Transparency = theme.BorderTransparency or 0.7
+    Stroke.Thickness = 1
+    Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    
+    -- Top accent line
     local TopBorder = Instance.new("Frame", Frame)
     TopBorder.Name = "TopBorder"
     TopBorder.Size = UDim2.new(1, 0, 0, 1)
     TopBorder.Position = UDim2.new(0, 0, 0, 0)
     TopBorder.BackgroundColor3 = theme.AccentColor
-    TopBorder.BackgroundTransparency = 0.7
+    TopBorder.BackgroundTransparency = 0.3
     TopBorder.BorderSizePixel = 0
     TopBorder.ZIndex = 2
     
-    -- Add glow effect to top border
-    local TopGlow = Instance.new("ImageLabel", Frame)
-    TopGlow.Name = "TopGlow"
-    TopGlow.Size = UDim2.new(1, 0, 0, 8)
-    TopGlow.Position = UDim2.new(0, 0, 0, -4)
-    TopGlow.BackgroundTransparency = 1
-    TopGlow.Image = "rbxassetid://7912134082" -- Bloom image
-    TopGlow.ImageColor3 = theme.AccentColor
-    TopGlow.ImageTransparency = 0.8
-    TopGlow.ScaleType = Enum.ScaleType.Slice
-    TopGlow.SliceCenter = Rect.new(4, 4, 4, 4)
+    -- Start Button
+    local StartButton = Instance.new("TextButton", Frame)
+    StartButton.Name = "StartButton"
+    StartButton.Size = UDim2.new(0, 80, 1, -8)
+    StartButton.Position = UDim2.new(0, 8, 0, 4)
+    StartButton.BackgroundColor3 = theme.AccentColor
+    StartButton.BackgroundTransparency = 0.8
+    StartButton.BorderSizePixel = 0
+    StartButton.Text = "Start"
+    StartButton.TextColor3 = theme.TextColor
+    StartButton.Font = theme.BoldFont or theme.Font
+    StartButton.TextSize = theme.TextSize
+    StartButton.AutoButtonColor = false
     
-    -- Add inner shadow
-    local Shadow = Instance.new("ImageLabel", Frame)
-    Shadow.Name = "Shadow"
-    Shadow.Size = UDim2.new(1, 10, 1, 10)
-    Shadow.Position = UDim2.new(0, -5, 0, -5)
-    Shadow.BackgroundTransparency = 1
-    Shadow.Image = "rbxassetid://7912134082" -- Shadow image
-    Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-    Shadow.ImageTransparency = 0.6
-    Shadow.ScaleType = Enum.ScaleType.Slice
-    Shadow.SliceCenter = Rect.new(10, 10, 10, 10)
-    Shadow.ZIndex = 0 -- Place behind taskbar
+    local StartCorner = Instance.new("UICorner", StartButton)
+    StartCorner.CornerRadius = UDim.new(0, 8)
     
-    -- Add a logo/title
-    local Logo = Instance.new("TextLabel", Frame)
-    Logo.Name = "Logo"
-    Logo.Size = UDim2.new(0, 100, 1, 0)
-    Logo.Position = UDim2.new(0, 10, 0, 0)
-    Logo.BackgroundTransparency = 1
-    Logo.Text = "CensuraG"
-    Logo.TextColor3 = theme.TextColor
-    Logo.Font = theme.Font
-    Logo.TextSize = 16
-    Logo.TextXAlignment = Enum.TextXAlignment.Left
+    local StartStroke = Instance.new("UIStroke", StartButton)
+    StartStroke.Color = theme.BorderColor
+    StartStroke.Transparency = theme.BorderTransparency or 0.7
+    StartStroke.Thickness = 1
     
-    -- Add button container for window buttons
+    -- Start button hover effects
+    StartButton.MouseEnter:Connect(function()
+        _G.CensuraG.AnimationManager:Tween(StartButton, {
+            BackgroundTransparency = 0.6
+        }, 0.15)
+    end)
+    
+    StartButton.MouseLeave:Connect(function()
+        _G.CensuraG.AnimationManager:Tween(StartButton, {
+            BackgroundTransparency = 0.8
+        }, 0.15)
+    end)
+    
+    -- Connect start button to desktop manager
+    StartButton.MouseButton1Click:Connect(function()
+        if _G.CensuraG.Desktop then
+            _G.CensuraG.Desktop:ToggleStartMenu()
+        end
+    end)
+    
+    -- System tray area
+    local SystemTray = Instance.new("Frame", Frame)
+    SystemTray.Name = "SystemTray"
+    SystemTray.Size = UDim2.new(0, 120, 1, -8)
+    SystemTray.Position = UDim2.new(1, -128, 0, 4)
+    SystemTray.BackgroundTransparency = 1
+    
+    -- Add button container for window buttons (adjusted for start button and system tray)
     local ButtonContainer = Instance.new("Frame", Frame)
-    ButtonContainer.Name = "ButtonContainer" -- Ensure it has the expected name
-    ButtonContainer.Size = UDim2.new(1, -120, 1, -10)
-    ButtonContainer.Position = UDim2.new(0, 110, 0, 5)
+    ButtonContainer.Name = "ButtonContainer"
+    ButtonContainer.Size = UDim2.new(1, -220, 1, -10) -- Account for start button and system tray
+    ButtonContainer.Position = UDim2.new(0, 95, 0, 5) -- Start after start button
     ButtonContainer.BackgroundTransparency = 1
     
     -- Add horizontal layout for buttons
@@ -90,42 +108,42 @@ return function()
     local Taskbar = {
         Frame = Frame,
         ButtonContainer = ButtonContainer,
-        Logo = Logo,
+        StartButton = StartButton,
+        SystemTray = SystemTray,
         TopBorder = TopBorder,
-        TopGlow = TopGlow,  -- Make sure to include this for refresh
-        Shadow = Shadow,
+        Stroke = Stroke,
         Refresh = function(self)
             local theme = Config:GetTheme()
             
-            -- Main frame tween
+            -- Main frame styling
             _G.CensuraG.AnimationManager:Tween(self.Frame, {
                 BackgroundColor3 = theme.PrimaryColor,
-                BackgroundTransparency = 0.1
+                BackgroundTransparency = theme.GlassTransparency or 0.1
             }, animConfig.FadeDuration)
             
-            -- Top border tween
+            -- Stroke styling
+            _G.CensuraG.AnimationManager:Tween(self.Stroke, {
+                Color = theme.BorderColor,
+                Transparency = theme.BorderTransparency or 0.7
+            }, animConfig.FadeDuration)
+            
+            -- Top border styling
             _G.CensuraG.AnimationManager:Tween(self.TopBorder, {
                 BackgroundColor3 = theme.AccentColor
             }, animConfig.FadeDuration)
             
-            -- Top glow tween
-            _G.CensuraG.AnimationManager:Tween(self.TopGlow, {
-                ImageColor3 = theme.AccentColor
-            }, animConfig.FadeDuration)
-            
-            -- Logo text tween
-            _G.CensuraG.AnimationManager:Tween(self.Logo, {
+            -- Start button styling
+            _G.CensuraG.AnimationManager:Tween(self.StartButton, {
+                BackgroundColor3 = theme.AccentColor,
                 TextColor3 = theme.TextColor
             }, animConfig.FadeDuration)
             
-            -- Set Font directly
-            self.Logo.Font = theme.Font
-            
-            -- ButtonContainer children will be handled by RefreshAll
+            self.StartButton.Font = theme.BoldFont or theme.Font
+            self.StartButton.TextSize = theme.TextSize
         end
     }
     
-    _G.CensuraG.Logger:info("Taskbar created")
+    _G.CensuraG.Logger:info("Glassmorphic taskbar created")
     
     -- Return both the Frame and the Taskbar object
     return Frame, Taskbar

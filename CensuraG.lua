@@ -1,4 +1,36 @@
--- CensuraG/CensuraG.lua (revised with Splash Screen integration)
+-- CensuraG/CensuraG.lua (Enhanced Glassmorphic Desktop Environment)
+
+-- Single Session Management - Prevent multiple instances
+if rawget(_G, "CensuraG") and _G.CensuraG.Initialized then
+    _G.CensuraG.Logger:warn("CensuraG already running in this session")
+    
+    -- If there's a new app trying to register, handle it gracefully
+    if _G.CensuraGPendingApp then
+        local appData = _G.CensuraGPendingApp
+        if _G.CensuraG.Desktop and _G.CensuraG.Desktop.RegisterApp then
+            _G.CensuraG.Desktop:RegisterApp(
+                appData.Name or "Unknown App",
+                appData.Description or "Application",
+                appData.Icon or "rbxassetid://0",
+                appData.Callback,
+                appData.Category or "Applications"
+            )
+            _G.CensuraG.Logger:info("Registered new app: " .. (appData.Name or "Unknown"))
+        end
+        _G.CensuraGPendingApp = nil
+    end
+    
+    -- Bring existing session to focus
+    if _G.CensuraG.BringToFront then
+        _G.CensuraG.BringToFront()
+    end
+    
+    return _G.CensuraG
+end
+
+-- Initialize session marker
+rawset(_G, "CensuraGSessionId", tick())
+
 local function safeLoadstring(url, errorMsg)
     local success, result = pcall(function()
         return game:HttpGet(url, true)
@@ -353,7 +385,45 @@ if splash then
     end)
 end
 
+-- Session Management Functions
+CensuraG.BringToFront = function()
+    if CensuraG.WindowManager and CensuraG.WindowManager.GetActiveWindow then
+        local activeWindow = CensuraG.WindowManager.GetActiveWindow()
+        if activeWindow then
+            activeWindow:BringToFront()
+        end
+    end
+    
+    if CensuraG.Desktop and CensuraG.Desktop.StartMenu then
+        CensuraG.Desktop:ShowStartMenu()
+    end
+end
+
+CensuraG.RegisterApp = function(name, description, icon, callback, category)
+    if CensuraG.Desktop and CensuraG.Desktop.RegisterApp then
+        return CensuraG.Desktop:RegisterApp(name, description, icon, callback, category)
+    else
+        -- Store for later registration
+        _G.CensuraGPendingApp = {
+            Name = name,
+            Description = description,
+            Icon = icon,
+            Callback = callback,
+            Category = category
+        }
+        CensuraG.Logger:warn("Desktop not ready, app queued for registration: " .. name)
+        return nil
+    end
+end
+
+-- Mark as initialized
+CensuraG.Initialized = true
+CensuraG.SessionId = _G.CensuraGSessionId
+
 --loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura-Applications/main/Services/Remote.lua"))() -- Debug Tool
 
-CensuraG.Logger:info("CensuraG initialization complete")
+CensuraG.Logger:section("CensuraG Desktop Ready")
+CensuraG.Logger:info("Glassmorphic desktop environment initialized")
+CensuraG.Logger:info("Session ID: " .. CensuraG.SessionId)
+CensuraG.Logger:info("Theme: " .. CensuraG.Config.CurrentTheme)
 return CensuraG

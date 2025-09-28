@@ -8,43 +8,63 @@ return function(title)
     local screenGui = playerGui:FindFirstChild("ScreenGui") or Instance.new("ScreenGui", playerGui)
     screenGui.Name = "ScreenGui"
 
-    -- Main Window Frame
+    -- Main Window Frame (Glassmorphic)
     local Frame = Instance.new("Frame")
     Frame.Name = "WindowFrame"
     Frame.Size = UDim2.fromOffset(Config.Math.DefaultWindowSize.X, Config.Math.DefaultWindowSize.Y)
     Frame.Position = UDim2.fromOffset(100, 100)
     Frame.BackgroundColor3 = theme.PrimaryColor
-    Frame.BackgroundTransparency = 0.15 -- Slight transparency
+    Frame.BackgroundTransparency = theme.GlassTransparency or 0.15
     Frame.BorderSizePixel = 0
     Frame.Parent = screenGui
-    Frame.ClipsDescendants = true -- Clip content to window bounds
+    Frame.ClipsDescendants = true
 
-    -- Add corner radius
+    -- Glassmorphic corner radius
     local Corner = Instance.new("UICorner", Frame)
-    Corner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+    Corner.CornerRadius = UDim.new(0, 12) -- Larger radius for modern look
 
-    -- Add stroke for border
+    -- Glassmorphic border
     local Stroke = Instance.new("UIStroke", Frame)
     Stroke.Color = theme.BorderColor
-    Stroke.Transparency = 0.6
-    Stroke.Thickness = Config.Math.BorderThickness
+    Stroke.Transparency = theme.BorderTransparency or 0.7
+    Stroke.Thickness = 1
+    
+    -- Drop shadow effect (fake shadow with frame)
+    local Shadow = Instance.new("Frame", Frame)
+    Shadow.Name = "Shadow"
+    Shadow.Size = UDim2.new(1, 6, 1, 6)
+    Shadow.Position = UDim2.new(0, -3, 0, -3)
+    Shadow.BackgroundColor3 = theme.ShadowColor or Color3.new(0, 0, 0)
+    Shadow.BackgroundTransparency = theme.ShadowTransparency or 0.8
+    Shadow.ZIndex = Frame.ZIndex - 1
+    
+    local ShadowCorner = Instance.new("UICorner", Shadow)
+    ShadowCorner.CornerRadius = UDim.new(0, 15)
 
-    -- Title Bar
+    -- Glassmorphic Title Bar
     local TitleBar = Instance.new("Frame", Frame)
     TitleBar.Name = "TitleBar"
-    TitleBar.Size = UDim2.new(1, 0, 0, 32)
+    TitleBar.Size = UDim2.new(1, 0, 0, 40) -- Taller for modern look
     TitleBar.BackgroundColor3 = theme.SecondaryColor
-    TitleBar.BackgroundTransparency = 0.8
+    TitleBar.BackgroundTransparency = (theme.GlassTransparency or 0.15) + 0.1
     TitleBar.BorderSizePixel = 0
     TitleBar.ZIndex = 2
 
     local TitleCorner = Instance.new("UICorner", TitleBar)
-    TitleCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+    TitleCorner.CornerRadius = UDim.new(0, 12)
 
     local TitleStroke = Instance.new("UIStroke", TitleBar)
     TitleStroke.Color = theme.BorderColor
-    TitleStroke.Transparency = 0.6
-    TitleStroke.Thickness = Config.Math.BorderThickness
+    TitleStroke.Transparency = (theme.BorderTransparency or 0.7) + 0.1
+    TitleStroke.Thickness = 1
+    
+    -- Title bar separator line
+    local TitleSeparator = Instance.new("Frame", TitleBar)
+    TitleSeparator.Size = UDim2.new(1, -20, 0, 1)
+    TitleSeparator.Position = UDim2.new(0, 10, 1, -1)
+    TitleSeparator.BackgroundColor3 = theme.BorderColor
+    TitleSeparator.BackgroundTransparency = theme.BorderTransparency or 0.7
+    TitleSeparator.BorderSizePixel = 0
 
     local TitleText = Instance.new("TextLabel", TitleBar)
     TitleText.Name = "TitleText"
@@ -121,25 +141,28 @@ return function(title)
     local CloseCorner = Instance.new("UICorner", CloseButton)
     CloseCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
 
-    -- Content Scrolling Frame - Simplified and fixed
+    -- Glassmorphic Content Frame
     local ContentFrame = Instance.new("ScrollingFrame", Frame)
     ContentFrame.Name = "ContentFrame"
-    ContentFrame.Position = UDim2.new(0, 6, 0, 36)
-    ContentFrame.Size = UDim2.new(1, -12, 1, -46) -- Leave room for resize handle
+    ContentFrame.Position = UDim2.new(0, 12, 0, 50) -- Account for new title bar height
+    ContentFrame.Size = UDim2.new(1, -24, 1, -70) -- More padding, leave room for resize
     ContentFrame.BackgroundColor3 = theme.PrimaryColor
-    ContentFrame.BackgroundTransparency = 0.3
+    ContentFrame.BackgroundTransparency = (theme.GlassTransparency or 0.15) + 0.05
     ContentFrame.BorderSizePixel = 0
-    ContentFrame.ScrollBarThickness = 6
+    ContentFrame.ScrollBarThickness = 4 -- Thinner scrollbar
     ContentFrame.ScrollBarImageColor3 = theme.AccentColor
-    ContentFrame.ScrollBarImageTransparency = 0.3
-    ContentFrame.CanvasSize = UDim2.new(0, 0, 2, 0) -- Start with larger canvas
+    ContentFrame.ScrollBarImageTransparency = 0.5
+    ContentFrame.CanvasSize = UDim2.new(0, 0, 2, 0)
     ContentFrame.ScrollingEnabled = true
-    -- Remove problematic properties
-    -- ContentFrame.ScrollBarInset = Enum.ScrollBarInset.ScrollBar
-    -- ContentFrame.ElasticBehavior = Enum.ElasticBehavior.Always
 
     local ContentCorner = Instance.new("UICorner", ContentFrame)
-    ContentCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+    ContentCorner.CornerRadius = UDim.new(0, 8)
+    
+    -- Inner content border
+    local ContentStroke = Instance.new("UIStroke", ContentFrame)
+    ContentStroke.Color = theme.BorderColor
+    ContentStroke.Transparency = (theme.BorderTransparency or 0.7) + 0.1
+    ContentStroke.Thickness = 1
 
     -- List layout for components
     local ListLayout = Instance.new("UIListLayout", ContentFrame)

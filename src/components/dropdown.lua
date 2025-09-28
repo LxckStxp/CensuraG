@@ -5,22 +5,23 @@ return function(parent, title, options, callback)
     local theme = Config:GetTheme()
     local animConfig = Config.Animations
     
-    -- Container
+    -- Glassmorphic Container
     local DropdownFrame = Instance.new("Frame", parent)
-    DropdownFrame.Size = UDim2.new(1, -12, 0, 32)
+    DropdownFrame.Size = UDim2.new(1, -12, 0, 36) -- Slightly taller for modern look
     DropdownFrame.BackgroundColor3 = theme.SecondaryColor
-    DropdownFrame.BackgroundTransparency = 0.8
+    DropdownFrame.BackgroundTransparency = theme.GlassTransparency or 0.8
     DropdownFrame.BorderSizePixel = 0
     
-    -- Add corner radius
+    -- Glassmorphic corner radius
     local Corner = Instance.new("UICorner", DropdownFrame)
-    Corner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+    Corner.CornerRadius = UDim.new(0, 12) -- More rounded for modern look
     
-    -- Add stroke
+    -- Glassmorphic stroke
     local Stroke = Instance.new("UIStroke", DropdownFrame)
-    Stroke.Color = theme.AccentColor
-    Stroke.Transparency = 0.6
-    Stroke.Thickness = Config.Math.BorderThickness
+    Stroke.Color = theme.BorderColor
+    Stroke.Transparency = theme.BorderTransparency or 0.7
+    Stroke.Thickness = 1
+    Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     
     -- Title
     local TitleLabel = Instance.new("TextLabel", DropdownFrame)
@@ -33,15 +34,20 @@ return function(parent, title, options, callback)
     TitleLabel.TextSize = theme.TextSize
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
     
-    -- Selected value display
+    -- Glassmorphic Selected value display
     local SelectedDisplay = Instance.new("Frame", DropdownFrame)
-    SelectedDisplay.Size = UDim2.new(0, 100, 0, 24)
-    SelectedDisplay.Position = UDim2.new(1, -110, 0.5, -12)
+    SelectedDisplay.Size = UDim2.new(0, 110, 0, 28) -- Slightly larger
+    SelectedDisplay.Position = UDim2.new(1, -118, 0.5, -14)
     SelectedDisplay.BackgroundColor3 = theme.PrimaryColor
-    SelectedDisplay.BackgroundTransparency = 0.5
+    SelectedDisplay.BackgroundTransparency = (theme.GlassTransparency or 0.8) + 0.1
     
     local DisplayCorner = Instance.new("UICorner", SelectedDisplay)
-    DisplayCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+    DisplayCorner.CornerRadius = UDim.new(0, 8) -- Smaller radius for contrast
+    
+    local DisplayStroke = Instance.new("UIStroke", SelectedDisplay)
+    DisplayStroke.Color = theme.BorderColor
+    DisplayStroke.Transparency = theme.BorderTransparency or 0.7
+    DisplayStroke.Thickness = 1
     
     local SelectedText = Instance.new("TextLabel", SelectedDisplay)
     SelectedText.Size = UDim2.new(1, -24, 1, 0)
@@ -54,19 +60,25 @@ return function(parent, title, options, callback)
     -- Store the currently selected option
     local selectedOption = options[1] or "Select"
     
-    -- Arrow button
+    -- Glassmorphic Arrow button
     local ArrowButton = Instance.new("TextButton", SelectedDisplay)
-    ArrowButton.Size = UDim2.new(0, 24, 1, 0)
-    ArrowButton.Position = UDim2.new(1, -24, 0, 0)
+    ArrowButton.Size = UDim2.new(0, 28, 1, 0)
+    ArrowButton.Position = UDim2.new(1, -28, 0, 0)
     ArrowButton.BackgroundColor3 = theme.AccentColor
-    ArrowButton.BackgroundTransparency = 0.7
+    ArrowButton.BackgroundTransparency = 0.8
     ArrowButton.Text = "▼"
     ArrowButton.TextColor3 = theme.TextColor
     ArrowButton.Font = theme.Font
     ArrowButton.TextSize = 12
+    ArrowButton.AutoButtonColor = false
     
     local ArrowCorner = Instance.new("UICorner", ArrowButton)
-    ArrowCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+    ArrowCorner.CornerRadius = UDim.new(0, 6) -- Smaller radius
+    
+    local ArrowStroke = Instance.new("UIStroke", ArrowButton)
+    ArrowStroke.Color = theme.BorderColor
+    ArrowStroke.Transparency = theme.BorderTransparency or 0.7
+    ArrowStroke.Thickness = 1
     
     -- Create a separate parent for the option list to ensure it's on top
     local OptionListContainer = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
@@ -74,22 +86,34 @@ return function(parent, title, options, callback)
     OptionListContainer.ResetOnSpawn = false
     OptionListContainer.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
-    -- Options list
+    -- Glassmorphic Options list
     local OptionList = Instance.new("Frame", OptionListContainer)
-    OptionList.Size = UDim2.new(0, 100, 0, #options * 24)
+    OptionList.Size = UDim2.new(0, 110, 0, #options * 28) -- Match display width and use taller rows
     OptionList.BackgroundColor3 = theme.PrimaryColor
-    OptionList.BackgroundTransparency = 0.2
+    OptionList.BackgroundTransparency = theme.GlassTransparency or 0.2
     OptionList.BorderSizePixel = 0
     OptionList.Visible = false
     OptionList.ZIndex = 100
     
     local ListCorner = Instance.new("UICorner", OptionList)
-    ListCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+    ListCorner.CornerRadius = UDim.new(0, 12) -- Match modern styling
     
     local ListStroke = Instance.new("UIStroke", OptionList)
-    ListStroke.Color = theme.AccentColor
-    ListStroke.Transparency = 0.6
-    ListStroke.Thickness = Config.Math.BorderThickness
+    ListStroke.Color = theme.BorderColor
+    ListStroke.Transparency = theme.BorderTransparency or 0.7
+    ListStroke.Thickness = 1
+    ListStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    
+    -- Add shadow/blur effect to option list
+    local ListShadow = Instance.new("Frame", OptionList)
+    ListShadow.Size = UDim2.new(1, 6, 1, 6)
+    ListShadow.Position = UDim2.new(0, -3, 0, -3)
+    ListShadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    ListShadow.BackgroundTransparency = 0.8
+    ListShadow.ZIndex = -1
+    
+    local ShadowCorner = Instance.new("UICorner", ListShadow)
+    ShadowCorner.CornerRadius = UDim.new(0, 15)
     
     -- Function to update option list position
     local function updateOptionListPosition()
@@ -97,7 +121,7 @@ return function(parent, title, options, callback)
         local displaySize = SelectedDisplay.AbsoluteSize
         
         OptionList.Position = UDim2.new(0, displayPos.X, 0, displayPos.Y + displaySize.Y + 2)
-        OptionList.Size = UDim2.new(0, displaySize.X, 0, #options * 24)
+        OptionList.Size = UDim2.new(0, displaySize.X, 0, #options * 28) -- Use new taller rows
     end
     
     -- Storage for option buttons
@@ -106,8 +130,8 @@ return function(parent, title, options, callback)
     -- Create option buttons
     for i, option in ipairs(options) do
         local OptionButton = Instance.new("TextButton", OptionList)
-        OptionButton.Size = UDim2.new(1, 0, 0, 24)
-        OptionButton.Position = UDim2.new(0, 0, 0, (i-1) * 24)
+        OptionButton.Size = UDim2.new(1, -4, 0, 26) -- Slightly smaller with padding
+        OptionButton.Position = UDim2.new(0, 2, 0, (i-1) * 28 + 1) -- Add margin
         
         -- Set background color based on selection state
         if option == selectedOption then

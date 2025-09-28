@@ -5,30 +5,31 @@ return function(parent, text, callback)
     local theme = Config:GetTheme()
     local animConfig = Config.Animations
     
-    -- Container Frame for consistent styling
+    -- Glassmorphic Container Frame
     local ButtonFrame = Instance.new("Frame", parent)
-    ButtonFrame.Size = UDim2.new(1, -12, 0, 32)
+    ButtonFrame.Size = UDim2.new(1, -12, 0, 36) -- Slightly taller for modern look
     ButtonFrame.BackgroundColor3 = theme.SecondaryColor
-    ButtonFrame.BackgroundTransparency = 0.8
+    ButtonFrame.BackgroundTransparency = theme.GlassTransparency or 0.8
     ButtonFrame.BorderSizePixel = 0
     ButtonFrame:SetAttribute("ComponentType", "textbutton") -- For refresh system
     
-    -- Add corner radius
+    -- Glassmorphic corner radius
     local Corner = Instance.new("UICorner", ButtonFrame)
-    Corner.CornerRadius = UDim.new(0, Config.Math.CornerRadius)
+    Corner.CornerRadius = UDim.new(0, 12) -- More rounded for glassmorphic look
     
-    -- Add outer stroke for consistent border
+    -- Glassmorphic stroke
     local Stroke = Instance.new("UIStroke", ButtonFrame)
-    Stroke.Color = theme.AccentColor
-    Stroke.Transparency = 0.6
-    Stroke.Thickness = Config.Math.BorderThickness
+    Stroke.Color = theme.BorderColor
+    Stroke.Transparency = theme.BorderTransparency or 0.7
+    Stroke.Thickness = 1
+    Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     
-    -- Actual button (slightly smaller than frame)
+    -- Glassmorphic button (slightly smaller than frame)
     local Button = Instance.new("TextButton", ButtonFrame)
     Button.Size = UDim2.new(1, -4, 1, -4)
     Button.Position = UDim2.new(0, 2, 0, 2)
     Button.BackgroundColor3 = theme.SecondaryColor
-    Button.BackgroundTransparency = 0.9 -- Slightly more transparent than frame
+    Button.BackgroundTransparency = (theme.GlassTransparency or 0.8) + 0.1 -- Slightly more transparent than frame
     Button.BorderSizePixel = 0
     Button.Text = text
     Button.TextColor3 = theme.TextColor
@@ -37,9 +38,9 @@ return function(parent, text, callback)
     Button.AutoButtonColor = false -- We'll handle hover effects manually
     Button.ClipsDescendants = true -- For ripple effect if added later
     
-    -- Inner button corner radius
+    -- Glassmorphic inner corner radius
     local ButtonCorner = Instance.new("UICorner", Button)
-    ButtonCorner.CornerRadius = UDim.new(0, Config.Math.CornerRadius - 1)
+    ButtonCorner.CornerRadius = UDim.new(0, 11) -- Match glassmorphic styling
     
     -- Add text shadow for depth
     local TextShadow = Instance.new("TextLabel", Button)
@@ -67,19 +68,35 @@ return function(parent, text, callback)
     Glow.ScaleType = Enum.ScaleType.Slice
     Glow.SliceCenter = Rect.new(10, 10, 10, 10)
     
-    -- Hover and click effects
+    -- Glassmorphic hover and click effects
     Button.MouseEnter:Connect(function()
-        _G.CensuraG.AnimationManager:Tween(Stroke, {Transparency = 0.2}, 0.2)
-        _G.CensuraG.AnimationManager:Tween(ButtonFrame, {BackgroundTransparency = 0.7}, 0.2)
-        _G.CensuraG.AnimationManager:Tween(Button, {BackgroundTransparency = 0.8}, 0.2)
-        _G.CensuraG.AnimationManager:Tween(Glow, {ImageTransparency = 0.8}, 0.2)
+        local hoverTransparency = (theme.BorderTransparency or 0.7) * 0.5
+        local hoverFrameTransparency = (theme.GlassTransparency or 0.8) * 0.8
+        local hoverButtonTransparency = hoverFrameTransparency + 0.1
+        
+        _G.CensuraG.AnimationManager:Tween(Stroke, {
+            Transparency = hoverTransparency,
+            Color = theme.AccentColor
+        }, 0.15)
+        _G.CensuraG.AnimationManager:Tween(ButtonFrame, {BackgroundTransparency = hoverFrameTransparency}, 0.15)
+        _G.CensuraG.AnimationManager:Tween(Button, {
+            BackgroundTransparency = hoverButtonTransparency,
+            TextColor3 = theme.AccentColor
+        }, 0.15)
+        _G.CensuraG.AnimationManager:Tween(Glow, {ImageTransparency = 0.8}, 0.15)
     end)
     
     Button.MouseLeave:Connect(function()
-        _G.CensuraG.AnimationManager:Tween(Stroke, {Transparency = 0.6}, 0.2)
-        _G.CensuraG.AnimationManager:Tween(ButtonFrame, {BackgroundTransparency = 0.8}, 0.2)
-        _G.CensuraG.AnimationManager:Tween(Button, {BackgroundTransparency = 0.9}, 0.2)
-        _G.CensuraG.AnimationManager:Tween(Glow, {ImageTransparency = 0.9}, 0.2)
+        _G.CensuraG.AnimationManager:Tween(Stroke, {
+            Transparency = theme.BorderTransparency or 0.7,
+            Color = theme.BorderColor
+        }, 0.15)
+        _G.CensuraG.AnimationManager:Tween(ButtonFrame, {BackgroundTransparency = theme.GlassTransparency or 0.8}, 0.15)
+        _G.CensuraG.AnimationManager:Tween(Button, {
+            BackgroundTransparency = (theme.GlassTransparency or 0.8) + 0.1,
+            TextColor3 = theme.TextColor
+        }, 0.15)
+        _G.CensuraG.AnimationManager:Tween(Glow, {ImageTransparency = 0.9}, 0.15)
     end)
     
     Button.MouseButton1Down:Connect(function()

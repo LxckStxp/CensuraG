@@ -26,14 +26,26 @@ local Config = {
         FocusAnimationSpeed = 0.15,  -- Window focus change animations
     },
 
-    -- Desktop Environment Settings
+    -- Desktop Environment Settings (Glassmorphic Overlay)
     Desktop = {
-        BackgroundColor = Color3.fromRGB(25, 30, 35),
-        ShowDesktopIcons = true,
-        IconSize = 64,
-        IconSpacing = 20,
-        DoubleClickTime = 0.3,     -- Double-click detection time
+        ShowBackground = false,     -- No background - show game world
+        ShowDesktopIcons = false,   -- Use start menu instead
+        DoubleClickTime = 0.3,      -- Double-click detection time
         EnableContextMenu = true,   -- Right-click desktop menu
+        BlurBackground = true,      -- Blur effects behind UI
+    },
+    
+    -- Start Menu Configuration
+    StartMenu = {
+        Size = UDim2.new(0, 320, 0, 400),          -- Menu size
+        Position = UDim2.new(0, 10, 1, -450),      -- Position from taskbar
+        ShowSearch = true,                           -- Search functionality
+        ShowRecent = true,                          -- Recent apps section
+        ShowCategories = true,                      -- App categories
+        MaxRecentApps = 6,                         -- Max recent apps to show
+        ItemHeight = 40,                           -- Menu item height
+        CategoryHeight = 30,                       -- Category header height
+        AnimationSpeed = 0.25,                     -- Open/close animation
     },
 
     -- Window Behavior Settings
@@ -58,50 +70,104 @@ local Config = {
         ShowWindowPreviews = false, -- Hover previews (future feature)
     },
 
-    -- Themes based on CensuraDev
+    -- Glassmorphic Themes - Modern and Minimalistic
     Themes = {
-        Military = {
-            PrimaryColor = Color3.fromRGB(15, 17, 19),      -- Deep dark gray (background)
-            SecondaryColor = Color3.fromRGB(25, 28, 32),    -- Slightly lighter gray
-            AccentColor = Color3.fromRGB(200, 200, 200),    -- Almost white accent
-            BorderColor = Color3.fromRGB(200, 200, 200),    -- Light border
-            TextColor = Color3.fromRGB(225, 228, 230),      -- Soft white text
-            EnabledColor = Color3.fromRGB(50, 200, 100),    -- Success green
-            DisabledColor = Color3.fromRGB(180, 70, 70),    -- Muted red
-            SecondaryTextColor = Color3.fromRGB(130, 135, 140), -- Muted text
-            Font = Enum.Font.GothamBold,
+        Glass = {
+            -- Glassmorphic colors with transparency
+            PrimaryColor = Color3.fromRGB(255, 255, 255),      -- Pure white base
+            SecondaryColor = Color3.fromRGB(255, 255, 255),     -- White secondary
+            AccentColor = Color3.fromRGB(0, 122, 255),          -- Modern blue accent
+            BorderColor = Color3.fromRGB(255, 255, 255),        -- White border
+            TextColor = Color3.fromRGB(0, 0, 0),                -- Black text
+            EnabledColor = Color3.fromRGB(52, 199, 89),         -- iOS green
+            DisabledColor = Color3.fromRGB(255, 59, 48),        -- iOS red
+            SecondaryTextColor = Color3.fromRGB(60, 60, 67),    -- Secondary gray text
+            
+            -- Glassmorphic properties
+            GlassTransparency = 0.15,                           -- Main glass transparency
+            BlurIntensity = 20,                                 -- Blur effect intensity
+            BorderTransparency = 0.7,                           -- Border transparency
+            ShadowColor = Color3.fromRGB(0, 0, 0),              -- Shadow color
+            ShadowTransparency = 0.8,                           -- Shadow transparency
+            
+            -- Typography
+            Font = Enum.Font.Gotham,
+            BoldFont = Enum.Font.GothamBold,
+            LightFont = Enum.Font.GothamLight,
             TextSize = 14,
             
-            -- For backwards compatibility
-            Background = Color3.fromRGB(15, 17, 19), -- Alias for PrimaryColor
-            Accent = Color3.fromRGB(200, 200, 200),  -- Alias for AccentColor
-            Enabled = Color3.fromRGB(50, 200, 100),  -- Alias for EnabledColor
-            Disabled = Color3.fromRGB(180, 70, 70),  -- Alias for DisabledColor
+            -- Legacy aliases
+            Background = Color3.fromRGB(255, 255, 255),
+            Accent = Color3.fromRGB(0, 122, 255),
+            Enabled = Color3.fromRGB(52, 199, 89),
+            Disabled = Color3.fromRGB(255, 59, 48),
         },
         
-        -- Add Cyberpunk theme
-        Cyberpunk = {
-            PrimaryColor = Color3.fromRGB(15, 15, 30),       -- Dark blue-purple
-            SecondaryColor = Color3.fromRGB(30, 30, 45),     -- Lighter blue-purple
-            AccentColor = Color3.fromRGB(255, 20, 147),      -- Neon pink
-            BorderColor = Color3.fromRGB(255, 20, 147),      -- Neon pink
-            TextColor = Color3.fromRGB(0, 255, 255),         -- Cyan
-            EnabledColor = Color3.fromRGB(0, 255, 128),      -- Neon green
-            DisabledColor = Color3.fromRGB(128, 0, 128),     -- Purple
-            SecondaryTextColor = Color3.fromRGB(180, 180, 255), -- Muted cyan
-            Font = Enum.Font.Arcade,
+        Dark = {
+            -- Dark glassmorphic theme
+            PrimaryColor = Color3.fromRGB(28, 28, 30),          -- Dark gray base
+            SecondaryColor = Color3.fromRGB(44, 44, 46),        -- Lighter dark gray
+            AccentColor = Color3.fromRGB(10, 132, 255),         -- Bright blue accent
+            BorderColor = Color3.fromRGB(255, 255, 255),        -- White border
+            TextColor = Color3.fromRGB(255, 255, 255),          -- White text
+            EnabledColor = Color3.fromRGB(48, 209, 88),         -- Green
+            DisabledColor = Color3.fromRGB(255, 69, 58),        -- Red
+            SecondaryTextColor = Color3.fromRGB(174, 174, 178), -- Gray text
+            
+            -- Glassmorphic properties
+            GlassTransparency = 0.2,
+            BlurIntensity = 25,
+            BorderTransparency = 0.6,
+            ShadowColor = Color3.fromRGB(0, 0, 0),
+            ShadowTransparency = 0.6,
+            
+            -- Typography
+            Font = Enum.Font.Gotham,
+            BoldFont = Enum.Font.GothamBold,
+            LightFont = Enum.Font.GothamLight,
             TextSize = 14,
             
-            -- For backwards compatibility
-            Background = Color3.fromRGB(15, 15, 30),       -- Alias for PrimaryColor
-            Accent = Color3.fromRGB(255, 20, 147),         -- Alias for AccentColor
-            Enabled = Color3.fromRGB(0, 255, 128),         -- Alias for EnabledColor
-            Disabled = Color3.fromRGB(128, 0, 128),        -- Alias for DisabledColor
+            -- Legacy aliases
+            Background = Color3.fromRGB(28, 28, 30),
+            Accent = Color3.fromRGB(10, 132, 255),
+            Enabled = Color3.fromRGB(48, 209, 88),
+            Disabled = Color3.fromRGB(255, 69, 58),
+        },
+        
+        Minimal = {
+            -- Ultra minimal theme
+            PrimaryColor = Color3.fromRGB(248, 248, 248),       -- Off-white
+            SecondaryColor = Color3.fromRGB(255, 255, 255),     -- Pure white
+            AccentColor = Color3.fromRGB(0, 0, 0),              -- Pure black accent
+            BorderColor = Color3.fromRGB(200, 200, 200),        -- Light gray border
+            TextColor = Color3.fromRGB(0, 0, 0),                -- Black text
+            EnabledColor = Color3.fromRGB(0, 0, 0),             -- Black for enabled
+            DisabledColor = Color3.fromRGB(160, 160, 160),      -- Gray for disabled
+            SecondaryTextColor = Color3.fromRGB(100, 100, 100), -- Dark gray text
+            
+            -- Glassmorphic properties
+            GlassTransparency = 0.05,
+            BlurIntensity = 10,
+            BorderTransparency = 0.8,
+            ShadowColor = Color3.fromRGB(0, 0, 0),
+            ShadowTransparency = 0.9,
+            
+            -- Typography
+            Font = Enum.Font.Gotham,
+            BoldFont = Enum.Font.GothamBold,
+            LightFont = Enum.Font.GothamLight,
+            TextSize = 13,
+            
+            -- Legacy aliases
+            Background = Color3.fromRGB(248, 248, 248),
+            Accent = Color3.fromRGB(0, 0, 0),
+            Enabled = Color3.fromRGB(0, 0, 0),
+            Disabled = Color3.fromRGB(160, 160, 160),
         }
     },
 
-    -- Current Theme (default to Military)
-    CurrentTheme = "Military"
+    -- Current Theme (default to Glass)
+    CurrentTheme = "Glass"
 }
 
 -- Window State Enumeration
