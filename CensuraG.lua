@@ -1,429 +1,554 @@
--- CensuraG/CensuraG.lua (Enhanced Glassmorphic Desktop Environment)
+-- CensuraG/CensuraG.lua (Modern Glassmorphic Desktop Environment v2.0)
+-- High-performance, streamlined initialization with advanced error recovery
 
--- Single Session Management - Prevent multiple instances
+-- Singleton Pattern - Ensure single instance per session
 if rawget(_G, "CensuraG") and _G.CensuraG.Initialized then
-    _G.CensuraG.Logger:warn("CensuraG already running in this session")
+    local existing = _G.CensuraG
+    existing.Logger:info("Accessing existing CensuraG session")
     
-    -- If there's a new app trying to register, handle it gracefully
+    -- Handle pending app registration gracefully
     if _G.CensuraGPendingApp then
-        local appData = _G.CensuraGPendingApp
-        if _G.CensuraG.Desktop and _G.CensuraG.Desktop.RegisterApp then
-            _G.CensuraG.Desktop:RegisterApp(
-                appData.Name or "Unknown App",
-                appData.Description or "Application",
-                appData.Icon or "rbxassetid://0",
-                appData.Callback,
-                appData.Category or "Applications"
-            )
-            _G.CensuraG.Logger:info("Registered new app: " .. (appData.Name or "Unknown"))
-        end
+        local app = _G.CensuraGPendingApp
+        task.spawn(function()
+            existing:RegisterApp(app.Name, app.Description, app.Icon, app.Callback, app.Category)
+        end)
         _G.CensuraGPendingApp = nil
     end
     
-    -- Bring existing session to focus
-    if _G.CensuraG.BringToFront then
-        _G.CensuraG.BringToFront()
+    -- Restore focus to existing session
+    if existing.BringToFront then
+        existing:BringToFront()
     end
     
-    return _G.CensuraG
+    return existing
 end
 
--- Initialize session marker
-rawset(_G, "CensuraGSessionId", tick())
+-- Performance tracking
+local initStartTime = tick()
+local sessionId = tostring(math.random(100000, 999999)) .. "_" .. math.floor(initStartTime)
+rawset(_G, "CensuraGSessionId", sessionId)
 
-local function safeLoadstring(url, errorMsg)
-    local success, result = pcall(function()
-        return game:HttpGet(url, true)
-    end)
-    
-    if not success then
-        return nil, "Failed to fetch: " .. tostring(result)
+-- Advanced module loading system with retry logic and caching
+local ModuleLoader = {}
+ModuleLoader.cache = {}
+ModuleLoader.retryAttempts = 3
+ModuleLoader.retryDelay = 0.5
+
+function ModuleLoader:LoadModule(url, name, required)
+    -- Check cache first
+    if self.cache[url] then
+        return self.cache[url], nil
     end
     
-    local loadSuccess, loadResult = pcall(loadstring, result)
-    if not loadSuccess then
-        return nil, "Failed to compile: " .. tostring(loadResult)
+    local attempts = 0
+    local lastError = ""
+    
+    while attempts < self.retryAttempts do
+        attempts = attempts + 1
+        
+        local success, result = pcall(function()
+            local source = game:HttpGet(url, true)
+            local compiled = loadstring(source)
+            if not compiled then
+                error("Failed to compile module")
+            end
+            return compiled()
+        end)
+        
+        if success then
+            -- Cache successful load
+            self.cache[url] = result
+            return result, nil
+        else
+            lastError = tostring(result)
+            if attempts < self.retryAttempts then
+                task.wait(self.retryDelay * attempts) -- Exponential backoff
+            end
+        end
     end
     
-    local execSuccess, execResult = pcall(loadResult)
-    if not execSuccess then
-        return nil, "Failed to execute: " .. tostring(execResult)
-    end
-    
-    return execResult
+    return nil, string.format("Failed to load %s after %d attempts. Last error: %s", 
+                             name or "module", attempts, lastError)
 end
 
--- Load and initialize splash screen first
+-- Initialize CensuraG core
+local CensuraG = rawget(_G, "CensuraG") or {
+    -- Performance tracking
+    InitTime = initStartTime,
+    SessionId = sessionId,
+    Version = "2.0.0",
+    BuildNumber = math.floor(tick()),
+    
+    -- State management
+    Initialized = false,
+    Loading = true,
+    
+    -- Component registry
+    Components = {},
+    Managers = {},
+    Windows = {},
+    
+    -- API surface
+    API = {}
+}
+_G.CensuraG = CensuraG
+
+-- Load splash screen with fallback
 local splash
-local splashModule, splashError = safeLoadstring("https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/Splash.lua", "Failed to load Splash")
+local splashModule, splashError = ModuleLoader:LoadModule(
+    "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/Splash.lua",
+    "Splash", false
+)
+
 if splashModule then
     splash = splashModule:Show()
 else
-    warn("Failed to load splash screen: " .. (splashError or "Unknown error"))
+    -- Minimal fallback splash
+    warn("Splash screen failed to load, using fallback: " .. (splashError or "Unknown"))
+    splash = {
+        UpdateStatus = function(_, text, progress) 
+            print(string.format("[CensuraG] %s (%.0f%%)", text or "Loading...", (progress or 0) * 100))
+        end,
+        Hide = function() end
+    }
 end
 
--- Initialize the library
-if splash then splash:UpdateStatus("Loading core libraries...", 0.1) end
-local Oratio, oratioError = safeLoadstring("https://raw.githubusercontent.com/LxckStxp/Oratio/main/init.lua", "Failed to load Oratio")
+-- Load essential dependencies
+if splash then splash:UpdateStatus("Loading essential services...", 0.05) end
+
+-- Oratio Logger (Critical dependency)
+local Oratio, oratioError = ModuleLoader:LoadModule(
+    "https://raw.githubusercontent.com/LxckStxp/Oratio/main/init.lua", 
+    "Oratio", true
+)
+
 if not Oratio then 
     if splash then splash:Hide() end
-    error("Failed to load Oratio: " .. (oratioError or "Unknown error")) 
+    error("Critical dependency failed: " .. (oratioError or "Unknown error"))
 end
 
-local CensuraG = rawget(_G, "CensuraG") or {}
-_G.CensuraG = CensuraG
-
--- Initialize Logger
+-- Initialize high-performance logger
 CensuraG.Logger = Oratio.new({
-    moduleName = "CensuraG",
-    minLevel = "INFO",
-    separator = "---"
+    moduleName = "CensuraG v" .. CensuraG.Version,
+    minLevel = "DEBUG",
+    separator = "═══",
+    enableColors = true,
+    timestampFormat = "[%H:%M:%S]"
 })
 
-CensuraG.Logger:section("CensuraG Initialization")
-CensuraG.Logger:info("Starting CensuraG UI API")
+CensuraG.Logger:section("CensuraG Modern Initialization")
+CensuraG.Logger:info("Session: " .. sessionId)
+CensuraG.Logger:debug("Init performance tracking started")
 
--- Create ScreenGui early to ensure it exists
-if splash then splash:UpdateStatus("Creating screen container...", 0.15) end
-local function createScreenGui()
+-- Create optimized ScreenGui container
+if splash then splash:UpdateStatus("Creating display container...", 0.1) end
+
+CensuraG.ScreenGui = (function()
     local playerGui = game.Players.LocalPlayer:WaitForChild("PlayerGui")
-    local existingGui = playerGui:FindFirstChild("CensuraGScreenGui")
-    if existingGui then return existingGui end
+    local existing = playerGui:FindFirstChild("CensuraGScreenGui")
+    if existing then 
+        CensuraG.Logger:debug("Reusing existing ScreenGui")
+        return existing 
+    end
     
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "CensuraGScreenGui"
     screenGui.ResetOnSpawn = false
     screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    screenGui.DisplayOrder = 100 -- Ensure proper layering
     screenGui.Parent = playerGui
+    
+    CensuraG.Logger:debug("Created new ScreenGui container")
     return screenGui
-end
+end)()
 
-CensuraG.ScreenGui = createScreenGui()
-CensuraG.Logger:info("Created ScreenGui container")
+-- Parallel loading system for core modules
+if splash then splash:UpdateStatus("Loading core architecture...", 0.15) end
 
--- Load Utilities first
-if splash then splash:UpdateStatus("Loading utilities...", 0.2) end
-local Utilities, utilitiesError = safeLoadstring("https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/Utilities.lua", "Failed to load Utilities")
-if not Utilities then
-    CensuraG.Logger:error("Failed to load Utilities: " .. (utilitiesError or "Unknown error"))
-    Utilities = {
-        LoadModule = function(url)
-            CensuraG.Logger:error("Utilities.LoadModule called but Utilities failed to load")
-            return nil
-        end
+local CoreLoader = {}
+CoreLoader.modules = {
+    -- Critical path modules (load sequentially)
+    {
+        name = "Config",
+        url = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/Config.lua",
+        critical = true
+    },
+    {
+        name = "Utilities", 
+        url = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/Utilities.lua",
+        critical = true
+    },
+    -- Non-critical modules (can load in parallel)
+    {
+        name = "Methods",
+        url = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/Methods.lua",
+        critical = false
+    },
+    {
+        name = "AnimationManager",
+        url = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/AnimationManager.lua",
+        critical = false
+    },
+    {
+        name = "RefreshManager",
+        url = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/RefreshManager.lua",
+        critical = false
     }
-end
-CensuraG.Utilities = Utilities
-
--- Load Core Modules with better error handling
-if splash then splash:UpdateStatus("Loading core modules...", 0.3) end
-local coreModules = {
-    Config = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/Config.lua",
-    Methods = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/Methods.lua",
-    AnimationManager = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/AnimationManager.lua",
-    RefreshManager = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/RefreshManager.lua",
-    DesktopManager = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/DesktopManager.lua"
 }
 
-local allCoreModulesLoaded = true
-local moduleCount = 0
-for name, url in pairs(coreModules) do
-    moduleCount = moduleCount + 1
-    if splash then 
-        splash:UpdateStatus("Loading " .. name .. "...", 0.3 + (moduleCount / #coreModules) * 0.2) 
-    end
-    
-    local module, error = safeLoadstring(url, "Failed to load " .. name)
-    if module then
-        CensuraG[name] = module
-        CensuraG.Logger:info("Loaded core module: " .. name)
-    else
-        CensuraG.Logger:error("Failed to load " .. name .. ": " .. (error or "Unknown error"))
-        allCoreModulesLoaded = false
-    end
-end
-
-if not allCoreModulesLoaded then
-    CensuraG.Logger:warn("Some core modules failed to load, functionality may be limited")
-end
-
--- Initialize RefreshManager early if it's loaded
-if splash then splash:UpdateStatus("Initializing refresh manager...", 0.5) end
-if CensuraG.RefreshManager then
-    CensuraG.RefreshManager:Initialize()
-    CensuraG.Logger:info("RefreshManager initialized")
-end
-
--- Load Components with better error handling
-if splash then splash:UpdateStatus("Loading UI components...", 0.55) end
-CensuraG.Components = {}
-local componentList = {
-    "window", "taskbar", "textlabel", "textbutton", "imagelabel", "slider", "dropdown", "switch", "grid", "systemtray"
-}
-
-local allComponentsLoaded = true
-for i, component in ipairs(componentList) do
-    if splash then 
-        splash:UpdateStatus("Loading component: " .. component, 0.55 + (i / #componentList) * 0.2) 
-    end
-    
-    local url = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/components/" .. component .. ".lua"
-    local loadedComponent = Utilities.LoadModule(url)
-    if loadedComponent then
-        CensuraG.Components[component] = loadedComponent
-        CensuraG.Logger:info("Loaded component: " .. component)
-    else
-        CensuraG.Logger:error("Failed to load component: " .. component)
-        allComponentsLoaded = false
-    end
-end
-
-if not allComponentsLoaded then
-    CensuraG.Logger:warn("Some components failed to load, UI functionality may be limited")
-end
-
--- Wait to load managers after components
-if allComponentsLoaded then
-    -- Load manager modules that depend on components
-    if splash then splash:UpdateStatus("Loading managers...", 0.75) end
-    local managerModules = {
-        WindowManager = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/WindowManager.lua",
-        TaskbarManager = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/TaskbarManager.lua"
-    }
-    
-    local allManagersLoaded = true
-    local managerCount = 0
-    for name, url in pairs(managerModules) do
-        managerCount = managerCount + 1
+-- Load critical modules first
+for i, moduleInfo in ipairs(CoreLoader.modules) do
+    if moduleInfo.critical then
         if splash then 
-            splash:UpdateStatus("Loading " .. name .. "...", 0.75 + (managerCount / #managerModules) * 0.1) 
+            splash:UpdateStatus("Loading " .. moduleInfo.name .. "...", 0.15 + (i * 0.05))
         end
         
-        local module, error = safeLoadstring(url, "Failed to load " .. name)
+        local module, error = ModuleLoader:LoadModule(moduleInfo.url, moduleInfo.name, true)
         if module then
-            CensuraG[name] = module
-            CensuraG.Logger:info("Loaded manager: " .. name)
+            CensuraG[moduleInfo.name] = module
+            CensuraG.Logger:info("✓ Loaded critical module: " .. moduleInfo.name)
         else
-            CensuraG.Logger:error("Failed to load " .. name .. ": " .. (error or "Unknown error"))
-            allManagersLoaded = false
+            CensuraG.Logger:error("✗ Critical module failed: " .. moduleInfo.name .. " - " .. error)
+            if splash then splash:Hide() end
+            error("Critical module failure: " .. moduleInfo.name)
         end
     end
-    
-    if not allManagersLoaded then
-        CensuraG.Logger:warn("Some managers failed to load, functionality may be limited")
+end
+
+-- Initialize Config early for theme support
+if CensuraG.Config then
+    -- Ensure Config is properly initialized
+    if type(CensuraG.Config.Initialize) == "function" then
+        CensuraG.Config:Initialize()
     end
-    
-    -- Initialize global state
-    if splash then splash:UpdateStatus("Initializing global state...", 0.85) end
-    CensuraG.Windows = CensuraG.Windows or {}
-    CensuraG.Taskbar = CensuraG.Taskbar or nil
-    
-    -- Initialize Taskbar only if TaskbarManager loaded
-    if splash then splash:UpdateStatus("Initializing taskbar...", 0.9) end
-    if CensuraG.TaskbarManager and not CensuraG.Taskbar then
-        pcall(function()
-            CensuraG.Taskbar = { Instance = CensuraG.TaskbarManager }
-            
-            -- Safely initialize the taskbar
-            if CensuraG.Taskbar.Instance and typeof(CensuraG.Taskbar.Instance) == "table" and CensuraG.Taskbar.Instance.Initialize then
-                CensuraG.Taskbar.Instance:Initialize()
-                CensuraG.Logger:info("Taskbar initialized")
-                
-                -- Initialize SystemTray after Taskbar
-                if splash then splash:UpdateStatus("Initializing system tray...", 0.93) end
-                if CensuraG.Components.systemtray and not CensuraG.SystemTray then
-                    CensuraG.SystemTray = CensuraG.Components.systemtray(CensuraG.Taskbar.Instance.Frame)
-                    CensuraG.Logger:info("SystemTray initialized")
-                end
+    CensuraG.Logger:info("Configuration system ready - Theme: " .. (CensuraG.Config.CurrentTheme or "Default"))
+end
+
+-- Load non-critical modules in parallel (simulate with coroutines)
+if splash then splash:UpdateStatus("Loading supporting systems...", 0.35) end
+
+local parallelTasks = {}
+for i, moduleInfo in ipairs(CoreLoader.modules) do
+    if not moduleInfo.critical then
+        table.insert(parallelTasks, function()
+            local module, error = ModuleLoader:LoadModule(moduleInfo.url, moduleInfo.name, false)
+            if module then
+                CensuraG[moduleInfo.name] = module
+                CensuraG.Logger:info("✓ Loaded module: " .. moduleInfo.name)
             else
-                CensuraG.Logger:error("TaskbarManager invalid or Initialize method missing")
+                CensuraG.Logger:warn("⚠ Optional module failed: " .. moduleInfo.name .. " - " .. error)
             end
         end)
     end
+end
+
+-- Execute parallel tasks
+for _, task in ipairs(parallelTasks) do
+    task.spawn(task)
+end
+
+-- Wait a moment for parallel tasks to complete
+task.wait(0.2)
+
+-- Initialize loaded managers
+if splash then splash:UpdateStatus("Initializing managers...", 0.5) end
+if CensuraG.RefreshManager and type(CensuraG.RefreshManager.Initialize) == "function" then
+    CensuraG.RefreshManager:Initialize()
+    CensuraG.Logger:info("✓ RefreshManager initialized")
+end
+
+if CensuraG.AnimationManager and type(CensuraG.AnimationManager.Initialize) == "function" then
+    CensuraG.AnimationManager:Initialize()
+    CensuraG.Logger:info("✓ AnimationManager initialized")
+end
+
+-- Advanced parallel component loading system
+if splash then splash:UpdateStatus("Loading UI components...", 0.55) end
+
+local ComponentLoader = {}
+ComponentLoader.components = {
+    -- Essential UI components
+    {name = "window", priority = "high"},
+    {name = "textbutton", priority = "high"},
+    {name = "textlabel", priority = "high"},
     
-    -- Initialize Desktop Manager
-    if splash then splash:UpdateStatus("Initializing desktop environment...", 0.95) end
-    if CensuraG.DesktopManager then
-        pcall(function()
-            CensuraG.Desktop = CensuraG.DesktopManager
-            CensuraG.Desktop:Initialize()
-            CensuraG.Logger:info("Desktop environment initialized")
-        end)
-    else
-        CensuraG.Logger:warn("DesktopManager not loaded, desktop features disabled")
-    end
-else
-    CensuraG.Logger:error("Not initializing managers due to missing components")
-end
+    -- Interactive components
+    {name = "slider", priority = "medium"},
+    {name = "dropdown", priority = "medium"},
+    {name = "switch", priority = "medium"},
+    
+    -- Advanced components
+    {name = "taskbar", priority = "medium"},
+    {name = "systemtray", priority = "low"},
+    {name = "imagelabel", priority = "low"},
+    {name = "grid", priority = "low"}
+}
 
--- Add utility methods to CensuraG
-if splash then splash:UpdateStatus("Setting up API methods...", 0.98) end
+-- Parallel component loading
+local componentTasks = {}
+local componentResults = {}
+local componentsLoaded = 0
+local totalComponents = #ComponentLoader.components
 
-CensuraG.CreateWindow = function(title)
-    if CensuraG.Methods and CensuraG.Methods.CreateWindow then
-        local window = CensuraG.Methods:CreateWindow(title)
-        if window then
-            -- Automatically bring new windows to front
-            window:BringToFront()
-        end
-        return window
-    else
-        CensuraG.Logger:error("Methods module not loaded, cannot create window")
-        return nil
-    end
-end
-
-CensuraG.SetTheme = function(themeName)
-    if CensuraG.Config then
-        -- Store the original theme name for logging
-        local oldTheme = CensuraG.Config.CurrentTheme
+for i, comp in ipairs(ComponentLoader.components) do
+    task.spawn(function()
+        local url = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/components/" .. comp.name .. ".lua"
         
-        -- Update the theme
-        CensuraG.Config.CurrentTheme = themeName
-        
-        -- Refresh all UI elements using RefreshManager if available
-        if CensuraG.RefreshManager then
-            CensuraG.RefreshManager:RefreshAll()
-            if CensuraG.SystemTray then
-                CensuraG.SystemTray:Refresh()
-            end
-            CensuraG.Logger:info("Theme changed from " .. oldTheme .. " to " .. themeName .. " (using RefreshManager)")
-        -- Fall back to Methods if RefreshManager isn't available
-        elseif CensuraG.Methods and CensuraG.Methods.RefreshAll then
-            CensuraG.Methods:RefreshAll()
-            if CensuraG.SystemTray then
-                CensuraG.SystemTray:Refresh()
-            end
-            CensuraG.Logger:info("Theme changed from " .. oldTheme .. " to " .. themeName .. " (using Methods)")
+        local module, error
+        if CensuraG.Utilities and CensuraG.Utilities.LoadModule then
+            module = CensuraG.Utilities.LoadModule(url)
+            if not module then error = "Utilities.LoadModule failed" end
         else
-            CensuraG.Logger:warn("Theme changed to " .. themeName .. " but no refresh mechanism available")
+            module, error = ModuleLoader:LoadModule(url, comp.name, comp.priority == "high")
         end
-    else
-        CensuraG.Logger:error("Config module not loaded, cannot change theme")
-    end
-end
-
--- Add refresh utility methods that use RefreshManager
-CensuraG.RefreshComponent = function(component, instance)
-    if CensuraG.RefreshManager then
-        CensuraG.RefreshManager:RefreshComponent(component, instance)
-    elseif CensuraG.Methods and CensuraG.Methods.RefreshComponent then
-        CensuraG.Methods:RefreshComponent(component, instance)
-    else
-        CensuraG.Logger:error("No refresh mechanism available, cannot refresh component")
-    end
-end
-
-CensuraG.RefreshAll = function()
-    if CensuraG.RefreshManager then
-        CensuraG.RefreshManager:RefreshAll()
-        if CensuraG.SystemTray then
-            CensuraG.SystemTray:Refresh()
+        
+        componentResults[comp.name] = {
+            module = module,
+            error = error,
+            priority = comp.priority
+        }
+        
+        componentsLoaded = componentsLoaded + 1
+        
+        if splash then 
+            splash:UpdateStatus(
+                string.format("Loading components (%d/%d)...", componentsLoaded, totalComponents), 
+                0.55 + (componentsLoaded / totalComponents) * 0.15
+            )
         end
-        if CensuraG.Desktop then
-            CensuraG.Desktop:Refresh()
-        end
-    elseif CensuraG.Methods and CensuraG.Methods.RefreshAll then
-        CensuraG.Methods:RefreshAll()
-        if CensuraG.SystemTray then
-            CensuraG.SystemTray:Refresh()
-        end
-        if CensuraG.Desktop then
-            CensuraG.Desktop:Refresh()
-        end
-    else
-        CensuraG.Logger:error("No refresh mechanism available, cannot refresh all components")
-    end
-end
-
--- Desktop Management Functions
-CensuraG.TileWindows = function()
-    if CensuraG.WindowManager then
-        CensuraG.WindowManager.TileWindows()
-    else
-        CensuraG.Logger:error("WindowManager not available")
-    end
-end
-
-CensuraG.CascadeWindows = function()
-    if CensuraG.WindowManager then
-        CensuraG.WindowManager.CascadeWindows()
-    else
-        CensuraG.Logger:error("WindowManager not available")
-    end
-end
-
-CensuraG.CloseAllWindows = function()
-    if CensuraG.WindowManager then
-        CensuraG.WindowManager.CloseAllWindows()
-    else
-        CensuraG.Logger:error("WindowManager not available")
-    end
-end
-
-CensuraG.GetActiveWindow = function()
-    if CensuraG.WindowManager then
-        return CensuraG.WindowManager.GetActiveWindow()
-    end
-    return nil
-end
-
-CensuraG.CreateDesktopIcon = function(name, iconId, callback)
-    if CensuraG.Desktop then
-        return CensuraG.Desktop:CreateDesktopIcon(name, iconId, callback)
-    else
-        CensuraG.Logger:error("Desktop not initialized")
-        return nil
-    end
-end
-
--- Hide splash screen and complete initialization
-if splash then 
-    splash:UpdateStatus("Ready!", 1.0)
-    task.delay(0.5, function()
-        splash:Hide()
     end)
 end
 
--- Session Management Functions
-CensuraG.BringToFront = function()
-    if CensuraG.WindowManager and CensuraG.WindowManager.GetActiveWindow then
-        local activeWindow = CensuraG.WindowManager.GetActiveWindow()
-        if activeWindow then
-            activeWindow:BringToFront()
+-- Wait for component loading to complete
+while componentsLoaded < totalComponents do
+    task.wait(0.01)
+end
+
+-- Process component results
+CensuraG.Components = {}
+local criticalComponentsOK = true
+local totalLoadedComponents = 0
+
+for name, result in pairs(componentResults) do
+    if result.module then
+        CensuraG.Components[name] = result.module
+        totalLoadedComponents = totalLoadedComponents + 1
+        CensuraG.Logger:info("✓ Component loaded: " .. name .. " (" .. result.priority .. ")")
+    else
+        if result.priority == "high" then
+            criticalComponentsOK = false
+            CensuraG.Logger:error("✗ Critical component failed: " .. name .. " - " .. (result.error or "Unknown"))
+        else
+            CensuraG.Logger:warn("⚠ Optional component failed: " .. name .. " - " .. (result.error or "Unknown"))
+        end
+    end
+end
+
+CensuraG.Logger:info(string.format("Component loading complete: %d/%d loaded", totalLoadedComponents, totalComponents))
+
+-- Load advanced managers (requires components)
+if criticalComponentsOK then
+    if splash then splash:UpdateStatus("Loading advanced managers...", 0.75) end
+    
+    local advancedManagers = {
+        {
+            name = "WindowManager",
+            url = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/WindowManager.lua"
+        },
+        {
+            name = "TaskbarManager", 
+            url = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/TaskbarManager.lua"
+        },
+        {
+            name = "DesktopManager",
+            url = "https://raw.githubusercontent.com/LxckStxp/CensuraG/main/src/ui/DesktopManager.lua"
+        }
+    }
+    
+    for i, manager in ipairs(advancedManagers) do
+        if splash then 
+            splash:UpdateStatus("Loading " .. manager.name .. "...", 0.75 + (i / #advancedManagers) * 0.1)
+        end
+        
+        local module, error = ModuleLoader:LoadModule(manager.url, manager.name, false)
+        if module then
+            CensuraG[manager.name] = module
+            CensuraG.Managers[manager.name] = module
+            CensuraG.Logger:info("✓ Manager loaded: " .. manager.name)
+        else
+            CensuraG.Logger:warn("⚠ Manager failed: " .. manager.name .. " - " .. error)
+        end
+    end
+else
+    CensuraG.Logger:error("Skipping manager initialization due to critical component failures")
+end
+
+-- Advanced initialization sequence
+if splash then splash:UpdateStatus("Initializing desktop environment...", 0.85) end
+
+-- Create modern API surface
+CensuraG.API = {
+    -- Window management
+    CreateWindow = function(config)
+        if CensuraG.WindowManager then
+            return CensuraG.WindowManager:Create(config)
+        end
+        CensuraG.Logger:error("WindowManager not available")
+        return nil
+    end,
+    
+    -- Theme management  
+    SetTheme = function(themeName)
+        if CensuraG.Config then
+            CensuraG.Config:SetTheme(themeName)
+            if CensuraG.RefreshManager then
+                CensuraG.RefreshManager:RefreshAll()
+            end
+            CensuraG.Logger:info("Theme changed to: " .. themeName)
+        end
+    end,
+    
+    -- App registration
+    RegisterApp = function(appConfig)
+        if CensuraG.Desktop then
+            return CensuraG.Desktop:RegisterApp(appConfig)
+        else
+            -- Queue for later registration
+            _G.CensuraGPendingApp = appConfig
+            return nil
+        end
+    end,
+    
+    -- System utilities
+    RefreshAll = function()
+        if CensuraG.RefreshManager then
+            CensuraG.RefreshManager:RefreshAll()
+        end
+    end
+}
+
+-- Initialize core systems
+local function initializeSystem()
+    local startTime = tick()
+    
+    -- Initialize TaskbarManager
+    if CensuraG.TaskbarManager then
+        if splash then splash:UpdateStatus("Starting taskbar...", 0.88) end
+        local success, taskbar = pcall(function()
+            return CensuraG.TaskbarManager:Initialize()
+        end)
+        
+        if success then
+            CensuraG.Taskbar = taskbar
+            CensuraG.Logger:info("✓ Taskbar system ready")
+            
+            -- Initialize SystemTray
+            if CensuraG.Components.systemtray then
+                CensuraG.SystemTray = CensuraG.Components.systemtray(taskbar.Frame)
+                CensuraG.Logger:info("✓ System tray ready")
+            end
+        else
+            CensuraG.Logger:error("✗ Taskbar initialization failed")
         end
     end
     
-    if CensuraG.Desktop and CensuraG.Desktop.StartMenu then
+    -- Initialize DesktopManager  
+    if CensuraG.DesktopManager then
+        if splash then splash:UpdateStatus("Starting desktop...", 0.92) end
+        local success, result = pcall(function()
+            CensuraG.Desktop = CensuraG.DesktopManager
+            return CensuraG.Desktop:Initialize()
+        end)
+        
+        if success then
+            CensuraG.Logger:info("✓ Desktop environment ready")
+        else
+            CensuraG.Logger:error("✗ Desktop initialization failed: " .. tostring(result))
+        end
+    end
+    
+    local initDuration = tick() - startTime
+    CensuraG.Logger:debug("System initialization took: " .. string.format("%.2f", initDuration) .. "ms")
+end
+
+-- Execute system initialization
+pcall(initializeSystem)
+
+-- Finalize API surface and legacy compatibility
+if splash then splash:UpdateStatus("Finalizing API surface...", 0.95) end
+
+-- Legacy compatibility methods
+CensuraG.CreateWindow = CensuraG.API.CreateWindow
+CensuraG.SetTheme = CensuraG.API.SetTheme
+CensuraG.RegisterApp = CensuraG.API.RegisterApp
+CensuraG.RefreshAll = CensuraG.API.RefreshAll
+
+-- Extended desktop management
+CensuraG.TileWindows = function()
+    if CensuraG.WindowManager and CensuraG.WindowManager.TileWindows then
+        return CensuraG.WindowManager:TileWindows()
+    end
+    CensuraG.Logger:warn("Window tiling not available")
+end
+
+CensuraG.CascadeWindows = function()
+    if CensuraG.WindowManager and CensuraG.WindowManager.CascadeWindows then
+        return CensuraG.WindowManager:CascadeWindows()  
+    end
+    CensuraG.Logger:warn("Window cascading not available")
+end
+
+CensuraG.BringToFront = function()
+    if CensuraG.Desktop and CensuraG.Desktop.BringToFront then
+        CensuraG.Desktop:BringToFront()
+    elseif CensuraG.Desktop and CensuraG.Desktop.ShowStartMenu then
         CensuraG.Desktop:ShowStartMenu()
     end
 end
 
-CensuraG.RegisterApp = function(name, description, icon, callback, category)
-    if CensuraG.Desktop and CensuraG.Desktop.RegisterApp then
-        return CensuraG.Desktop:RegisterApp(name, description, icon, callback, category)
-    else
-        -- Store for later registration
-        _G.CensuraGPendingApp = {
-            Name = name,
-            Description = description,
-            Icon = icon,
-            Callback = callback,
-            Category = category
-        }
-        CensuraG.Logger:warn("Desktop not ready, app queued for registration: " .. name)
-        return nil
-    end
+-- Performance and system information
+CensuraG.GetPerformanceMetrics = function()
+    local totalInitTime = tick() - initStartTime
+    return {
+        InitializationTime = totalInitTime,
+        SessionId = sessionId,
+        Version = CensuraG.Version,
+        LoadedComponents = #CensuraG.Components,
+        LoadedManagers = #CensuraG.Managers,
+        ActiveWindows = CensuraG.Windows and #CensuraG.Windows or 0,
+        MemoryUsage = collectgarbage("count"),
+        BuildNumber = CensuraG.BuildNumber
+    }
 end
 
--- Mark as initialized
+-- Mark as fully initialized
 CensuraG.Initialized = true
-CensuraG.SessionId = _G.CensuraGSessionId
+CensuraG.Loading = false
 
---loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura-Applications/main/Services/Remote.lua"))() -- Debug Tool
+-- Hide splash screen with completion effect
+if splash then 
+    splash:UpdateStatus("CensuraG Ready!", 1.0)
+    task.delay(0.8, function()
+        splash:Hide()
+    end)
+end
 
-CensuraG.Logger:section("CensuraG Desktop Ready")
-CensuraG.Logger:info("Glassmorphic desktop environment initialized")
-CensuraG.Logger:info("Session ID: " .. CensuraG.SessionId)
-CensuraG.Logger:info("Theme: " .. CensuraG.Config.CurrentTheme)
+-- Final performance metrics
+local totalInitTime = tick() - initStartTime
+local metrics = CensuraG.GetPerformanceMetrics()
+
+CensuraG.Logger:section("CensuraG Modern Desktop Environment Ready")
+CensuraG.Logger:info(string.format("🚀 Initialization complete in %.2fms", totalInitTime * 1000))
+CensuraG.Logger:info("📋 Session: " .. sessionId)
+CensuraG.Logger:info("🎨 Theme: " .. (CensuraG.Config and CensuraG.Config.CurrentTheme or "Default"))
+CensuraG.Logger:info(string.format("🧩 Components: %d loaded", metrics.LoadedComponents))
+CensuraG.Logger:info(string.format("⚙️ Managers: %d active", metrics.LoadedManagers))
+CensuraG.Logger:info(string.format("💾 Memory: %.1fKB", metrics.MemoryUsage))
+CensuraG.Logger:info("✨ Modern glassmorphic interface ready")
+
+-- Optional debug remote (commented for production)
+-- task.spawn(function()
+--     loadstring(game:HttpGet("https://raw.githubusercontent.com/LxckStxp/Censura-Applications/main/Services/Remote.lua"))()
+-- end)
+
 return CensuraG
